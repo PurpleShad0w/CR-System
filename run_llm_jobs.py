@@ -9,23 +9,27 @@ from typing import Dict, Any, List
 from llm_client import make_client
 from quality_score import evaluate_quality
 
+
 def load_json(p: Path) -> Dict[str, Any]:
     return json.loads(p.read_text(encoding="utf-8"))
 
+
 def save_json(p: Path, obj: Dict[str, Any]):
     p.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 def build_messages(prompt: str) -> List[Dict[str, str]]:
     # Keep it simple and consistent with your prompts
     return [
         {"role": "system", "content": "Tu es un rédacteur technique Build 4 Use. Respecte les contraintes et n'invente rien."},
-        {"role": "user", "content": prompt}
+        {"role": "user", "content": prompt},
     ]
+
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--bundle", required=True, help="Path to drafts/<id>/draft_bundle.json")
-    ap.add_argument("--out", default="", help="Output folder (defaults to bundle folder)")
+    ap.add_argument("--bundle", required=True, help="Path to process/drafts/<case_id>/draft_bundle.json")
+    ap.add_argument("--out", default="", help="Output folder (defaults to bundle folder under process/drafts)")
     ap.add_argument("--temperature", type=float, default=0.2)
     ap.add_argument("--max_tokens", type=int, default=1200)
     ap.add_argument("--top_p", type=float, default=1.0)
@@ -54,7 +58,7 @@ def main():
             temperature=args.temperature,
             max_tokens=args.max_tokens,
             top_p=args.top_p,
-            stream=False
+            stream=False,
         )
         sec["generated_text"] = resp.text
         sec["llm_raw"] = resp.raw
@@ -66,7 +70,7 @@ def main():
     assembled = {
         "case_id": generated.get("case_id"),
         "report_type": generated.get("report_type"),
-        "macro_parts": []
+        "macro_parts": [],
     }
 
     by_mp = {}
@@ -81,7 +85,7 @@ def main():
             "sections": [
                 {"bucket_id": s.get("bucket_id"), "text": (s.get("generated_text") or "").strip()}
                 for s in by_mp[mp]
-            ]
+            ],
         })
 
     assembled_path = out_dir / "assembled_report.json"
@@ -99,6 +103,7 @@ def main():
 
     if args.min_quality and (quality.get("total", 0) < args.min_quality):
         raise SystemExit(2)
+
 
 if __name__ == "__main__":
     main()

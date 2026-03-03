@@ -2,28 +2,35 @@
 # -*- coding: utf-8 -*-
 """
 generate_draft.py
+
 Purpose
 -------
 Convert a per-case plan into LLM-ready section writing jobs:
 - macro-parts 1-3 only
 - per selected bucket: evidence from OneNote + prompt text
 
+NEW FOLDER CONVENTION (project reorg)
+-------------------------------------
+- Inputs live under:   input/
+- Pipeline artifacts:  process/
+- Final reports:       output/
+
 Inputs
 ------
-plans/<case_id>.json                 (from plan_generation.py)
-processed/<notebook>/pages/*.json    (from process_onenote.py)
-prompts/prompt_templates.json        (prompt template configuration)
+process/plans/<case_id>.json
+process/onenote/<notebook>/pages/*.json
+input/config/prompt_templates.json
 
 Outputs
 -------
-drafts/<case_id>/
-  draft_bundle.json                  (machine-readable)
-  prompts.txt                        (all prompts concatenated)
-  prompts/<bucket_id>.txt            (one prompt per bucket)
+process/drafts/<case_id>/
+  draft_bundle.json
+  prompts.txt
+  prompts/<bucket_id>.txt
 
 Usage Example
------
-python generate_draft.py --plan plans/P050011.json --onenote processed/test --templates prompts/prompt_templates.json
+-------------
+python generate_draft.py --plan process/plans/P050011.json --onenote process/onenote/test --templates input/config/prompt_templates.json
 """
 
 import argparse
@@ -32,9 +39,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
 
-
 # --- BACX INTENT RULES ------------------------------------
-
 BACX_INTENT_BY_MACRO = {
     "État des lieux GTB": "DESCRIBE_EXISTING",
     "Scoring GTB actuel": "SCORE_EXISTING",
@@ -79,8 +84,10 @@ def norm(s: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
+
 def load_json(path: Path) -> Dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
 
 def load_onenote_pages(onenote_root: Path) -> List[Dict[str, Any]]:
     pages_dir = onenote_root / "pages"
@@ -94,10 +101,8 @@ def load_onenote_pages(onenote_root: Path) -> List[Dict[str, Any]]:
             continue
     return pages
 
+
 def page_text_blocks(page: Dict[str, Any]) -> List[Tuple[str, str]]:
-    """
-    Return list of (block_type, text) from a OneNote page pack.
-    """
     out = []
     title = page.get("title") or ""
     if title:
@@ -114,34 +119,30 @@ def page_text_blocks(page: Dict[str, Any]) -> List[Tuple[str, str]]:
                 out.append(("audio_transcript", txt))
     return out
 
+
 def extract_snippets(page: Dict[str, Any], keywords: List[str], max_snips: int = 8) -> List[str]:
-    """
-    Extract short evidence snippets from the page by keyword hits.
-    """
     kws = [norm(k) for k in keywords if k]
     snips = []
     for t, txt in page_text_blocks(page):
         nt = norm(txt)
         hit = sum(1 for k in kws if k and k in nt)
         if hit > 0:
-            # Keep the original text, trimmed
             snips.append(f"[{t}] {txt[:500]}")
-        if len(snips) >= max_snips:
-            break
+            if len(snips) >= max_snips:
+                break
     return snips
+
 
 def build_evidence_block(case_id: str,
                          bucket_id: str,
                          keywords: List[str],
                          routed_pages: List[Dict[str, Any]],
                          pages_by_id: Dict[str, Dict[str, Any]]) -> str:
-    """
-    Build the evidence block string inserted into prompts.
-    """
     lines = []
     lines.append(f"- Bucket: {bucket_id}")
     lines.append(f"- Mots-clés: {', '.join(keywords)}")
     lines.append("")
+
     for rp in routed_pages:
         pid = rp.get("page_id")
         score = rp.get("score")
@@ -157,7 +158,9 @@ def build_evidence_block(case_id: str,
             for s in snips:
                 lines.append(f"- {s}")
         lines.append("")
+
     return "\n".join(lines).strip()
+
 
 def render_prompt(template_cfg: Dict[str, Any],
                   case_id: str,
@@ -174,15 +177,16 @@ def render_prompt(template_cfg: Dict[str, Any],
         macro_part_num=macro_part_num,
         macro_part_name=macro_part_name,
         bucket_id=bucket_id,
-        evidence_block=evidence_block
+        evidence_block=evidence_block,
     )
+
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--plan", required=True, help="Path to plans/<case_id>.json")
-    ap.add_argument("--onenote", required=True, help="Path to processed/<notebook> folder (contains pages/)")
-    ap.add_argument("--templates", required=True, help="Path to prompts/prompt_templates.json")
-    ap.add_argument("--out", default="drafts", help="Output folder")
+    ap.add_argument("--plan", required=True, help="Path to process/plans/<case_id>.json")
+    ap.add_argument("--onenote", required=True, help="Path to process/onenote/<notebook> folder (contains pages/)")
+    ap.add_argument("--templates", default="input/config/prompt_templates.json", help="Path to input/config/prompt_templates.json")
+    ap.add_argument("--out", default="process/drafts", help="Output root under process/ (default: process/drafts)")
     args = ap.parse_args()
 
     plan = load_json(Path(args.plan))
@@ -192,7 +196,7 @@ def main():
     case_id = plan.get("case_id") or Path(args.plan).stem
     report_type = plan.get("report_type")
     macro_parts = plan.get("macro_parts") or {}
-    gen_parts = plan.get("generate_macro_parts") or [1,2,3]
+    gen_parts = plan.get("generate_macro_parts") or [1, 2, 3]
 
     # Index pages by page_id for routing lookup
     pages_by_id = {}
@@ -211,14 +215,11 @@ def main():
         "report_type": report_type,
         "generate_macro_parts": gen_parts,
         "macro_parts": macro_parts,
-        "sections": []
+        "sections": [],
     }
 
     all_prompts = []
-
-    # Choose report-type template blocks
     rt_templates = tpl.get("templates", {}).get(report_type, {})
-
     routing = plan.get("routing") or {}
     selected_by_part = plan.get("selected_buckets_by_macro_part") or {}
 
@@ -229,12 +230,12 @@ def main():
             continue
 
         mp_name = mp_cfg.get("name") if isinstance(mp_cfg, dict) else str(mp_cfg)
-        # Macro-part instructions (if present)
+
         mp_template = rt_templates.get(f"macro_part_{mp}", {})
         mp_instructions = mp_template.get("instructions", [])
 
-        # Buckets selected for this macro-part
         bucket_items = selected_by_part.get(str(mp)) or selected_by_part.get(mp) or []
+
         for bi in bucket_items:
             bucket_id = bi.get("bucket_id")
             if not bucket_id:
@@ -247,24 +248,8 @@ def main():
             evidence = build_evidence_block(case_id, bucket_id, keywords, top_pages, pages_by_id)
 
             intent = BACX_INTENT_BY_MACRO.get(mp_name)
-
             rules = INTENT_RULES.get(intent, {})
-            intent_note = rules.get("note", "")
             forbidden = rules.get("forbidden", [])
-
-            intent_header = ""
-            if intent:
-                intent_header = (
-                    f"### BACX_INTENT: {intent}\n"
-                    f"- {intent_note}\n"
-                )
-            if forbidden:
-                intent_header += (
-                    "- Termes interdits dans cette section : "
-                    + ", ".join(forbidden)
-                    + "\n\n"
-                )
-
 
             prompt = render_prompt(
                 tpl,
@@ -273,10 +258,10 @@ def main():
                 macro_part_num=mp,
                 macro_part_name=mp_name,
                 bucket_id=bucket_id,
-                evidence_block=evidence
+                evidence_block=evidence,
             )
 
-            # Prepend macro-part specific instructions (if any)
+            # Prepend macro-part specific instructions
             if mp_instructions:
                 header = "### Instructions macro-partie\n- " + "\n- ".join(mp_instructions) + "\n\n"
                 prompt = header + prompt
@@ -289,23 +274,23 @@ def main():
                 "keywords": keywords,
                 "top_pages": top_pages,
                 "evidence": evidence,
-                "prompt": prompt
+                "prompt": prompt,
             }
-
             bundle["sections"].append(section_obj)
 
-            # Save individual prompt
             p_out = prompts_dir / f"{bucket_id}.txt"
             p_out.write_text(prompt, encoding="utf-8")
             all_prompts.append(f"\n\n===== {bucket_id} (Macro {mp}: {mp_name}) =====\n\n{prompt}")
 
     # Write outputs
+    out_root.mkdir(parents=True, exist_ok=True)
     (out_root / "draft_bundle.json").write_text(json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8")
     (out_root / "prompts.txt").write_text("\n".join(all_prompts).strip() + "\n", encoding="utf-8")
 
     print(f"Wrote: {out_root / 'draft_bundle.json'}")
     print(f"Wrote: {out_root / 'prompts.txt'}")
     print(f"Prompts directory: {prompts_dir}")
+
 
 if __name__ == "__main__":
     main()
