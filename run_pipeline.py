@@ -7,9 +7,9 @@ Single entrypoint to run the full GTB / BACS report generation pipeline.
 
 NEW FOLDER CONVENTION (project reorg)
 -------------------------------------
-- Inputs live under:   input/
-- Pipeline artifacts:  process/
-- Final reports:       output/
+- Inputs live under: input/
+- Pipeline artifacts: process/
+- Final reports: output/
 
 Pipeline
 --------
@@ -19,19 +19,22 @@ Pipeline
 4. run_llm_jobs.py           (process/drafts -> generated_bundle + assembled_report + quality_report)
 5. render_report_pptx.py     (process/drafts -> output/reports)
 
-All parameters are defined below.
+LLM MODE
+--------
+Default is now: multistep
+You can override with: --mode single
 """
 
+import argparse
 import subprocess
 import sys
 from pathlib import Path
 
 # ============================================================================
-# CONFIGURATION (EDIT HERE)
+# CONFIGURATION (DEFAULTS — can be overridden by CLI)
 # ============================================================================
-
-CASE_ID = "P050011"
-NOTEBOOK_NAME = "test"  # frontmatter notebook: value
+DEFAULT_CASE_ID = "P050011"
+DEFAULT_NOTEBOOK_NAME = "test"  # frontmatter notebook: value
 
 ROOT = Path(__file__).resolve().parent
 
@@ -52,19 +55,20 @@ SKELETONS_DIR = PROCESS_ROOT / "learning" / "skeletons"
 
 # Outputs
 OUTPUT_ROOT = ROOT / "output"
-OUTPUT_REPORTS = OUTPUT_ROOT / "reports" / CASE_ID
 
 # Quality gate
-MIN_QUALITY_SCORE = 75.0
+DEFAULT_MIN_QUALITY_SCORE = 75.0
 
 # LLM parameters
 LLM_TEMPERATURE = "0.2"
 LLM_MAX_TOKENS = "1200"
 
+# NEW: default LLM mode
+DEFAULT_LLM_MODE = "multistep"  # <- default requested
+
 # ============================================================================
 # UTIL
 # ============================================================================
-
 def run(cmd: list[str], *, cwd: Path = ROOT):
     print("\n▶", " ".join(cmd))
     res = subprocess.run(cmd, cwd=cwd)
@@ -75,19 +79,33 @@ def run(cmd: list[str], *, cwd: Path = ROOT):
 # ============================================================================
 # PIPELINE
 # ============================================================================
-
 def main():
-    notebook_processed = ONENOTE_PROCESSED_ROOT / NOTEBOOK_NAME
-    plan_path = PLANS_ROOT / f"{CASE_ID}.json"
-    draft_dir = DRAFTS_ROOT / CASE_ID
+    ap = argparse.ArgumentParser(description="Run the GTB/BACS generation pipeline end-to-end.")
+    ap.add_argument("--case-id", default=DEFAULT_CASE_ID, help="Case identifier (used for plan + output folder)")
+    ap.add_argument("--notebook", default=DEFAULT_NOTEBOOK_NAME, help="OneNote notebook name (frontmatter notebook:)")
+    ap.add_argument("--mode", choices=["single", "multistep"], default=DEFAULT_LLM_MODE,
+                    help="LLM mode passed to run_llm_jobs.py (default: multistep)")
+    ap.add_argument("--min-quality", type=float, default=DEFAULT_MIN_QUALITY_SCORE,
+                    help="Minimum quality score gate passed to run_llm_jobs.py")
+    args = ap.parse_args()
 
-    OUTPUT_REPORTS.mkdir(parents=True, exist_ok=True)
+    case_id = args.case_id
+    notebook_name = args.notebook
+    llm_mode = args.mode
+    min_quality = args.min_quality
+
+    notebook_processed = ONENOTE_PROCESSED_ROOT / notebook_name
+    plan_path = PLANS_ROOT / f"{case_id}.json"
+    draft_dir = DRAFTS_ROOT / case_id
+
+    output_reports = OUTPUT_ROOT / "reports" / case_id
+    output_reports.mkdir(parents=True, exist_ok=True)
 
     # 1) OneNote → structured JSON (process/onenote/<notebook>)
     run([
         sys.executable,
         "process_onenote.py",
-        NOTEBOOK_NAME,
+        notebook_name,
         "--input", str(ONENOTE_EXPORT_ROOT),
         "--out", str(ONENOTE_PROCESSED_ROOT),
         "--transcribe",
@@ -100,7 +118,7 @@ def main():
         "--config", str(REPORT_TYPES_CONFIG),
         "--skeletons", str(SKELETONS_DIR),
         "--onenote", str(notebook_processed),
-        "--case-id", CASE_ID,
+        "--case-id", case_id,
         "--out", str(PLANS_ROOT),
     ])
 
@@ -115,17 +133,19 @@ def main():
     ])
 
     # 4) LLM execution + assembly + quality gate (still under process/drafts/<case_id>)
+    # NEW: pass --mode (default multistep, overridable)
     run([
         sys.executable,
         "run_llm_jobs.py",
         "--bundle", str(draft_dir / "draft_bundle.json"),
+        "--mode", llm_mode,
         "--temperature", LLM_TEMPERATURE,
         "--max_tokens", LLM_MAX_TOKENS,
-        "--min_quality", str(MIN_QUALITY_SCORE),
+        "--min_quality", str(min_quality),
     ])
 
     # 5) PPTX rendering → output/reports/<case_id>/Rapport_Audit.pptx
-    out_pptx = OUTPUT_REPORTS / "Rapport_Audit.pptx"
+    out_pptx = output_reports / "Rapport_Audit.pptx"
     run([
         sys.executable,
         "render_report_pptx.py",
@@ -136,7 +156,6 @@ def main():
 
     print("\n✅ Pipeline completed successfully")
     print(f"📄 Output: {out_pptx}")
-
 
 if __name__ == "__main__":
     main()

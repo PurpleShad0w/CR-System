@@ -102,6 +102,32 @@ def split_text_for_slides(text: str, max_chars: int = 900, max_lines: int = 12) 
 
     return chunks if chunks else [""]
 
+def split_section_into_slides(section_text: str):
+    slides = []
+    current_title = None
+    current_lines = []
+
+    for line in section_text.splitlines():
+        line = line.strip()
+        if line.startswith("#### "):
+            if current_title:
+                slides.append({
+                    "title": current_title,
+                    "body": "\n".join(current_lines).strip()
+                })
+            current_title = line.replace("#### ", "").strip()
+            current_lines = []
+        else:
+            current_lines.append(line)
+
+    if current_title:
+        slides.append({
+            "title": current_title,
+            "body": "\n".join(current_lines).strip()
+        })
+
+    return slides
+
 # -----------------------------
 # PPTX cloning utilities
 # -----------------------------
@@ -277,21 +303,38 @@ def build_deck(template_path: Path, assembled_path: Path, out_path: Path):
                 if sh.text_frame.text.strip() in {"01", "02", "03", "99"}:
                     sh.text_frame.text = badge_num
 
-        # Section slides
         for sec in mp.get("sections") or []:
             bucket_id = sec.get("bucket_id") or "SECTION"
             sec_text = sec.get("text") or ""
-            chunks = split_text_for_slides(sec_text, max_chars=900, max_lines=12)
+            # NEW: prefer splitting by #### headings (subsections) to avoid jamming all text into one slide.
+            # If no #### headings are present, fall back to the existing conservative chunk splitter.
+            subsection_slides = split_section_into_slides(sec_text)
+            if subsection_slides:
+                slide_items = []
+                for sidx, item in enumerate(subsection_slides, start=1):
+                    stitle = (item.get("title") or "").strip() or bucket_id
+                    sbody = (item.get("body") or "").strip()
+                    # If a subsection body is still too long, chunk it further using existing logic.
+                    body_chunks = split_text_for_slides(sbody, max_chars=900, max_lines=12)
+                    for cidx, chunk in enumerate(body_chunks, start=1):
+                        # Title formatting: include bucket for context + (x/y) when chunked
+                        title = f"{bucket_id} – {stitle}"
+                        if len(body_chunks) > 1:
+                            title = f"{bucket_id} – {stitle} ({cidx}/{len(body_chunks)})"
+                        slide_items.append((title, chunk))
+            else:
+                # Fallback: previous behavior (split the whole section into slide-sized chunks)
+                chunks = split_text_for_slides(sec_text, max_chars=900, max_lines=12)
+                slide_items = []
+                for idx, chunk in enumerate(chunks, start=1):
+                    title = bucket_id
+                    if len(chunks) > 1:
+                        title = f"{bucket_id} ({idx}/{len(chunks)})"
+                    slide_items.append((title, chunk))
 
-            for idx, chunk in enumerate(chunks, start=1):
-                # choose layout: text-only by default (no images provided)
-                slide_out = clone_slide(prs_out, s_text_in)
-
-                # Title: bucket_id, with (1/2) if split
-                title = bucket_id
-                if len(chunks) > 1:
-                    title = f"{bucket_id} ({idx}/{len(chunks)})"
-
+            # Render each slide item
+            for title, chunk in slide_items:
+                slide_out = clone_slide(prs_out, s_text_in)  # text-only layout by default
                 replace_placeholders(slide_out, {
                     "{{SLIDE_TITLE}}": title,
                     "{{DATE}}": today,
@@ -299,7 +342,6 @@ def build_deck(template_path: Path, assembled_path: Path, out_path: Path):
                     "{{CONTACT_EMAIL}}": "contact@build4use.eu"
                 })
 
-                # Fill the bullet placeholder
                 shape = find_shape_containing(slide_out, "{{TEXTE_BULLETS}}")
                 if shape:
                     set_bullets_in_shape(shape, chunk, font_size_pt=16)
