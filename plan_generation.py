@@ -70,6 +70,14 @@ def load_onenote_pages(onenote_root: Path) -> List[Dict[str, Any]]:
             continue
     return pages
 
+def filter_pages_by_section(pages: List[Dict[str, Any]], onenote_section: str) -> List[Dict[str, Any]]:
+    if not onenote_section:
+        return pages
+    return [
+        p for p in pages
+        if (p.get("section") or (p.get("metadata", {}) or {}).get("section")) == onenote_section
+    ]
+
 # ----------------------------
 # Skeleton catalog loading
 # ----------------------------
@@ -207,6 +215,7 @@ def build_plan(config: Dict[str, Any], skeleton_catalogs: Dict[str, Any], pages:
         "selected_buckets_by_macro_part": dict(selected_by_part),
         "routing": routing,
         "skeleton_catalogs_loaded": skeleton_summary,
+        "onenote_section": None,  # populated in main when filtering is used
         "notes": {
             "principle": "Buckets are selected from OneNote context; macro-part 4 is never generated.",
             "skeletons_role": "Skeleton JSONs are treated as candidate catalogs / priors, not a fixed outline.",
@@ -219,6 +228,7 @@ def main():
     ap.add_argument("--config", default="input/config/report_types.json")
     ap.add_argument("--skeletons", default="process/learning/skeletons")
     ap.add_argument("--onenote", required=True, help="Path to process/onenote/<notebook> folder (contains pages/)")
+    ap.add_argument("--onenote-section", default="", help="Restrict planning to a OneNote section (e.g., 'Oseraie - OSNY').")
     ap.add_argument("--case-id", default="", help="Case identifier used for output plan filename.")
     ap.add_argument("--out", default="process/plans", help="Output folder for plans (under process/).")
     args = ap.parse_args()
@@ -226,11 +236,15 @@ def main():
     cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
     skeleton_catalogs = load_skeleton_catalogs(Path(args.skeletons))
     pages = load_onenote_pages(Path(args.onenote))
+    onenote_section = args.onenote_section.strip()
+    if onenote_section:
+        pages = filter_pages_by_section(pages, onenote_section)
 
     # Default case_id falls back to explicit arg or the folder name.
     case_id = args.case_id.strip() or Path(args.onenote).name
 
     plan = build_plan(cfg, skeleton_catalogs, pages, case_id)
+    plan["onenote_section"] = onenote_section if onenote_section else None
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{case_id}.json"

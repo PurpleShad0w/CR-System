@@ -20,6 +20,7 @@ Inputs
 process/plans/<case_id>.json
 process/onenote/<notebook>/pages/*.json
 input/config/prompt_templates.json
+process/onenote_aggregates/<notebook>/<section_slug>.json (optional, recommended)
 
 Outputs
 -------
@@ -100,6 +101,66 @@ def load_onenote_pages(onenote_root: Path) -> List[Dict[str, Any]]:
         except Exception:
             continue
     return pages
+
+
+def load_section_aggregate(agg_path: Path) -> Dict[str, Any]:
+    if not agg_path or not agg_path.exists():
+        return {}
+    try:
+        return json.loads(agg_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def build_section_context_block(agg: Dict[str, Any], keywords: List[str], max_titles: int = 12) -> str:
+    """
+    Build a compact synthesis of the whole OneNote section:
+    - inventory by equipment family
+    - relevant titles for this bucket (keyword match)
+    - reminders to reproduce inventories when evidence is list-like
+    """
+    if not agg:
+        return ""
+    sec_name = agg.get("onenote_section") or ""
+    page_count = agg.get("page_count") or 0
+    inv = agg.get("inventory") or []
+
+    kw_norm = [norm(k) for k in (keywords or []) if k]
+
+    lines = []
+    lines.append(f"## Synthèse OneNote (section: {sec_name}, pages: {page_count})")
+    lines.append("")
+    lines.append("### Inventaire (par familles)")
+    for it in inv[:12]:
+        fam = it.get('family')
+        cnt = it.get('count')
+        lines.append(f"- {fam}: {cnt} élément(s)")
+    lines.append("")
+
+    # bucket-relevant titles
+    lines.append("### Pages probablement pertinentes pour ce bucket (titres)")
+    picked = []
+    for it in inv:
+        for t in (it.get("titles") or []):
+            nt = norm(t)
+            if not kw_norm or any(k in nt for k in kw_norm):
+                picked.append(t)
+            if len(picked) >= max_titles:
+                break
+        if len(picked) >= max_titles:
+            break
+    if not picked:
+        lines.append("(Aucun titre détecté via mots-clés; se baser sur les preuves ci-dessous.)")
+    else:
+        for t in picked:
+            lines.append(f"- {t}")
+    lines.append("")
+
+    lines.append("### Consigne de rédaction (synthèse → rapport)")
+    lines.append("- Si l’évidence ressemble à un inventaire matériel/équipement, PRODUIS un inventaire similaire (liste structurée) dans la section.")
+    lines.append("- Regroupe les observations répétées sur plusieurs pages en paragraphes de synthèse (éviter 'page par page').")
+    lines.append("")
+    return "\n".join(lines).strip()
 
 
 def page_text_blocks(page: Dict[str, Any]) -> List[Tuple[str, str]]:
@@ -187,9 +248,12 @@ def main():
     ap.add_argument("--onenote", required=True, help="Path to process/onenote/<notebook> folder (contains pages/)")
     ap.add_argument("--templates", default="input/config/prompt_templates.json", help="Path to input/config/prompt_templates.json")
     ap.add_argument("--out", default="process/drafts", help="Output root under process/ (default: process/drafts)")
+    ap.add_argument("--section-aggregate", default="", help="Optional path to process/onenote_aggregates/<notebook>/<section_slug>.json")
     args = ap.parse_args()
 
     plan = load_json(Path(args.plan))
+    # Load optional section synthesis (recommended when report unit = OneNote section)
+    agg = load_section_aggregate(Path(args.section_aggregate)) if args.section_aggregate else {}
     tpl = load_json(Path(args.templates))
     pages = load_onenote_pages(Path(args.onenote))
 
@@ -244,8 +308,14 @@ def main():
             r = routing.get(bucket_id) or {}
             keywords = r.get("keywords") or []
             top_pages = r.get("top_pages") or []
+            # NEW: section-level context block (inventory + grouping guidance)
+            section_ctx = build_section_context_block(agg, keywords)
 
             evidence = build_evidence_block(case_id, bucket_id, keywords, top_pages, pages_by_id)
+
+            # prepend section synthesis before per-page evidence
+            if section_ctx:
+                evidence = section_ctx + "\n\n" + evidence
 
             intent = BACX_INTENT_BY_MACRO.get(mp_name)
             rules = INTENT_RULES.get(intent, {})
