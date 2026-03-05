@@ -2,6 +2,6 @@
 .env
 Autocontroles/
 __pycache__/
-input/reports/
 output/
 process/
+reports/
