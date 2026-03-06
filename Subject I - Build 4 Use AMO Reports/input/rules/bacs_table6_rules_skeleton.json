@@ -1,0 +1,1593 @@
+{
+  "meta": {
+    "standard": "NF EN ISO 52120-1:2022",
+    "source": "Tableau 6 — Listes des fonctions et affectation aux classes d’efficacité de BAC",
+    "classes": [
+      "D",
+      "C",
+      "B",
+      "A"
+    ],
+    "scopes": [
+      "Résidentiel",
+      "Non résidentiel"
+    ],
+    "license_note": "This JSON intentionally avoids verbatim ISO text. Use tools/extract_table6_from_pdf.py to generate a locally enriched JSON with full phrasing from your licensed PDF."
+  },
+  "rules": [
+    {
+      "rule_id": "1.1",
+      "group": "Chauffage",
+      "title": "Régulation de l’émission (pièce)",
+      "levels": {
+        "0": {
+          "label": "Aucune régulation"
+        },
+        "1": {
+          "label": "Régulation centrale"
+        },
+        "2": {
+          "label": "Régulation individuelle par pièce"
+        },
+        "3": {
+          "label": "Modulante avec communication"
+        },
+        "4": {
+          "label": "Communication + détection d’occupation"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [
+        "Classe A non applicable aux émetteurs à forte inertie (plancher, murs)."
+      ]
+    },
+    {
+      "rule_id": "1.2",
+      "group": "Chauffage",
+      "title": "Émission TABS (chauffage)",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Centrale auto"
+        },
+        "2": {
+          "label": "Centrale évoluée"
+        },
+        "3": {
+          "label": "Évoluée + intermittence/rétroaction"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Système thermo-actif présent"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "1.3",
+      "group": "Chauffage",
+      "title": "Température réseau (loi d’eau)",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Selon T° extérieure"
+        },
+        "2": {
+          "label": "Selon besoins"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "1.4",
+      "group": "Chauffage",
+      "title": "Commande des pompes de distribution",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Marche/arrêt"
+        },
+        "2": {
+          "label": "Multi-vitesses"
+        },
+        "3": {
+          "label": "Vitesse variable (Δp interne)"
+        },
+        "4": {
+          "label": "Vitesse variable (demande externe)"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "1.4.a",
+      "group": "Chauffage",
+      "title": "Équilibrage hydronique distribution chaud",
+      "levels": {
+        "0": {
+          "label": "Aucun"
+        },
+        "1": {
+          "label": "Statique émetteurs"
+        },
+        "2": {
+          "label": "Statique émetteurs+groupe"
+        },
+        "3": {
+          "label": "Statique + dynamique groupe"
+        },
+        "4": {
+          "label": "Dynamique par émetteur"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [
+          ">10 émetteurs"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "1.5",
+      "group": "Chauffage",
+      "title": "Régulation intermittente émission/distribution",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Programme fixe"
+        },
+        "2": {
+          "label": "Optimisation marche/arrêt"
+        },
+        "3": {
+          "label": "Évaluation des besoins"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "1.6",
+      "group": "Chauffage",
+      "title": "Commande générateurs (combustion/chauffage urbain)",
+      "levels": {
+        "0": {
+          "label": "T° constante"
+        },
+        "1": {
+          "label": "T° variable selon T° ext"
+        },
+        "2": {
+          "label": "T° variable selon charge"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "1.7",
+      "group": "Chauffage",
+      "title": "Commande générateurs (pompe à chaleur)",
+      "levels": {
+        "0": {
+          "label": "T° constante"
+        },
+        "1": {
+          "label": "T° variable selon T° ext"
+        },
+        "2": {
+          "label": "T° variable selon charge"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "1.8",
+      "group": "Chauffage",
+      "title": "Commande générateurs (unité extérieure)",
+      "levels": {
+        "0": {
+          "label": "Marche/arrêt"
+        },
+        "1": {
+          "label": "Multi-paliers"
+        },
+        "2": {
+          "label": "Progressive"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "1.9",
+      "group": "Chauffage",
+      "title": "Priorité des générateurs",
+      "levels": {
+        "0": {
+          "label": "Temps de fonctionnement"
+        },
+        "1": {
+          "label": "Liste fixe"
+        },
+        "2": {
+          "label": "Liste dynamique rendement"
+        },
+        "3": {
+          "label": "Dynamique + prédictions"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "1.10",
+      "group": "Chauffage",
+      "title": "Stockage thermique (TES)",
+      "levels": {
+        "0": {
+          "label": "Stockage continu"
+        },
+        "1": {
+          "label": "Régulation 2 capteurs"
+        },
+        "2": {
+          "label": "Prédictions de charges"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Stockage thermique présent"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "2.1",
+      "group": "ECS",
+      "title": "Stockage ECS (élec/PAC intégrée)",
+      "levels": {
+        "0": {
+          "label": "Marche/arrêt"
+        },
+        "1": {
+          "label": "Marche/arrêt + programmation"
+        },
+        "2": {
+          "label": "+ multi-capteurs / selon besoins"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Production ECS présente"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "2.2",
+      "group": "ECS",
+      "title": "Stockage ECS (générateur eau chaude)",
+      "levels": {
+        "0": {
+          "label": "Marche/arrêt"
+        },
+        "1": {
+          "label": "Marche/arrêt + programmation"
+        },
+        "2": {
+          "label": "+ selon besoins / multi-capteurs"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "2.3",
+      "group": "ECS",
+      "title": "Stockage ECS solaire + appoint",
+      "levels": {
+        "0": {
+          "label": "Manuelle"
+        },
+        "1": {
+          "label": "Auto priorité solaire"
+        },
+        "2": {
+          "label": "+ selon besoins / multi-capteurs"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Solaire thermique présent"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "2.4",
+      "group": "ECS",
+      "title": "Pompe de circulation ECS",
+      "levels": {
+        "0": {
+          "label": "Continu"
+        },
+        "1": {
+          "label": "Programmation"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.1",
+      "group": "Refroidissement",
+      "title": "Régulation de l’émission (pièce)",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Centrale"
+        },
+        "2": {
+          "label": "Individuelle"
+        },
+        "3": {
+          "label": "Modulante + communication"
+        },
+        "4": {
+          "label": "+ détection occupation"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Système de refroidissement présent"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.2",
+      "group": "Refroidissement",
+      "title": "Émission TABS (refroidissement)",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Centrale auto"
+        },
+        "2": {
+          "label": "Centrale évoluée"
+        },
+        "3": {
+          "label": "Évoluée + intermittence/rétroaction"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Système thermo-actif présent"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.3",
+      "group": "Refroidissement",
+      "title": "Température réseau froid",
+      "levels": {
+        "0": {
+          "label": "T° constante"
+        },
+        "1": {
+          "label": "Selon T° extérieure"
+        },
+        "2": {
+          "label": "Selon besoins"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.4",
+      "group": "Refroidissement",
+      "title": "Commande des pompes de distribution",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Marche/arrêt"
+        },
+        "2": {
+          "label": "Multi-niveau"
+        },
+        "3": {
+          "label": "Vitesse variable (Δp interne)"
+        },
+        "4": {
+          "label": "Vitesse variable (demande externe)"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.4.a",
+      "group": "Refroidissement",
+      "title": "Équilibrage hydronique distribution froid",
+      "levels": {
+        "0": {
+          "label": "Aucun"
+        },
+        "1": {
+          "label": "Statique émetteurs"
+        },
+        "2": {
+          "label": "Statique émetteurs+groupe"
+        },
+        "3": {
+          "label": "Statique + dynamique groupe"
+        },
+        "4": {
+          "label": "Dynamique par émetteur"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [
+          ">10 émetteurs"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.5",
+      "group": "Refroidissement",
+      "title": "Régulation intermittente émission/distribution",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Programme fixe"
+        },
+        "2": {
+          "label": "Optimisation marche/arrêt"
+        },
+        "3": {
+          "label": "Évaluation des besoins"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.6",
+      "group": "Refroidissement",
+      "title": "Asservissement chauffage/refroidissement",
+      "levels": {
+        "0": {
+          "label": "Aucun"
+        },
+        "1": {
+          "label": "Partiel"
+        },
+        "2": {
+          "label": "Total"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.7",
+      "group": "Refroidissement",
+      "title": "Régulation générateurs de froid",
+      "levels": {
+        "0": {
+          "label": "T° constante"
+        },
+        "1": {
+          "label": "Selon T° extérieure"
+        },
+        "2": {
+          "label": "Selon charge"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.8",
+      "group": "Refroidissement",
+      "title": "Priorité générateurs de froid",
+      "levels": {
+        "0": {
+          "label": "Temps de fonctionnement"
+        },
+        "1": {
+          "label": "Charges"
+        },
+        "2": {
+          "label": "Rendement/Caractéristiques"
+        },
+        "3": {
+          "label": "Prédictions"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "3.9",
+      "group": "Refroidissement",
+      "title": "Stockage thermique (TES)",
+      "levels": {
+        "0": {
+          "label": "Continu"
+        },
+        "1": {
+          "label": "Programmé"
+        },
+        "2": {
+          "label": "Prédictions"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Stockage thermique présent"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.1",
+      "group": "Ventilation",
+      "title": "Débit d’air au niveau pièce",
+      "levels": {
+        "0": {
+          "label": "Aucune (constant)"
+        },
+        "1": {
+          "label": "Programmée"
+        },
+        "2": {
+          "label": "Selon occupation"
+        },
+        "3": {
+          "label": "Selon besoins IAQ"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.2",
+      "group": "Ventilation",
+      "title": "Température air ambiant (tout air)",
+      "levels": {
+        "0": {
+          "label": "Marche/arrêt"
+        },
+        "1": {
+          "label": "Régulation continue"
+        },
+        "2": {
+          "label": "Régulation optimisée"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.3",
+      "group": "Ventilation",
+      "title": "Coordination air/ système statique",
+      "levels": {
+        "0": {
+          "label": "Non coordonnée"
+        },
+        "1": {
+          "label": "Coordonnée"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.4",
+      "group": "Ventilation",
+      "title": "Débit/rapport air extérieur",
+      "levels": {
+        "0": {
+          "label": "Fixe"
+        },
+        "1": {
+          "label": "Étagé calendrier"
+        },
+        "2": {
+          "label": "Étagé occupation"
+        },
+        "3": {
+          "label": "Progressif capteurs"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.5",
+      "group": "Ventilation",
+      "title": "Débit/pression au niveau CTA",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Horaires marche/arrêt"
+        },
+        "2": {
+          "label": "Multi-niveau"
+        },
+        "3": {
+          "label": "Auto sans réinit"
+        },
+        "4": {
+          "label": "Auto avec réinit"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.6",
+      "group": "Ventilation",
+      "title": "Récupération chaleur: antigel",
+      "levels": {
+        "0": {
+          "label": "Sans protection"
+        },
+        "1": {
+          "label": "Avec protection"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.7",
+      "group": "Ventilation",
+      "title": "Récupération chaleur: surchauffe",
+      "levels": {
+        "0": {
+          "label": "Sans régulation"
+        },
+        "1": {
+          "label": "Avec régulation"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.8",
+      "group": "Ventilation",
+      "title": "Free cooling",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Nocturne"
+        },
+        "2": {
+          "label": "Naturel"
+        },
+        "3": {
+          "label": "Enthalpie"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.9",
+      "group": "Ventilation",
+      "title": "Température air soufflé (CTA)",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Consigne constante"
+        },
+        "2": {
+          "label": "Variable selon T° ext"
+        },
+        "3": {
+          "label": "Variable selon charge"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "4.10",
+      "group": "Ventilation",
+      "title": "Humidité",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Point de rosée"
+        },
+        "2": {
+          "label": "Régulation directe"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "5.1",
+      "group": "Éclairage",
+      "title": "Commande basée sur l’occupation",
+      "levels": {
+        "0": {
+          "label": "Manuel"
+        },
+        "1": {
+          "label": "Manuel + extinction auto"
+        },
+        "2": {
+          "label": "Auto (présence)"
+        },
+        "3": {
+          "label": "Manuel + auto partiel"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "5.2",
+      "group": "Éclairage",
+      "title": "Régulation lumière naturelle",
+      "levels": {
+        "0": {
+          "label": "Manuelle centralisée"
+        },
+        "1": {
+          "label": "Manuelle zone"
+        },
+        "2": {
+          "label": "Commutation auto"
+        },
+        "3": {
+          "label": "Modulation auto"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "6.1",
+      "group": "Stores",
+      "title": "Commande des stores",
+      "levels": {
+        "0": {
+          "label": "Manuelle"
+        },
+        "1": {
+          "label": "Motorisée manuelle"
+        },
+        "2": {
+          "label": "Motorisée automatique"
+        },
+        "3": {
+          "label": "Commande combinée (éclairage+stores+CVC)"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "7.1",
+      "group": "GTB",
+      "title": "Gestion des points de consigne",
+      "levels": {
+        "0": {
+          "label": "Réglage manuel local"
+        },
+        "1": {
+          "label": "Adaptation décentralisée"
+        },
+        "2": {
+          "label": "Adaptation centrale"
+        },
+        "3": {
+          "label": "Centrale + rétroaction utilisateurs"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "7.2",
+      "group": "GTB",
+      "title": "Gestion des temps de fonctionnement",
+      "levels": {
+        "0": {
+          "label": "Réglage manuel"
+        },
+        "1": {
+          "label": "Horaire fixe + préconditionnement fixe"
+        },
+        "2": {
+          "label": "Horaire + adaptation centrale + préconditionnement variable"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "7.3",
+      "group": "GTB",
+      "title": "Détection des défauts & aide au diagnostic",
+      "levels": {
+        "0": {
+          "label": "Aucune indication centralisée"
+        },
+        "1": {
+          "label": "Alarmes centralisées"
+        },
+        "2": {
+          "label": "Alarmes + diagnostic"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "7.4",
+      "group": "GTB",
+      "title": "Reporting conso & conditions intérieures",
+      "levels": {
+        "0": {
+          "label": "Valeurs réelles uniquement"
+        },
+        "1": {
+          "label": "Tendances + conso"
+        },
+        "2": {
+          "label": "Analyse + performance + étalonnage"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "7.5",
+      "group": "GTB",
+      "title": "Production locale / ENR",
+      "levels": {
+        "0": {
+          "label": "Non régulée"
+        },
+        "1": {
+          "label": "Coordination + stockage + autoconsommation"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Production locale/ENR présente"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "7.6",
+      "group": "GTB",
+      "title": "Récupération/transfert de chaleur",
+      "levels": {
+        "0": {
+          "label": "Instantané"
+        },
+        "1": {
+          "label": "Maîtrisé (incluant stockage)"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Récupération/transfert présent"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    },
+    {
+      "rule_id": "7.7",
+      "group": "GTB",
+      "title": "Intégration réseau intelligent",
+      "levels": {
+        "0": {
+          "label": "Aucune"
+        },
+        "1": {
+          "label": "Gestion selon charge réseau (demand response)"
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Fonction smart grid pertinente"
+        ],
+        "exclusions": []
+      },
+      "notes": []
+    }
+  ]
+}

@@ -1,0 +1,5981 @@
+{
+  "meta": {
+    "standard": "NF EN ISO 52120-1:2022",
+    "source": "Tableau 6 — Listes des fonctions et affectation aux classes d’efficacité de BAC",
+    "classes": [
+      "D",
+      "C",
+      "B",
+      "A"
+    ],
+    "scopes": [
+      "Résidentiel",
+      "Non résidentiel"
+    ],
+    "license_note": "This JSON intentionally avoids verbatim ISO text. Use tools/extract_table6_from_pdf.py to generate a locally enriched JSON with full phrasing from your licensed PDF.",
+    "structured": true,
+    "extractor": "v5",
+    "start_page": 43,
+    "end_page": 53
+  },
+  "rules": [
+    {
+      "rule_id": "1.1",
+      "group": "Chauffage",
+      "title": "Régulation de l’émission (pièce)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation centrale automatique",
+            "lines": [
+              "Régulation centrale automatique"
+            ],
+            "cleaned_lines": [
+              "Régulation centrale automatique"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation centrale automatique x x",
+            "lines": [
+              "1 Régulation centrale automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation individuelle par pièce",
+            "lines": [
+              "Régulation individuelle par pièce"
+            ],
+            "cleaned_lines": [
+              "Régulation individuelle par pièce"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation individuelle par pièce x x x x",
+            "lines": [
+              "2 Régulation individuelle par pièce x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation modulante individuelle par",
+            "lines": [
+              "Régulation modulante individuelle par",
+              "pièce avec communication x x x xa x x x xa"
+            ],
+            "cleaned_lines": [
+              "Régulation modulante individuelle par",
+              "pièce avec communication"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation modulante individuelle par",
+            "lines": [
+              "3 Régulation modulante individuelle par",
+              "pièce avec communication x x x xa x x x xa"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "xa",
+              "x",
+              "x",
+              "x",
+              "xa"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "4": {
+          "text": {
+            "header": "Régulation modulante individuelle par",
+            "lines": [
+              "Régulation modulante individuelle par",
+              "pièce avec communication et détection d’occupation (ne s’applique pas",
+              "aux systèmes d’émission de chaleur à",
+              "réaction lente, comme le chauffage par le",
+              "plancher)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation modulante individuelle par",
+              "pièce avec communication et détection d’occupation (ne s’applique pas",
+              "aux systèmes d’émission de chaleur à",
+              "réaction lente, comme le chauffage par le",
+              "plancher)"
+            ]
+          },
+          "raw": {
+            "header": "4 Régulation modulante individuelle par",
+            "lines": [
+              "4 Régulation modulante individuelle par",
+              "pièce avec communication et détection d’occupation (ne s’applique pas",
+              "aux systèmes d’émission de chaleur à",
+              "réaction lente, comme le chauffage par le",
+              "plancher)x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [
+        "Classe A non applicable aux émetteurs à forte inertie (plancher, murs)."
+      ],
+      "raw_text_excerpt": "1.1 Régulation de l’émission\n La fonction de régulation est appliquée à l’émetteur de chaleur (radiateurs, plancher chauffant, ventilo-\nconvecteur, unité intérieure) au niveau de la pièce; pour le type 1, une seule fonction de régulation peut \nréguler plusieurs pièces\n 0 Aucune régulation automatique x    x    \n 1 Régulation centrale automatique x    x    \n 2 Régulation individuelle par pièce x x   x x   \n 3 Régulation modulante individuelle par \npièce avec communicationx x x xa x x x xa\n 4 Régulation modulante individuelle par \npièce avec communication et détec -\ntion d’occupation (ne s’applique pas \naux systèmes d’émission de chaleur à \nréaction lente, comme le chauffage par le \nplancher)x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\n© ISO 2021 – Tous droits réservés   \n 27AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "function_text": {
+        "lines": [
+          "1.1 Régulation de l’émission",
+          "La fonction de régulation est appliquée à l’émetteur de chaleur (radiateurs, plancher chauffant, ventiloconvecteur, unité intérieure) au niveau de la pièce; pour le type 1, une seule fonction de régulation peut",
+          "réguler plusieurs pièces"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "1.2",
+      "group": "Chauffage",
+      "title": "Émission TABS (chauffage)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation centrale automatique",
+            "lines": [
+              "Régulation centrale automatique"
+            ],
+            "cleaned_lines": [
+              "Régulation centrale automatique"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation centrale automatique x x x x",
+            "lines": [
+              "1 Régulation centrale automatique x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation centrale automatique évoluée",
+            "lines": [
+              "Régulation centrale automatique évoluée"
+            ],
+            "cleaned_lines": [
+              "Régulation centrale automatique évoluée"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation centrale automatique évoluée x x x x x x",
+            "lines": [
+              "2 Régulation centrale automatique évoluée x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation centrale automatique évoluée",
+            "lines": [
+              "Régulation centrale automatique évoluée",
+              "avec fonctionnement par intermittence",
+              "et/ou commande à rétroaction de température ambiante x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation centrale automatique évoluée",
+              "avec fonctionnement par intermittence",
+              "et/ou commande à rétroaction de température ambiante"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation centrale automatique évoluée",
+            "lines": [
+              "3 Régulation centrale automatique évoluée",
+              "avec fonctionnement par intermittence",
+              "et/ou commande à rétroaction de température ambiante x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Système thermo-actif présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.2 Régulation de l’émission pour système thermo-actif (mode de chauffage)\n 0 Aucune régulation automatique x    x    \n 1 Régulation centrale automatique x x   x x   \n 2 Régulation centrale automatique évoluée x x x  x x x  \n 3 Régulation centrale automatique évoluée \navec fonctionnement par intermittence \net/ou commande à rétroaction de tempé -\nrature ambiantex x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "1.2 Régulation de l’émission pour système thermo-actif (mode de chauffage)"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "1.3",
+      "group": "Chauffage",
+      "title": "Température réseau (loi d’eau)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation en fonction de la température",
+            "lines": [
+              "Régulation en fonction de la température",
+              "extérieure x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation en fonction de la température",
+              "extérieure"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation en fonction de la température",
+            "lines": [
+              "1 Régulation en fonction de la température",
+              "extérieure x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation en fonction des besoins",
+            "lines": [
+              "Régulation en fonction des besoins"
+            ],
+            "cleaned_lines": [
+              "Régulation en fonction des besoins"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation en fonction des besoins x x x x x x x x",
+            "lines": [
+              "2 Régulation en fonction des besoins x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.3 Régulation de la température de l’eau chaude du réseau de distribution (en départ ou en retour)\n Une fonction similaire peut être appliquée à la régulation des réseaux pour le chauffage électrique direct\n 0 Aucune régulation automatique x    x    \n 1 Régulation en fonction de la température \nextérieurex x   x x   \n 2 Régulation en fonction des besoins x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "1.3 Régulation de la température de l’eau chaude du réseau de distribution (en départ ou en retour)",
+          "Une fonction similaire peut être appliquée à la régulation des réseaux pour le chauffage électrique direct"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "1.4",
+      "group": "Chauffage",
+      "title": "Commande des pompes de distribution",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Commande de mise en marche/arrêt",
+            "lines": [
+              "Commande de mise en marche/arrêt"
+            ],
+            "cleaned_lines": [
+              "Commande de mise en marche/arrêt"
+            ]
+          },
+          "raw": {
+            "header": "1 Commande de mise en marche/arrêt x x x x",
+            "lines": [
+              "1 Commande de mise en marche/arrêt x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Commande multi-niveau",
+            "lines": [
+              "Commande multi-niveau"
+            ],
+            "cleaned_lines": [
+              "Commande multi-niveau"
+            ]
+          },
+          "raw": {
+            "header": "2 Commande multi-niveau x x x x x x",
+            "lines": [
+              "2 Commande multi-niveau x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Commande des pompes à vitesse variable (estimations (internes) du groupe",
+            "lines": [
+              "Commande des pompes à vitesse variable (estimations (internes) du groupe",
+              "de pompes)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Commande des pompes à vitesse variable (estimations (internes) du groupe",
+              "de pompes)"
+            ]
+          },
+          "raw": {
+            "header": "3 Commande des pompes à vitesse variable (estimations (internes) du groupe",
+            "lines": [
+              "3 Commande des pompes à vitesse variable (estimations (internes) du groupe",
+              "de pompes)x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "4": {
+          "text": {
+            "header": "Commande des pompes à vitesse",
+            "lines": [
+              "Commande des pompes à vitesse",
+              "variable (signal de demande externe)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Commande des pompes à vitesse",
+              "variable (signal de demande externe)"
+            ]
+          },
+          "raw": {
+            "header": "4 Commande des pompes à vitesse",
+            "lines": [
+              "4 Commande des pompes à vitesse",
+              "variable (signal de demande externe)x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.4 Régulation des pompes de distribution du réseau\n Les pompes régulées peuvent être installées à différents niveaux dans le réseau\n 0 Aucune régulation automatique x    x    \n 1 Commande de mise en marche/arrêt x x   x x   \n 2 Commande multi-niveau x x x  x x x  \n 3 Commande des pompes à vitesse va -\nriable (estimations (internes) du groupe \nde pompes)x x x x x x x x\n 4 Commande des pompes à vitesse \nvariable (signal de demande externe)x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "1.4 Régulation des pompes de distribution du réseau",
+          "Les pompes régulées peuvent être installées à différents niveaux dans le réseau"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "1.4.a",
+      "group": "Chauffage",
+      "title": "Équilibrage hydronique distribution chaud",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucun équilibrage",
+            "lines": [
+              "Aucun équilibrage"
+            ],
+            "cleaned_lines": [
+              "Aucun équilibrage"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucun équilibrage x x",
+            "lines": [
+              "0 Aucun équilibrage x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Équilibrage statique de chaque émetteur,",
+            "lines": [
+              "Équilibrage statique de chaque émetteur,",
+              "sans équilibrage du groupe x x x"
+            ],
+            "cleaned_lines": [
+              "Équilibrage statique de chaque émetteur,",
+              "sans équilibrage du groupe"
+            ]
+          },
+          "raw": {
+            "header": "1 Équilibrage statique de chaque émetteur,",
+            "lines": [
+              "1 Équilibrage statique de chaque émetteur,",
+              "sans équilibrage du groupe x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Équilibrage statique de chaque émetteur",
+            "lines": [
+              "Équilibrage statique de chaque émetteur",
+              "et équilibrage statique du groupe x x x"
+            ],
+            "cleaned_lines": [
+              "Équilibrage statique de chaque émetteur",
+              "et équilibrage statique du groupe"
+            ]
+          },
+          "raw": {
+            "header": "2 Équilibrage statique de chaque émetteur",
+            "lines": [
+              "2 Équilibrage statique de chaque émetteur",
+              "et équilibrage statique du groupe x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Équilibrage statique de chaque émetteur",
+            "lines": [
+              "Équilibrage statique de chaque émetteur",
+              "et équilibrage dynamique du groupe x x x x x"
+            ],
+            "cleaned_lines": [
+              "Équilibrage statique de chaque émetteur",
+              "et équilibrage dynamique du groupe"
+            ]
+          },
+          "raw": {
+            "header": "3 Équilibrage statique de chaque émetteur",
+            "lines": [
+              "3 Équilibrage statique de chaque émetteur",
+              "et équilibrage dynamique du groupe x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "4": {
+          "text": {
+            "header": "Équilibrage dynamique de chaque émetteur",
+            "lines": [
+              "Équilibrage dynamique de chaque émetteur"
+            ],
+            "cleaned_lines": [
+              "Équilibrage dynamique de chaque émetteur"
+            ]
+          },
+          "raw": {
+            "header": "4 Équilibrage dynamique de chaque émetteur x x x x x x x x",
+            "lines": [
+              "4 Équilibrage dynamique de chaque émetteur x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [
+          ">10 émetteurs"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.4.a Équilibrage hydronique du système de distribution de chaleur (y compris la contribution à l’équilibrage \ndu côté de l’émission)\n L’équilibrage hydronique est appliqué à un émetteur ou à un groupe comprenant plus de 10 émetteurs \nde chaleur \n 0 Aucun équilibrage x    x    \n 1 Équilibrage statique de chaque émetteur, \nsans équilibrage du groupex x  x   \n 2 Équilibrage statique de chaque émetteur \net équilibrage statique du groupe x x x\n3 Équilibrage statique de chaque émetteur \net équilibrage dynamique du groupe x x x x x\n4 Équilibrage dynamique de chaque émet -\nteur x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  28AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "function_text": {
+        "lines": [
+          "1.4.a Équilibrage hydronique du système de distribution de chaleur (y compris la contribution à l’équilibrage",
+          "du côté de l’émission)",
+          "L’équilibrage hydronique est appliqué à un émetteur ou à un groupe comprenant plus de 10 émetteurs",
+          "de chaleur"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "1.5",
+      "group": "Chauffage",
+      "title": "Régulation intermittente émission/distribution",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation automatique avec programme fixe",
+            "lines": [
+              "Régulation automatique avec programme fixe"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique avec programme fixe"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation automatique avec programme fixe x x x x",
+            "lines": [
+              "1 Régulation automatique avec programme fixe x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation automatique avec optimisation de la mise en marche/arrêt",
+            "lines": [
+              "Régulation automatique avec optimisation de la mise en marche/arrêt"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique avec optimisation de la mise en marche/arrêt"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation automatique avec optimisation de la mise en marche/arrêt x x x x x x",
+            "lines": [
+              "2 Régulation automatique avec optimisation de la mise en marche/arrêt x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation automatique avec évaluation",
+            "lines": [
+              "Régulation automatique avec évaluation",
+              "des besoins x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique avec évaluation",
+              "des besoins"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation automatique avec évaluation",
+            "lines": [
+              "3 Régulation automatique avec évaluation",
+              "des besoins x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.5 Régulation intermittente de l’émission et/ou de la distribution\n Un seul régulateur peut réguler plusieurs pièces/zones ayant les mêmes profils d’occupation\n 0 Aucune régulation automatique x    x    \n 1 Régulation automatique avec pro -\ngramme fixex x   x x   \n 2 Régulation automatique avec optimisa -\ntion de la mise en marche/arrêtx x x  x x x  \n 3 Régulation automatique avec évaluation \ndes besoinsx x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "1.5 Régulation intermittente de l’émission et/ou de la distribution",
+          "Un seul régulateur peut réguler plusieurs pièces/zones ayant les mêmes profils d’occupation"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "1.6",
+      "group": "Chauffage",
+      "title": "Commande générateurs (combustion/chauffage urbain)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Régulation de température constante",
+            "lines": [
+              "Régulation de température constante"
+            ],
+            "cleaned_lines": [
+              "Régulation de température constante"
+            ]
+          },
+          "raw": {
+            "header": "0 Régulation de température constante x x",
+            "lines": [
+              "0 Régulation de température constante x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation de température variable en",
+            "lines": [
+              "Régulation de température variable en",
+              "fonction de la température extérieure x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation de température variable en",
+              "fonction de la température extérieure"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation de température variable en",
+            "lines": [
+              "1 Régulation de température variable en",
+              "fonction de la température extérieure x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation de température variable en",
+            "lines": [
+              "Régulation de température variable en",
+              "fonction de la charge x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation de température variable en",
+              "fonction de la charge"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation de température variable en",
+            "lines": [
+              "2 Régulation de température variable en",
+              "fonction de la charge x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.6 Commande de générateurs de chaleur (combustion et chauffage urbain)\n 0 Régulation de température constante x    x    \n 1 Régulation de température variable en \nfonction de la température extérieurex x   x x   \n 2 Régulation de température variable en \nfonction de la chargex x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "1.6 Commande de générateurs de chaleur (combustion et chauffage urbain)"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "1.7",
+      "group": "Chauffage",
+      "title": "Commande générateurs (pompe à chaleur)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Régulation de température constante",
+            "lines": [
+              "Régulation de température constante"
+            ],
+            "cleaned_lines": [
+              "Régulation de température constante"
+            ]
+          },
+          "raw": {
+            "header": "0 Régulation de température constante x x",
+            "lines": [
+              "0 Régulation de température constante x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation de température variable en",
+            "lines": [
+              "Régulation de température variable en",
+              "fonction de la température extérieure x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation de température variable en",
+              "fonction de la température extérieure"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation de température variable en",
+            "lines": [
+              "1 Régulation de température variable en",
+              "fonction de la température extérieure x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation de température variable en",
+            "lines": [
+              "Régulation de température variable en",
+              "fonction de la charge x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation de température variable en",
+              "fonction de la charge"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation de température variable en",
+            "lines": [
+              "2 Régulation de température variable en",
+              "fonction de la charge x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.7 Régulation des générateurs de chaleur (pompe à chaleur)\n 0 Régulation de température constante x    x    \n 1 Régulation de température variable en \nfonction de la température extérieurex x   x x   \n 2 Régulation de température variable en \nfonction de la chargex x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "1.7 Régulation des générateurs de chaleur (pompe à chaleur)"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "1.8",
+      "group": "Chauffage",
+      "title": "Commande générateurs (unité extérieure)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Commande de mise en marche/arrêt du",
+            "lines": [
+              "Commande de mise en marche/arrêt du",
+              "générateur de chaleur x x"
+            ],
+            "cleaned_lines": [
+              "Commande de mise en marche/arrêt du",
+              "générateur de chaleur"
+            ]
+          },
+          "raw": {
+            "header": "0 Commande de mise en marche/arrêt du",
+            "lines": [
+              "0 Commande de mise en marche/arrêt du",
+              "générateur de chaleur x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation à plusieurs niveaux (paliers)",
+            "lines": [
+              "Régulation à plusieurs niveaux (paliers)",
+              "du générateur de chaleur x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation à plusieurs niveaux (paliers)",
+              "du générateur de chaleur"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation à plusieurs niveaux (paliers)",
+            "lines": [
+              "1 Régulation à plusieurs niveaux (paliers)",
+              "du générateur de chaleur x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation progressive du générateur de",
+            "lines": [
+              "Régulation progressive du générateur de",
+              "chaleur x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation progressive du générateur de",
+              "chaleur"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation progressive du générateur de",
+            "lines": [
+              "2 Régulation progressive du générateur de",
+              "chaleur x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.8 Régulation des générateurs de chaleur (unité extérieure)\n 0 Commande de mise en marche/arrêt du \ngénérateur de chaleurx    x    \n 1 Régulation à plusieurs niveaux (paliers) \ndu générateur de chaleurx x x  x x x  \n 2 Régulation progressive du générateur de \nchaleurx x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "1.8 Régulation des générateurs de chaleur (unité extérieure)"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "1.9",
+      "group": "Chauffage",
+      "title": "Priorité des générateurs",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Priorités uniquement basées sur le",
+            "lines": [
+              "Priorités uniquement basées sur le",
+              "temps de fonctionnement x x"
+            ],
+            "cleaned_lines": [
+              "Priorités uniquement basées sur le",
+              "temps de fonctionnement"
+            ]
+          },
+          "raw": {
+            "header": "0 Priorités uniquement basées sur le",
+            "lines": [
+              "0 Priorités uniquement basées sur le",
+              "temps de fonctionnement x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation basée sur une liste fixe des",
+            "lines": [
+              "Régulation basée sur une liste fixe des",
+              "priorités x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation basée sur une liste fixe des",
+              "priorités"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation basée sur une liste fixe des",
+            "lines": [
+              "1 Régulation basée sur une liste fixe des",
+              "priorités x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation basée sur une liste dynamique des priorités",
+            "lines": [
+              "Régulation basée sur une liste dynamique des priorités"
+            ],
+            "cleaned_lines": [
+              "Régulation basée sur une liste dynamique des priorités"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation basée sur une liste dynamique des priorités x x x x x x",
+            "lines": [
+              "2 Régulation basée sur une liste dynamique des priorités x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation basée sur une liste dynamique des priorités reposant sur des",
+            "lines": [
+              "Régulation basée sur une liste dynamique des priorités reposant sur des",
+              "prédictions x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation basée sur une liste dynamique des priorités reposant sur des",
+              "prédictions"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation basée sur une liste dynamique des priorités reposant sur des",
+            "lines": [
+              "3 Régulation basée sur une liste dynamique des priorités reposant sur des",
+              "prédictions x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.9 Ordre de priorité des différents générateurs de chaleur\n 0 Priorités uniquement basées sur le \ntemps de fonctionnementx    x    \n 1 Régulation basée sur une liste fixe des \nprioritésx x   x x   \n 2 Régulation basée sur une liste dyna -\nmique des priorités x x x  x x x  \n 3 Régulation basée sur une liste dyna -\nmique des priorités reposant sur des \nprédictionsx x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 29AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "function_text": {
+        "lines": [
+          "1.9 Ordre de priorité des différents générateurs de chaleur"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "1.10",
+      "group": "Chauffage",
+      "title": "Stockage thermique (TES)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Stockage continu",
+            "lines": [
+              "Stockage continu"
+            ],
+            "cleaned_lines": [
+              "Stockage continu"
+            ]
+          },
+          "raw": {
+            "header": "0 Stockage continu x x",
+            "lines": [
+              "0 Stockage continu x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation du stockage au moyen de 2",
+            "lines": [
+              "Régulation du stockage au moyen de 2",
+              "capteurs x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation du stockage au moyen de 2",
+              "capteurs"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation du stockage au moyen de 2",
+            "lines": [
+              "1 Régulation du stockage au moyen de 2",
+              "capteurs x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Stockage basé sur les prédictions de",
+            "lines": [
+              "Stockage basé sur les prédictions de",
+              "charges x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Stockage basé sur les prédictions de",
+              "charges"
+            ]
+          },
+          "raw": {
+            "header": "2 Stockage basé sur les prédictions de",
+            "lines": [
+              "2 Stockage basé sur les prédictions de",
+              "charges x x x x x x x x",
+              "2 Régulation de l’alimentation en eau chaude sanitaire"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Stockage thermique présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.10 Régulation du fonctionnement du stockage de l’énergie thermique (TES)\n 0 Stockage continu x    x    \n 1 Régulation du stockage au moyen de 2 \ncapteursx x   x x   \n 2 Stockage basé sur les prédictions de \nchargesx x x x x x x x\n2 Régulation de l’alimentation en eau chaude sanitaire\n",
+      "function_text": {
+        "lines": [
+          "1.10 Régulation du fonctionnement du stockage de l’énergie thermique (TES)"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "2.1",
+      "group": "ECS",
+      "title": "Stockage ECS (élec/PAC intégrée)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Commande automatique de mise en",
+            "lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt x x"
+            ],
+            "cleaned_lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt"
+            ]
+          },
+          "raw": {
+            "header": "0 Commande automatique de mise en",
+            "lines": [
+              "0 Commande automatique de mise en",
+              "marche/arrêt x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Commande automatique de mise en",
+            "lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt et programmation du",
+              "temps de charge x x x x"
+            ],
+            "cleaned_lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt et programmation du",
+              "temps de charge"
+            ]
+          },
+          "raw": {
+            "header": "1 Commande automatique de mise en",
+            "lines": [
+              "1 Commande automatique de mise en",
+              "marche/arrêt et programmation du",
+              "temps de charge x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Commande automatique de mise en",
+            "lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt et programmation du",
+              "temps de charge et gestion du stockage",
+              "avec plusieurs capteurs x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt et programmation du",
+              "temps de charge et gestion du stockage",
+              "avec plusieurs capteurs"
+            ]
+          },
+          "raw": {
+            "header": "2 Commande automatique de mise en",
+            "lines": [
+              "2 Commande automatique de mise en",
+              "marche/arrêt et programmation du",
+              "temps de charge et gestion du stockage",
+              "avec plusieurs capteurs x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Production ECS présente"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "2.1 Régulation du stockage de l’eau chaude sanitaire avec chauffage électrique direct ou pompe à chaleur \nélectrique intégrée\n 0 Commande automatique de mise en \nmarche/arrêtx    x    \n 1 Commande automatique de mise en \nmarche/arrêt et programmation du \ntemps de chargex x   x x   \n 2 Commande automatique de mise en \nmarche/arrêt et programmation du \ntemps de charge et gestion du stockage \navec plusieurs capteursx x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "2.1 Régulation du stockage de l’eau chaude sanitaire avec chauffage électrique direct ou pompe à chaleur",
+          "électrique intégrée"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "2.2",
+      "group": "ECS",
+      "title": "Stockage ECS (générateur eau chaude)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Commande automatique de mise en",
+            "lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt x x"
+            ],
+            "cleaned_lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt"
+            ]
+          },
+          "raw": {
+            "header": "0 Commande automatique de mise en",
+            "lines": [
+              "0 Commande automatique de mise en",
+              "marche/arrêt x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Commande automatique de mise en",
+            "lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt et programmation du",
+              "temps de charge x x x x"
+            ],
+            "cleaned_lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt et programmation du",
+              "temps de charge"
+            ]
+          },
+          "raw": {
+            "header": "1 Commande automatique de mise en",
+            "lines": [
+              "1 Commande automatique de mise en",
+              "marche/arrêt et programmation du",
+              "temps de charge x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Commande automatique de mise en",
+            "lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt, programmation du temps",
+              "de charge et régulation de la température d’alimentation selon les besoins",
+              "ou gestion du stockage avec plusieurs",
+              "capteurs x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Commande automatique de mise en",
+              "marche/arrêt, programmation du temps",
+              "de charge et régulation de la température d’alimentation selon les besoins",
+              "ou gestion du stockage avec plusieurs",
+              "capteurs"
+            ]
+          },
+          "raw": {
+            "header": "2 Commande automatique de mise en",
+            "lines": [
+              "2 Commande automatique de mise en",
+              "marche/arrêt, programmation du temps",
+              "de charge et régulation de la température d’alimentation selon les besoins",
+              "ou gestion du stockage avec plusieurs",
+              "capteurs x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "2.2 Régulation du stockage de l’eau chaude sanitaire en utilisant un générateur d’eau chaude\n 0 Commande automatique de mise en \nmarche/arrêtx    x    \n 1 Commande automatique de mise en \nmarche/arrêt et programmation du \ntemps de chargex x   x x   \n 2 Commande automatique de mise en \nmarche/arrêt, programmation du temps \nde charge et régulation de la tempéra -\nture d’alimentation selon les besoins \nou gestion du stockage avec plusieurs \ncapteursx x x x x x x x \n",
+      "function_text": {
+        "lines": [
+          "2.2 Régulation du stockage de l’eau chaude sanitaire en utilisant un générateur d’eau chaude"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "2.3",
+      "group": "ECS",
+      "title": "Stockage ECS solaire + appoint",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Régulation manuelle",
+            "lines": [
+              "Régulation manuelle"
+            ],
+            "cleaned_lines": [
+              "Régulation manuelle"
+            ]
+          },
+          "raw": {
+            "header": "0 Régulation manuelle x x",
+            "lines": [
+              "0 Régulation manuelle x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation automatique du stockage de",
+            "lines": [
+              "Régulation automatique du stockage de",
+              "l’énergie solaire (Priorité 1) et stockage",
+              "supplémentaire (Priorité 2)x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique du stockage de",
+              "l’énergie solaire (Priorité 1) et stockage",
+              "supplémentaire (Priorité 2)"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation automatique du stockage de",
+            "lines": [
+              "1 Régulation automatique du stockage de",
+              "l’énergie solaire (Priorité 1) et stockage",
+              "supplémentaire (Priorité 2)x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation automatique du stockage de",
+            "lines": [
+              "Régulation automatique du stockage de",
+              "l’énergie solaire (Priorité 1) et stockage",
+              "supplémentaire (Priorité 2) plus régulation de la température d’alimentation",
+              "selon les besoins ou gestion du stockage",
+              "avec plusieurs capteurs x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique du stockage de",
+              "l’énergie solaire (Priorité 1) et stockage",
+              "supplémentaire (Priorité 2) plus régulation de la température d’alimentation",
+              "selon les besoins ou gestion du stockage",
+              "avec plusieurs capteurs"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation automatique du stockage de",
+            "lines": [
+              "2 Régulation automatique du stockage de",
+              "l’énergie solaire (Priorité 1) et stockage",
+              "supplémentaire (Priorité 2) plus régulation de la température d’alimentation",
+              "selon les besoins ou gestion du stockage",
+              "avec plusieurs capteurs x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Solaire thermique présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "2.3 Régulation du stockage de l’eau chaude sanitaire avec collecteur d’énergie solaire et génération de chaleur \nsupplémentaire\n 0 Régulation manuelle x    x    \n 1 Régulation automatique du stockage de \nl’énergie solaire (Priorité 1) et stockage \nsupplémentaire (Priorité 2)x x   x x   \n 2 Régulation automatique du stockage de \nl’énergie solaire (Priorité 1) et stockage \nsupplémentaire (Priorité 2) plus régu -\nlation de la température d’alimentation \nselon les besoins ou gestion du stockage \navec plusieurs capteursx x x x x x x x \na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  30AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "function_text": {
+        "lines": [
+          "2.3 Régulation du stockage de l’eau chaude sanitaire avec collecteur d’énergie solaire et génération de chaleur",
+          "supplémentaire"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "2.4",
+      "group": "ECS",
+      "title": "Pompe de circulation ECS",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Sans régulation, fonctionnement continu",
+            "lines": [
+              "Sans régulation, fonctionnement continu"
+            ],
+            "cleaned_lines": [
+              "Sans régulation, fonctionnement continu"
+            ]
+          },
+          "raw": {
+            "header": "0 Sans régulation, fonctionnement continu x x",
+            "lines": [
+              "0 Sans régulation, fonctionnement continu x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Avec programmation",
+            "lines": [
+              "Avec programmation"
+            ],
+            "cleaned_lines": [
+              "Avec programmation"
+            ]
+          },
+          "raw": {
+            "header": "1 Avec programmation x x x x x x x x",
+            "lines": [
+              "1 Avec programmation x x x x x x x x",
+              "3 Régulation du refroidissement"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "2.4 Commande de la pompe de circulation d’eau chaude sanitaire\n 0 Sans régulation, fonctionnement continu x    x    \n 1 Avec programmation x x x x x x x x \n3 Régulation du refroidissement\n",
+      "function_text": {
+        "lines": [
+          "2.4 Commande de la pompe de circulation d’eau chaude sanitaire"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "3.1",
+      "group": "Refroidissement",
+      "title": "Régulation de l’émission (pièce)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation centrale automatique",
+            "lines": [
+              "Régulation centrale automatique"
+            ],
+            "cleaned_lines": [
+              "Régulation centrale automatique"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation centrale automatique x x",
+            "lines": [
+              "1 Régulation centrale automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation individuelle par pièce",
+            "lines": [
+              "Régulation individuelle par pièce"
+            ],
+            "cleaned_lines": [
+              "Régulation individuelle par pièce"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation individuelle par pièce x x x x",
+            "lines": [
+              "2 Régulation individuelle par pièce x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation modulante individuelle par",
+            "lines": [
+              "Régulation modulante individuelle par",
+              "pièce avec communication x x x xa x x x xa"
+            ],
+            "cleaned_lines": [
+              "Régulation modulante individuelle par",
+              "pièce avec communication"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation modulante individuelle par",
+            "lines": [
+              "3 Régulation modulante individuelle par",
+              "pièce avec communication x x x xa x x x xa"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "xa",
+              "x",
+              "x",
+              "x",
+              "xa"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "4": {
+          "text": {
+            "header": "Régulation modulante individuelle par",
+            "lines": [
+              "Régulation modulante individuelle par",
+              "pièce avec communication et détection",
+              "d’occupation (ne s’applique pas aux",
+              "systèmes d’émission de froid à réaction",
+              "lente, comme le refroidissement par le",
+              "plancher)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation modulante individuelle par",
+              "pièce avec communication et détection",
+              "d’occupation (ne s’applique pas aux",
+              "systèmes d’émission de froid à réaction",
+              "lente, comme le refroidissement par le",
+              "plancher)"
+            ]
+          },
+          "raw": {
+            "header": "4 Régulation modulante individuelle par",
+            "lines": [
+              "4 Régulation modulante individuelle par",
+              "pièce avec communication et détection",
+              "d’occupation (ne s’applique pas aux",
+              "systèmes d’émission de froid à réaction",
+              "lente, comme le refroidissement par le",
+              "plancher)x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Système de refroidissement présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.1 Régulation de l’émission\n La fonction de régulation est appliquée au niveau des émetteurs (panneau de refroidissement, ventilo-\nconvecteur ou unité intérieure) ou des pièces; pour le type 1, une seule fonction peut réguler plusieurs pièces\n 0 Aucune régulation automatique x    x    \n 1 Régulation centrale automatique x    x    \n 2 Régulation individuelle par pièce x x   x x   \n 3 Régulation modulante individuelle par \npièce avec communicationx x x xa x x x xa\n 4 Régulation modulante individuelle par \npièce avec communication et détection \nd’occupation (ne s’applique pas aux \nsystèmes d’émission de froid à réaction \nlente, comme le refroidissement par le \nplancher)x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "3.1 Régulation de l’émission",
+          "La fonction de régulation est appliquée au niveau des émetteurs (panneau de refroidissement, ventiloconvecteur ou unité intérieure) ou des pièces; pour le type 1, une seule fonction peut réguler plusieurs pièces"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "3.2",
+      "group": "Refroidissement",
+      "title": "Émission TABS (refroidissement)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation centrale automatique",
+            "lines": [
+              "Régulation centrale automatique"
+            ],
+            "cleaned_lines": [
+              "Régulation centrale automatique"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation centrale automatique x x x x",
+            "lines": [
+              "1 Régulation centrale automatique x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation centrale automatique évoluée",
+            "lines": [
+              "Régulation centrale automatique évoluée"
+            ],
+            "cleaned_lines": [
+              "Régulation centrale automatique évoluée"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation centrale automatique évoluée x x x x x x",
+            "lines": [
+              "2 Régulation centrale automatique évoluée x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation centrale automatique évoluée",
+            "lines": [
+              "Régulation centrale automatique évoluée",
+              "avec fonctionnement par intermittence",
+              "et/ou commande à rétroaction de température ambiante x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation centrale automatique évoluée",
+              "avec fonctionnement par intermittence",
+              "et/ou commande à rétroaction de température ambiante"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation centrale automatique évoluée",
+            "lines": [
+              "3 Régulation centrale automatique évoluée",
+              "avec fonctionnement par intermittence",
+              "et/ou commande à rétroaction de température ambiante x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Système thermo-actif présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.2 Régulation de l’émission pour système thermo-actif (mode de refroidissement)\n0 Aucune régulation automatique x    x    \n1 Régulation centrale automatique x x   x x   \n2 Régulation centrale automatique évoluée x x x  x x x  \n3 Régulation centrale automatique évoluée \navec fonctionnement par intermittence \net/ou commande à rétroaction de tempé -\nrature ambiantex x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "3.2 Régulation de l’émission pour système thermo-actif (mode de refroidissement)"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "3.3",
+      "group": "Refroidissement",
+      "title": "Température réseau froid",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Régulation de température constante",
+            "lines": [
+              "Régulation de température constante"
+            ],
+            "cleaned_lines": [
+              "Régulation de température constante"
+            ]
+          },
+          "raw": {
+            "header": "0 Régulation de température constante x x",
+            "lines": [
+              "0 Régulation de température constante x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation en fonction de la température",
+            "lines": [
+              "Régulation en fonction de la température",
+              "extérieure x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation en fonction de la température",
+              "extérieure"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation en fonction de la température",
+            "lines": [
+              "1 Régulation en fonction de la température",
+              "extérieure x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation en fonction des besoins",
+            "lines": [
+              "Régulation en fonction des besoins"
+            ],
+            "cleaned_lines": [
+              "Régulation en fonction des besoins"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation en fonction des besoins x x x x x x x x",
+            "lines": [
+              "2 Régulation en fonction des besoins x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.3 Régulation de la température de l’eau réfrigérée du réseau de distribution (en départ ou en retour)\n Une fonction similaire peut être appliquée à la régulation d’un refroidissement électrique direct (par \nexemple, des unités de refroidissement compactes, des unités séparées) pour les pièces individuelles\n 0 Régulation de température constante x    x    \n 1 Régulation en fonction de la température \nextérieurex x   x x   \n 2 Régulation en fonction des besoins x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "3.3 Régulation de la température de l’eau réfrigérée du réseau de distribution (en départ ou en retour)",
+          "Une fonction similaire peut être appliquée à la régulation d’un refroidissement électrique direct (par",
+          "exemple, des unités de refroidissement compactes, des unités séparées) pour les pièces individuelles"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "3.4",
+      "group": "Refroidissement",
+      "title": "Commande des pompes de distribution",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Commande de mise en marche/arrêt",
+            "lines": [
+              "Commande de mise en marche/arrêt"
+            ],
+            "cleaned_lines": [
+              "Commande de mise en marche/arrêt"
+            ]
+          },
+          "raw": {
+            "header": "1 Commande de mise en marche/arrêt x x x x",
+            "lines": [
+              "1 Commande de mise en marche/arrêt x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Commande multi-niveau",
+            "lines": [
+              "Commande multi-niveau"
+            ],
+            "cleaned_lines": [
+              "Commande multi-niveau"
+            ]
+          },
+          "raw": {
+            "header": "2 Commande multi-niveau x x x x x x",
+            "lines": [
+              "2 Commande multi-niveau x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Commande des pompes à vitesse variable (estimations (internes) du groupe",
+            "lines": [
+              "Commande des pompes à vitesse variable (estimations (internes) du groupe",
+              "de pompes)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Commande des pompes à vitesse variable (estimations (internes) du groupe",
+              "de pompes)"
+            ]
+          },
+          "raw": {
+            "header": "3 Commande des pompes à vitesse variable (estimations (internes) du groupe",
+            "lines": [
+              "3 Commande des pompes à vitesse variable (estimations (internes) du groupe",
+              "de pompes)x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "4": {
+          "text": {
+            "header": "Commande des pompes à vitesse",
+            "lines": [
+              "Commande des pompes à vitesse",
+              "variable (signal de demande externe)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Commande des pompes à vitesse",
+              "variable (signal de demande externe)"
+            ]
+          },
+          "raw": {
+            "header": "4 Commande des pompes à vitesse",
+            "lines": [
+              "4 Commande des pompes à vitesse",
+              "variable (signal de demande externe)x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.4 Régulation des pompes de distribution du réseau\n Les pompes régulées peuvent être installées à différents niveaux dans le réseau\n 0 Aucune régulation automatique x    x    \n 1 Commande de mise en marche/arrêt x x   x x   \n 2 Commande multi-niveau x x x  x x x  \n 3 Commande des pompes à vitesse va -\nriable (estimations (internes) du groupe \nde pompes)x x x x x x x x\n 4 Commande des pompes à vitesse \nvariable (signal de demande externe)x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 31AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "function_text": {
+        "lines": [
+          "3.4 Régulation des pompes de distribution du réseau",
+          "Les pompes régulées peuvent être installées à différents niveaux dans le réseau"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "3.4.a",
+      "group": "Refroidissement",
+      "title": "Équilibrage hydronique distribution froid",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucun équilibrage",
+            "lines": [
+              "Aucun équilibrage"
+            ],
+            "cleaned_lines": [
+              "Aucun équilibrage"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucun équilibrage x x",
+            "lines": [
+              "0 Aucun équilibrage x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Équilibrage statique de chaque émetteur,",
+            "lines": [
+              "Équilibrage statique de chaque émetteur,",
+              "sans équilibrage du groupe x x x"
+            ],
+            "cleaned_lines": [
+              "Équilibrage statique de chaque émetteur,",
+              "sans équilibrage du groupe"
+            ]
+          },
+          "raw": {
+            "header": "1 Équilibrage statique de chaque émetteur,",
+            "lines": [
+              "1 Équilibrage statique de chaque émetteur,",
+              "sans équilibrage du groupe x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Équilibrage statique de chaque émetteur",
+            "lines": [
+              "Équilibrage statique de chaque émetteur",
+              "et équilibrage statique du groupe x x x"
+            ],
+            "cleaned_lines": [
+              "Équilibrage statique de chaque émetteur",
+              "et équilibrage statique du groupe"
+            ]
+          },
+          "raw": {
+            "header": "2 Équilibrage statique de chaque émetteur",
+            "lines": [
+              "2 Équilibrage statique de chaque émetteur",
+              "et équilibrage statique du groupe x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Équilibrage statique de chaque émetteur",
+            "lines": [
+              "Équilibrage statique de chaque émetteur",
+              "et équilibrage dynamique du groupe x x x x x"
+            ],
+            "cleaned_lines": [
+              "Équilibrage statique de chaque émetteur",
+              "et équilibrage dynamique du groupe"
+            ]
+          },
+          "raw": {
+            "header": "3 Équilibrage statique de chaque émetteur",
+            "lines": [
+              "3 Équilibrage statique de chaque émetteur",
+              "et équilibrage dynamique du groupe x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "4": {
+          "text": {
+            "header": "Équilibrage dynamique de chaque émetteur",
+            "lines": [
+              "Équilibrage dynamique de chaque émetteur"
+            ],
+            "cleaned_lines": [
+              "Équilibrage dynamique de chaque émetteur"
+            ]
+          },
+          "raw": {
+            "header": "4 Équilibrage dynamique de chaque émetteur x x x x x x x x",
+            "lines": [
+              "4 Équilibrage dynamique de chaque émetteur x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [
+          ">10 émetteurs"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.4.a Équilibrage hydronique du système de distribution de froid (y compris la contribution à l’équilibrage du \ncôté de l’émission)\n L’équilibrage hydronique est appliqué à un groupe comprenant plus de 10 émetteurs de froid (panneau de \nrefroidissement, ventilo-convecteur ou unité intérieure), en plus de l’équilibrage statique des émetteurs \nde froid individuels\n 0 Aucun équilibrage x x\n 1 Équilibrage statique de chaque émetteur, \nsans équilibrage du groupex x x\n 2 Équilibrage statique de chaque émetteur \net équilibrage statique du groupex x x\n3 Équilibrage statique de chaque émetteur \net équilibrage dynamique du groupex x x x x\n4 Équilibrage dynamique de chaque émet -\nteurx x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "3.4.a Équilibrage hydronique du système de distribution de froid (y compris la contribution à l’équilibrage du",
+          "côté de l’émission)",
+          "L’équilibrage hydronique est appliqué à un groupe comprenant plus de 10 émetteurs de froid (panneau de",
+          "refroidissement, ventilo-convecteur ou unité intérieure), en plus de l’équilibrage statique des émetteurs",
+          "de froid individuels"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "3.5",
+      "group": "Refroidissement",
+      "title": "Régulation intermittente émission/distribution",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation automatique avec programme fixe",
+            "lines": [
+              "Régulation automatique avec programme fixe"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique avec programme fixe"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation automatique avec programme fixe x x x x",
+            "lines": [
+              "1 Régulation automatique avec programme fixe x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation automatique avec optimisation de la mise en marche/arrêt",
+            "lines": [
+              "Régulation automatique avec optimisation de la mise en marche/arrêt"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique avec optimisation de la mise en marche/arrêt"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation automatique avec optimisation de la mise en marche/arrêt x x x x x x",
+            "lines": [
+              "2 Régulation automatique avec optimisation de la mise en marche/arrêt x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation automatique avec évaluation",
+            "lines": [
+              "Régulation automatique avec évaluation",
+              "des besoins x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique avec évaluation",
+              "des besoins"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation automatique avec évaluation",
+            "lines": [
+              "3 Régulation automatique avec évaluation",
+              "des besoins x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.5 Régulation par intermittence de l’émission et/ou de la distribution\n Un seul régulateur peut réguler plusieurs pièces/zones ayant les mêmes profils d’occupation\n 0 Aucune régulation automatique x    x    \n 1 Régulation automatique avec pro -\ngramme fixex x   x x   \n 2 Régulation automatique avec optimisa -\ntion de la mise en marche/arrêtx x x  x x x  \n 3 Régulation automatique avec évaluation \ndes besoinsx x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "3.5 Régulation par intermittence de l’émission et/ou de la distribution",
+          "Un seul régulateur peut réguler plusieurs pièces/zones ayant les mêmes profils d’occupation"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "3.6",
+      "group": "Refroidissement",
+      "title": "Asservissement chauffage/refroidissement",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucun asservissement",
+            "lines": [
+              "Aucun asservissement"
+            ],
+            "cleaned_lines": [
+              "Aucun asservissement"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucun asservissement x x",
+            "lines": [
+              "0 Aucun asservissement x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Asservissement partiel (en fonction du",
+            "lines": [
+              "Asservissement partiel (en fonction du",
+              "système de chauffage, de ventilation et",
+              "de climatisation (CVC))x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Asservissement partiel (en fonction du",
+              "système de chauffage, de ventilation et",
+              "de climatisation (CVC))"
+            ]
+          },
+          "raw": {
+            "header": "1 Asservissement partiel (en fonction du",
+            "lines": [
+              "1 Asservissement partiel (en fonction du",
+              "système de chauffage, de ventilation et",
+              "de climatisation (CVC))x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Asservissement total",
+            "lines": [
+              "Asservissement total"
+            ],
+            "cleaned_lines": [
+              "Asservissement total"
+            ]
+          },
+          "raw": {
+            "header": "2 Asservissement total x x x x x x x x",
+            "lines": [
+              "2 Asservissement total x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.6 Asservissement entre la régulation du chauffage et celle du refroidissement pour l’émission et/ou la \ndistribution\n 0 Aucun asservissement x    x    \n 1 Asservissement partiel (en fonction du \nsystème de chauffage, de ventilation et \nde climatisation (CVC))x x x  x x x  \n 2 Asservissement total x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "3.6 Asservissement entre la régulation du chauffage et celle du refroidissement pour l’émission et/ou la",
+          "distribution"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "3.7",
+      "group": "Refroidissement",
+      "title": "Régulation générateurs de froid",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Régulation de température constante",
+            "lines": [
+              "Régulation de température constante"
+            ],
+            "cleaned_lines": [
+              "Régulation de température constante"
+            ]
+          },
+          "raw": {
+            "header": "0 Régulation de température constante x x",
+            "lines": [
+              "0 Régulation de température constante x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation de température variable en",
+            "lines": [
+              "Régulation de température variable en",
+              "fonction de la température extérieure x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation de température variable en",
+              "fonction de la température extérieure"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation de température variable en",
+            "lines": [
+              "1 Régulation de température variable en",
+              "fonction de la température extérieure x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation de température variable en",
+            "lines": [
+              "Régulation de température variable en",
+              "fonction de la charge x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation de température variable en",
+              "fonction de la charge"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation de température variable en",
+            "lines": [
+              "2 Régulation de température variable en",
+              "fonction de la charge x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.7 Régulation de générateurs de froid\n Le but recherché est en général d’augmenter le plus possible la température du départ d’eau réfrigérée\n 0 Régulation de température constante x    x    \n 1 Régulation de température variable en \nfonction de la température extérieurex x x  x x x  \n 2 Régulation de température variable en \nfonction de la chargex x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "3.7 Régulation de générateurs de froid",
+          "Le but recherché est en général d’augmenter le plus possible la température du départ d’eau réfrigérée"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "3.8",
+      "group": "Refroidissement",
+      "title": "Priorité générateurs de froid",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Priorités uniquement basées sur le",
+            "lines": [
+              "Priorités uniquement basées sur le",
+              "temps de fonctionnement x x"
+            ],
+            "cleaned_lines": [
+              "Priorités uniquement basées sur le",
+              "temps de fonctionnement"
+            ]
+          },
+          "raw": {
+            "header": "0 Priorités uniquement basées sur le",
+            "lines": [
+              "0 Priorités uniquement basées sur le",
+              "temps de fonctionnement x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Priorités uniquement basées sur les",
+            "lines": [
+              "Priorités uniquement basées sur les",
+              "charges x x x x"
+            ],
+            "cleaned_lines": [
+              "Priorités uniquement basées sur les",
+              "charges"
+            ]
+          },
+          "raw": {
+            "header": "1 Priorités uniquement basées sur les",
+            "lines": [
+              "1 Priorités uniquement basées sur les",
+              "charges x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Priorités basées sur le rendement et les",
+            "lines": [
+              "Priorités basées sur le rendement et les",
+              "caractéristiques des générateurs x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Priorités basées sur le rendement et les",
+              "caractéristiques des générateurs"
+            ]
+          },
+          "raw": {
+            "header": "2 Priorités basées sur le rendement et les",
+            "lines": [
+              "2 Priorités basées sur le rendement et les",
+              "caractéristiques des générateurs x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Ordre de priorité basé sur les prédictions de charges",
+            "lines": [
+              "Ordre de priorité basé sur les prédictions de charges"
+            ],
+            "cleaned_lines": [
+              "Ordre de priorité basé sur les prédictions de charges"
+            ]
+          },
+          "raw": {
+            "header": "3 Ordre de priorité basé sur les prédictions de charges x x x x x x x x",
+            "lines": [
+              "3 Ordre de priorité basé sur les prédictions de charges x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.8 Ordre de priorité des générateurs de froid\n 0 Priorités uniquement basées sur le \ntemps de fonctionnementx    x    \n 1 Priorités uniquement basées sur les \nchargesx x   x x   \na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  32AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n 2 Priorités basées sur le rendement et les \ncaractéristiques des générateursx x x  x x x  \n 3 Ordre de priorité basé sur les prédic -\ntions de chargesx x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "3.8 Ordre de priorité des générateurs de froid"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "3.9",
+      "group": "Refroidissement",
+      "title": "Stockage thermique (TES)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Stockage continu",
+            "lines": [
+              "Stockage continu"
+            ],
+            "cleaned_lines": [
+              "Stockage continu"
+            ]
+          },
+          "raw": {
+            "header": "0 Stockage continu x x",
+            "lines": [
+              "0 Stockage continu x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Stockage programmé",
+            "lines": [
+              "Stockage programmé"
+            ],
+            "cleaned_lines": [
+              "Stockage programmé"
+            ]
+          },
+          "raw": {
+            "header": "1 Stockage programmé x x x x",
+            "lines": [
+              "1 Stockage programmé x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Stockage basé sur les prédictions de",
+            "lines": [
+              "Stockage basé sur les prédictions de",
+              "charges x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Stockage basé sur les prédictions de",
+              "charges"
+            ]
+          },
+          "raw": {
+            "header": "2 Stockage basé sur les prédictions de",
+            "lines": [
+              "2 Stockage basé sur les prédictions de",
+              "charges x x x x x x x x",
+              "4 Régulation de la ventilation et de la climatisation"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Stockage thermique présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.9 Régulation du stockage de l’énergie thermique (TES, Thermal Energy Storage)\n 0 Stockage continu x    x    \n 1 Stockage programmé x x   x x   \n 2 Stockage basé sur les prédictions de \nchargesx x x x x x x x\n4 Régulation de la ventilation et de la climatisation\n",
+      "function_text": {
+        "lines": [
+          "3.9 Régulation du stockage de l’énergie thermique (TES, Thermal Energy Storage)"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "4.1",
+      "group": "Ventilation",
+      "title": "Débit d’air au niveau pièce",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation programmée",
+            "lines": [
+              "Régulation programmée"
+            ],
+            "cleaned_lines": [
+              "Régulation programmée"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation programmée x x x x x x",
+            "lines": [
+              "1 Régulation programmée x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation basée sur l’occupation",
+            "lines": [
+              "Régulation basée sur l’occupation"
+            ],
+            "cleaned_lines": [
+              "Régulation basée sur l’occupation"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation basée sur l’occupation x x x x x x",
+            "lines": [
+              "2 Régulation basée sur l’occupation x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation en fonction des besoins",
+            "lines": [
+              "Régulation en fonction des besoins"
+            ],
+            "cleaned_lines": [
+              "Régulation en fonction des besoins"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation en fonction des besoins x x x x x x x x",
+            "lines": [
+              "3 Régulation en fonction des besoins x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.1 Régulation de l’alimentation en air au niveau de la pièce\n 0 Aucune régulation automatique x    x    \n 1 Régulation programmée x x x  x x x  \n 2 Régulation basée sur l’occupation x x x x x x\n3 Régulation en fonction des besoins x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "4.1 Régulation de l’alimentation en air au niveau de la pièce"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "4.2",
+      "group": "Ventilation",
+      "title": "Température air ambiant (tout air)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Commande de mise en marche/arrêt",
+            "lines": [
+              "Commande de mise en marche/arrêt"
+            ],
+            "cleaned_lines": [
+              "Commande de mise en marche/arrêt"
+            ]
+          },
+          "raw": {
+            "header": "0 Commande de mise en marche/arrêt x x",
+            "lines": [
+              "0 Commande de mise en marche/arrêt x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation continue",
+            "lines": [
+              "Régulation continue"
+            ],
+            "cleaned_lines": [
+              "Régulation continue"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation continue x x x x",
+            "lines": [
+              "1 Régulation continue x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation optimisée",
+            "lines": [
+              "Régulation optimisée"
+            ],
+            "cleaned_lines": [
+              "Régulation optimisée"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation optimisée x x x x x x x x",
+            "lines": [
+              "2 Régulation optimisée x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.2 Régulation de la température de l’air ambiant (systèmes tout air)\n 0 Commande de mise en marche/arrêt x    x    \n 1 Régulation continue x x   x x   \n 2 Régulation optimisée x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "4.2 Régulation de la température de l’air ambiant (systèmes tout air)"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "4.3",
+      "group": "Ventilation",
+      "title": "Coordination air/ système statique",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune coordination",
+            "lines": [
+              "Aucune coordination"
+            ],
+            "cleaned_lines": [
+              "Aucune coordination"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune coordination x x",
+            "lines": [
+              "0 Aucune coordination x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Avec coordination",
+            "lines": [
+              "Avec coordination"
+            ],
+            "cleaned_lines": [
+              "Avec coordination"
+            ]
+          },
+          "raw": {
+            "header": "1 Avec coordination x x x x x x x x",
+            "lines": [
+              "1 Avec coordination x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.3 Régulation de la température de l’air ambiant (systèmes air-eau combinés)\n 0 Aucune coordination x    x    \n 1 Avec coordination x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "4.3 Régulation de la température de l’air ambiant (systèmes air-eau combinés)"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "4.4",
+      "group": "Ventilation",
+      "title": "Débit/rapport air extérieur",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Rapport ou débit d’air extérieur fixe",
+            "lines": [
+              "Rapport ou débit d’air extérieur fixe"
+            ],
+            "cleaned_lines": [
+              "Rapport ou débit d’air extérieur fixe"
+            ]
+          },
+          "raw": {
+            "header": "0 Rapport ou débit d’air extérieur fixe x x x x",
+            "lines": [
+              "0 Rapport ou débit d’air extérieur fixe x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Rapport ou débit d’air extérieur (faible/",
+            "lines": [
+              "Rapport ou débit d’air extérieur (faible/",
+              "élevé) étagé (calendrier et horaires)x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Rapport ou débit d’air extérieur (faible/",
+              "élevé) étagé (calendrier et horaires)"
+            ]
+          },
+          "raw": {
+            "header": "1 Rapport ou débit d’air extérieur (faible/",
+            "lines": [
+              "1 Rapport ou débit d’air extérieur (faible/",
+              "élevé) étagé (calendrier et horaires)x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Rapport ou débit d’air extérieur (faible/",
+            "lines": [
+              "Rapport ou débit d’air extérieur (faible/",
+              "élevé) étagé (selon l’occupation)x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Rapport ou débit d’air extérieur (faible/",
+              "élevé) étagé (selon l’occupation)"
+            ]
+          },
+          "raw": {
+            "header": "2 Rapport ou débit d’air extérieur (faible/",
+            "lines": [
+              "2 Rapport ou débit d’air extérieur (faible/",
+              "élevé) étagé (selon l’occupation)x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation progressive",
+            "lines": [
+              "Régulation progressive"
+            ],
+            "cleaned_lines": [
+              "Régulation progressive"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation progressive x x x x x x x x",
+            "lines": [
+              "3 Régulation progressive x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.4 Régulation du débit d’air extérieur\n 0 Rapport ou débit d’air extérieur fixe x x   x  x   \n 1 Rapport ou débit d’air extérieur (faible/\nélevé) étagé (calendrier et horaires)x x x  x x  x  \n 2 Rapport ou débit d’air extérieur (faible/\nélevé) étagé (selon l’occupation)x x x  x x x  \n 3 Régulation progressive x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 33AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "function_text": {
+        "lines": [
+          "4.4 Régulation du débit d’air extérieur"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "4.5",
+      "group": "Ventilation",
+      "title": "Débit/pression au niveau CTA",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Programmation des heures de mise en",
+            "lines": [
+              "Programmation des heures de mise en",
+              "marche/arrêt x x x x"
+            ],
+            "cleaned_lines": [
+              "Programmation des heures de mise en",
+              "marche/arrêt"
+            ]
+          },
+          "raw": {
+            "header": "1 Programmation des heures de mise en",
+            "lines": [
+              "1 Programmation des heures de mise en",
+              "marche/arrêt x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation multi-niveau",
+            "lines": [
+              "Régulation multi-niveau"
+            ],
+            "cleaned_lines": [
+              "Régulation multi-niveau"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation multi-niveau x x x x x x",
+            "lines": [
+              "2 Régulation multi-niveau x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation automatique du débit ou de la",
+            "lines": [
+              "Régulation automatique du débit ou de la",
+              "pression (sans réinitialisation)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique du débit ou de la",
+              "pression (sans réinitialisation)"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation automatique du débit ou de la",
+            "lines": [
+              "3 Régulation automatique du débit ou de la",
+              "pression (sans réinitialisation)x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "4": {
+          "text": {
+            "header": "Régulation automatique du débit ou de la",
+            "lines": [
+              "Régulation automatique du débit ou de la",
+              "pression (avec réinitialisation)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Régulation automatique du débit ou de la",
+              "pression (avec réinitialisation)"
+            ]
+          },
+          "raw": {
+            "header": "4 Régulation automatique du débit ou de la",
+            "lines": [
+              "4 Régulation automatique du débit ou de la",
+              "pression (avec réinitialisation)x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.5 Régulation du débit ou de la pression d’air au niveau de la centrale de traitement d’air\n 0 Aucune régulation automatique x    x    \n 1 Programmation des heures de mise en \nmarche/arrêtx x   x x   \n 2 Régulation multi-niveau x x x  x x x  \n 3 Régulation automatique du débit ou de la \npression (sans réinitialisation)x x x x x x x x\n 4 Régulation automatique du débit ou de la \npression (avec réinitialisation)x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "4.5 Régulation du débit ou de la pression d’air au niveau de la centrale de traitement d’air"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "4.6",
+      "group": "Ventilation",
+      "title": "Récupération chaleur: antigel",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Sans protection contre le gel",
+            "lines": [
+              "Sans protection contre le gel"
+            ],
+            "cleaned_lines": [
+              "Sans protection contre le gel"
+            ]
+          },
+          "raw": {
+            "header": "0 Sans protection contre le gel x x",
+            "lines": [
+              "0 Sans protection contre le gel x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Avec protection contre le gel",
+            "lines": [
+              "Avec protection contre le gel"
+            ],
+            "cleaned_lines": [
+              "Avec protection contre le gel"
+            ]
+          },
+          "raw": {
+            "header": "1 Avec protection contre le gel x x x x x x x x",
+            "lines": [
+              "1 Avec protection contre le gel x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.6 Régulation de la récupération de chaleur: protection contre le gel\n 0 Sans protection contre le gel x    x    \n 1 Avec protection contre le gel x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "4.6 Régulation de la récupération de chaleur: protection contre le gel"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "4.7",
+      "group": "Ventilation",
+      "title": "Récupération chaleur: surchauffe",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Sans régulation des surchauffes",
+            "lines": [
+              "Sans régulation des surchauffes"
+            ],
+            "cleaned_lines": [
+              "Sans régulation des surchauffes"
+            ]
+          },
+          "raw": {
+            "header": "0 Sans régulation des surchauffes x x",
+            "lines": [
+              "0 Sans régulation des surchauffes x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Avec régulation des surchauffes",
+            "lines": [
+              "Avec régulation des surchauffes"
+            ],
+            "cleaned_lines": [
+              "Avec régulation des surchauffes"
+            ]
+          },
+          "raw": {
+            "header": "1 Avec régulation des surchauffes x x x x x x x x",
+            "lines": [
+              "1 Avec régulation des surchauffes x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.7 Régulation de la récupération de chaleur: prévention des surchauffes\n 0 Sans régulation des surchauffes x    x    \n 1 Avec régulation des surchauffes x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "4.7 Régulation de la récupération de chaleur: prévention des surchauffes"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "4.8",
+      "group": "Ventilation",
+      "title": "Free cooling",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Refroidissement nocturne",
+            "lines": [
+              "Refroidissement nocturne"
+            ],
+            "cleaned_lines": [
+              "Refroidissement nocturne"
+            ]
+          },
+          "raw": {
+            "header": "1 Refroidissement nocturne x x x x",
+            "lines": [
+              "1 Refroidissement nocturne x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Refroidissement naturel",
+            "lines": [
+              "Refroidissement naturel"
+            ],
+            "cleaned_lines": [
+              "Refroidissement naturel"
+            ]
+          },
+          "raw": {
+            "header": "2 Refroidissement naturel x x x x x x",
+            "lines": [
+              "2 Refroidissement naturel x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Régulation directe h,x (enthalpie)",
+            "lines": [
+              "Régulation directe h,x (enthalpie)"
+            ],
+            "cleaned_lines": [
+              "Régulation directe h, (enthalpie)"
+            ]
+          },
+          "raw": {
+            "header": "3 Régulation directe h,x (enthalpie) x x x x x x x x",
+            "lines": [
+              "3 Régulation directe h,x (enthalpie) x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.8 Refroidissement mécanique naturel\n 0 Aucune régulation automatique x    x    \n 1 Refroidissement nocturne x x   x x   \n 2 Refroidissement naturel x x x x x x\n 3 Régulation directe h,x (enthalpie) x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "4.8 Refroidissement mécanique naturel"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "4.9",
+      "group": "Ventilation",
+      "title": "Température air soufflé (CTA)",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Point de consigne constant",
+            "lines": [
+              "Point de consigne constant"
+            ],
+            "cleaned_lines": [
+              "Point de consigne constant"
+            ]
+          },
+          "raw": {
+            "header": "1 Point de consigne constant x x x x",
+            "lines": [
+              "1 Point de consigne constant x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Point de consigne variable avec compensation de la température extérieure",
+            "lines": [
+              "Point de consigne variable avec compensation de la température extérieure"
+            ],
+            "cleaned_lines": [
+              "Point de consigne variable avec compensation de la température extérieure"
+            ]
+          },
+          "raw": {
+            "header": "2 Point de consigne variable avec compensation de la température extérieure x x x x x x",
+            "lines": [
+              "2 Point de consigne variable avec compensation de la température extérieure x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Point de consigne variable avec compensation en fonction de la charge",
+            "lines": [
+              "Point de consigne variable avec compensation en fonction de la charge"
+            ],
+            "cleaned_lines": [
+              "Point de consigne variable avec compensation en fonction de la charge"
+            ]
+          },
+          "raw": {
+            "header": "3 Point de consigne variable avec compensation en fonction de la charge x x x x x x x x",
+            "lines": [
+              "3 Point de consigne variable avec compensation en fonction de la charge x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.9 Régulation de la température de l’air introduit\n 0 Aucune régulation automatique x    x    \n 1 Point de consigne constant x x   x x   \n 2 Point de consigne variable avec compen -\nsation de la température extérieurex x x  x x x  \n 3 Point de consigne variable avec compen -\nsation en fonction de la chargex x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "4.9 Régulation de la température de l’air introduit"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "4.10",
+      "group": "Ventilation",
+      "title": "Humidité",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune régulation automatique",
+            "lines": [
+              "Aucune régulation automatique"
+            ],
+            "cleaned_lines": [
+              "Aucune régulation automatique"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune régulation automatique x x",
+            "lines": [
+              "0 Aucune régulation automatique x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Régulation en fonction du point de rosée",
+            "lines": [
+              "Régulation en fonction du point de rosée"
+            ],
+            "cleaned_lines": [
+              "Régulation en fonction du point de rosée"
+            ]
+          },
+          "raw": {
+            "header": "1 Régulation en fonction du point de rosée x x x x",
+            "lines": [
+              "1 Régulation en fonction du point de rosée x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Régulation d’humidité directe",
+            "lines": [
+              "Régulation d’humidité directe"
+            ],
+            "cleaned_lines": [
+              "Régulation d’humidité directe"
+            ]
+          },
+          "raw": {
+            "header": "2 Régulation d’humidité directe x x x x x x x x",
+            "lines": [
+              "2 Régulation d’humidité directe x x x x x x x x",
+              "5 Commande de l’éclairage"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.10 Régulation de l’humidité\n 0 Aucune régulation automatique x    x    \n 1 Régulation en fonction du point de rosée x x   x x   \n 2 Régulation d’humidité directe x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  34AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n5 Commande de l’éclairage\n",
+      "function_text": {
+        "lines": [
+          "4.10 Régulation de l’humidité"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "5.1",
+      "group": "Éclairage",
+      "title": "Commande basée sur l’occupation",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Interrupteur manuel de mise en marche/",
+            "lines": [
+              "Interrupteur manuel de mise en marche/",
+              "arrêt x x x"
+            ],
+            "cleaned_lines": [
+              "Interrupteur manuel de mise en marche/",
+              "arrêt"
+            ]
+          },
+          "raw": {
+            "header": "0 Interrupteur manuel de mise en marche/",
+            "lines": [
+              "0 Interrupteur manuel de mise en marche/",
+              "arrêt x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Interrupteur manuel de mise en marche/",
+            "lines": [
+              "Interrupteur manuel de mise en marche/",
+              "arrêt + signal supplémentaire d’extinction x x x x x"
+            ],
+            "cleaned_lines": [
+              "Interrupteur manuel de mise en marche/",
+              "arrêt + signal supplémentaire d’extinction"
+            ]
+          },
+          "raw": {
+            "header": "1 Interrupteur manuel de mise en marche/",
+            "lines": [
+              "1 Interrupteur manuel de mise en marche/",
+              "arrêt + signal supplémentaire d’extinction x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Détection automatique (mise en marche",
+            "lines": [
+              "Détection automatique (mise en marche",
+              "automatique)b x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Détection automatique (mise en marche",
+              "automatique)b"
+            ]
+          },
+          "raw": {
+            "header": "2 Détection automatique (mise en marche",
+            "lines": [
+              "2 Détection automatique (mise en marche",
+              "automatique)b x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Détection automatique (mise en marche",
+            "lines": [
+              "Détection automatique (mise en marche",
+              "manuelle) b x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Détection automatique (mise en marche",
+              "manuelle) b"
+            ]
+          },
+          "raw": {
+            "header": "3 Détection automatique (mise en marche",
+            "lines": [
+              "3 Détection automatique (mise en marche",
+              "manuelle) b x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "5.1 Commande basée sur l’occupation\n 0 Interrupteur manuel de mise en marche/\narrêtx x   x    \n 1 Interrupteur manuel de mise en marche/\narrêt + signal supplémentaire d’extinc -\ntionx x x  x x   \n 2 Détection automatique (mise en marche \nautomatique)bx x x x x x x  x\n 3 Détection automatique (mise en marche \nmanuelle) bx x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "5.1 Commande basée sur l’occupation"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "5.2",
+      "group": "Éclairage",
+      "title": "Régulation lumière naturelle",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Manuelle (centrale)",
+            "lines": [
+              "Manuelle (centrale)"
+            ],
+            "cleaned_lines": [
+              "Manuelle (centrale)"
+            ]
+          },
+          "raw": {
+            "header": "0 Manuelle (centrale) x x x",
+            "lines": [
+              "0 Manuelle (centrale) x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Manuelle (par pièce/zone)",
+            "lines": [
+              "Manuelle (par pièce/zone)"
+            ],
+            "cleaned_lines": [
+              "Manuelle (par pièce/zone)"
+            ]
+          },
+          "raw": {
+            "header": "1 Manuelle (par pièce/zone) x x x x x",
+            "lines": [
+              "1 Manuelle (par pièce/zone) x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Commutation automatique b",
+            "lines": [
+              "Commutation automatique b"
+            ],
+            "cleaned_lines": [
+              "Commutation automatique b"
+            ]
+          },
+          "raw": {
+            "header": "2 Commutation automatique b x x x x x x",
+            "lines": [
+              "2 Commutation automatique b x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Modulation automatique b",
+            "lines": [
+              "Modulation automatique b",
+              "stores et du système de chauffage, de",
+              "ventilation et de climatisation (CVC)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Modulation automatique b"
+            ]
+          },
+          "raw": {
+            "header": "3 Modulation automatique b x x x x x x x x",
+            "lines": [
+              "3 Modulation automatique b x x x x x x x x",
+              "6 Commande des stores",
+              "0 Fonctionnement manuel x x",
+              "1 Fonctionnement motorisé avec commande manuelle x x x",
+              "2 Fonctionnement motorisé avec commande automatique x x x x x",
+              "3 Commande combinée de l’éclairage, des",
+              "stores et du système de chauffage, de",
+              "ventilation et de climatisation (CVC)x x x x x x x x",
+              "7 Gestion technique pour les foyers domestiques et les bâtiments"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "5.2 Régulation de l’intensité lumineuse/de la lumière naturelle\n 0 Manuelle (centrale) x    x x   \n 1 Manuelle (par pièce/zone) x x x  x x   \n 2 Commutation automatique b x x x  x x x  \n 3 Modulation automatique b x x x x x x x x\n6 Commande des stores\n 0 Fonctionnement manuel x    x    \n 1 Fonctionnement motorisé avec com -\nmande manuellex x   x    \n 2 Fonctionnement motorisé avec com -\nmande automatiquex x x  x x   \n 3 Commande combinée de l’éclairage, des \nstores et du système de chauffage, de \nventilation et de climatisation (CVC)x x x x x x x x\n7 Gestion technique pour les foyers domestiques et les bâtiments\n",
+      "function_text": {
+        "lines": [
+          "5.2 Régulation de l’intensité lumineuse/de la lumière naturelle"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "6.1",
+      "group": "Stores",
+      "title": "Commande des stores",
+      "levels": {},
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "",
+      "function_text": {
+        "lines": []
+      },
+      "footnotes": {},
+      "_missing_in_pdf": true
+    },
+    {
+      "rule_id": "7.1",
+      "group": "GTB",
+      "title": "Gestion des points de consigne",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Réglage manuel individuel pièce par",
+            "lines": [
+              "Réglage manuel individuel pièce par",
+              "pièce x x x"
+            ],
+            "cleaned_lines": [
+              "Réglage manuel individuel pièce par",
+              "pièce"
+            ]
+          },
+          "raw": {
+            "header": "0 Réglage manuel individuel pièce par",
+            "lines": [
+              "0 Réglage manuel individuel pièce par",
+              "pièce x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Adaptation uniquement à partir de",
+            "lines": [
+              "Adaptation uniquement à partir de",
+              "pièces réparties/décentralisées x x x x x"
+            ],
+            "cleaned_lines": [
+              "Adaptation uniquement à partir de",
+              "pièces réparties/décentralisées"
+            ]
+          },
+          "raw": {
+            "header": "1 Adaptation uniquement à partir de",
+            "lines": [
+              "1 Adaptation uniquement à partir de",
+              "pièces réparties/décentralisées x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Adaptation à partir d’une pièce centrale",
+            "lines": [
+              "Adaptation à partir d’une pièce centrale"
+            ],
+            "cleaned_lines": [
+              "Adaptation à partir d’une pièce centrale"
+            ]
+          },
+          "raw": {
+            "header": "2 Adaptation à partir d’une pièce centrale x x x x x x x",
+            "lines": [
+              "2 Adaptation à partir d’une pièce centrale x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "3": {
+          "text": {
+            "header": "Adaptation à partir d’une pièce centrale",
+            "lines": [
+              "Adaptation à partir d’une pièce centrale",
+              "avec rétroaction fréquente des entrées",
+              "des utilisateurs x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Adaptation à partir d’une pièce centrale",
+              "avec rétroaction fréquente des entrées",
+              "des utilisateurs"
+            ]
+          },
+          "raw": {
+            "header": "3 Adaptation à partir d’une pièce centrale",
+            "lines": [
+              "3 Adaptation à partir d’une pièce centrale",
+              "avec rétroaction fréquente des entrées",
+              "des utilisateurs x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.1 Gestion des points de consigne\n 0 Réglage manuel individuel pièce par \npiècex x   x    \n 1 Adaptation uniquement à partir de \npièces réparties/décentraliséesx x x  x x   \n 2 Adaptation à partir d’une pièce centrale x x x x x x x  \n 3 Adaptation à partir d’une pièce centrale \navec rétroaction fréquente des entrées \ndes utilisateursx x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 35AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "function_text": {
+        "lines": [
+          "7.1 Gestion des points de consigne"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "7.2",
+      "group": "GTB",
+      "title": "Gestion des temps de fonctionnement",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Réglage manuel (activation de l’installation)",
+            "lines": [
+              "Réglage manuel (activation de l’installation)"
+            ],
+            "cleaned_lines": [
+              "Réglage manuel (activation de l’installation)"
+            ]
+          },
+          "raw": {
+            "header": "0 Réglage manuel (activation de l’installation)x x x",
+            "lines": [
+              "0 Réglage manuel (activation de l’installation)x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Réglage individuel d’après un horaire",
+            "lines": [
+              "Réglage individuel d’après un horaire",
+              "prédéfini incluant des phases de préconditionnement fixes x x x x x"
+            ],
+            "cleaned_lines": [
+              "Réglage individuel d’après un horaire",
+              "prédéfini incluant des phases de préconditionnement fixes"
+            ]
+          },
+          "raw": {
+            "header": "1 Réglage individuel d’après un horaire",
+            "lines": [
+              "1 Réglage individuel d’après un horaire",
+              "prédéfini incluant des phases de préconditionnement fixes x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Réglage individuel d’après un horaire",
+            "lines": [
+              "Réglage individuel d’après un horaire",
+              "prédéfini; adaptation à partir d’une pièce",
+              "centrale; phases de préconditionnement",
+              "variables x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Réglage individuel d’après un horaire",
+              "prédéfini; adaptation à partir d’une pièce",
+              "centrale; phases de préconditionnement",
+              "variables"
+            ]
+          },
+          "raw": {
+            "header": "2 Réglage individuel d’après un horaire",
+            "lines": [
+              "2 Réglage individuel d’après un horaire",
+              "prédéfini; adaptation à partir d’une pièce",
+              "centrale; phases de préconditionnement",
+              "variables x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.2 Gestion des temps de fonctionnement\n 0 Réglage manuel (activation de l’installa -\ntion)x x   x    \n 1 Réglage individuel d’après un horaire \nprédéfini incluant des phases de précon -\nditionnement fixesx x x  x x   \n 2 Réglage individuel d’après un horaire \nprédéfini; adaptation à partir d’une pièce \ncentrale; phases de préconditionnement \nvariablesx x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "7.2 Gestion des temps de fonctionnement"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "7.3",
+      "group": "GTB",
+      "title": "Détection des défauts & aide au diagnostic",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune indication centralisée des",
+            "lines": [
+              "Aucune indication centralisée des",
+              "défauts détectés et des alarmes x x x"
+            ],
+            "cleaned_lines": [
+              "Aucune indication centralisée des",
+              "défauts détectés et des alarmes"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune indication centralisée des",
+            "lines": [
+              "0 Aucune indication centralisée des",
+              "défauts détectés et des alarmes x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Avec indication centralisée des défauts",
+            "lines": [
+              "Avec indication centralisée des défauts",
+              "détectés et des alarmes x x x x x"
+            ],
+            "cleaned_lines": [
+              "Avec indication centralisée des défauts",
+              "détectés et des alarmes"
+            ]
+          },
+          "raw": {
+            "header": "1 Avec indication centralisée des défauts",
+            "lines": [
+              "1 Avec indication centralisée des défauts",
+              "détectés et des alarmes x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Avec indication centralisée des défauts",
+            "lines": [
+              "Avec indication centralisée des défauts",
+              "détectés et des alarmes/fonctions de",
+              "diagnostic x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Avec indication centralisée des défauts",
+              "détectés et des alarmes/fonctions de",
+              "diagnostic"
+            ]
+          },
+          "raw": {
+            "header": "2 Avec indication centralisée des défauts",
+            "lines": [
+              "2 Avec indication centralisée des défauts",
+              "détectés et des alarmes/fonctions de",
+              "diagnostic x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.3 Détection des défauts des systèmes techniques du bâtiment et aide au diagnostic de ces défauts\n 0 Aucune indication centralisée des \ndéfauts détectés et des alarmesx x   x    \n 1 Avec indication centralisée des défauts \ndétectés et des alarmesx x x  x x   \n 2 Avec indication centralisée des défauts \ndétectés et des alarmes/fonctions de \ndiagnosticx x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "7.3 Détection des défauts des systèmes techniques du bâtiment et aide au diagnostic de ces défauts"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "7.4",
+      "group": "GTB",
+      "title": "Reporting conso & conditions intérieures",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Indication des valeurs réelles uniquement (par exemple températures,",
+            "lines": [
+              "Indication des valeurs réelles uniquement (par exemple températures,",
+              "valeurs mesurées)x x x x"
+            ],
+            "cleaned_lines": [
+              "Indication des valeurs réelles uniquement (par exemple températures,",
+              "valeurs mesurées)"
+            ]
+          },
+          "raw": {
+            "header": "0 Indication des valeurs réelles uniquement (par exemple températures,",
+            "lines": [
+              "0 Indication des valeurs réelles uniquement (par exemple températures,",
+              "valeurs mesurées)x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Fonctions d’analyse de tendances et",
+            "lines": [
+              "Fonctions d’analyse de tendances et",
+              "détermination de la consommation x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Fonctions d’analyse de tendances et",
+              "détermination de la consommation"
+            ]
+          },
+          "raw": {
+            "header": "1 Fonctions d’analyse de tendances et",
+            "lines": [
+              "1 Fonctions d’analyse de tendances et",
+              "détermination de la consommation x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "2": {
+          "text": {
+            "header": "Analyse, évaluation de la performance,",
+            "lines": [
+              "Analyse, évaluation de la performance,",
+              "étalonnage x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Analyse, évaluation de la performance,",
+              "étalonnage"
+            ]
+          },
+          "raw": {
+            "header": "2 Analyse, évaluation de la performance,",
+            "lines": [
+              "2 Analyse, évaluation de la performance,",
+              "étalonnage x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.4 Compte-rendu des informations concernant la consommation énergétique et les conditions intérieures\n 0 Indication des valeurs réelles uni -\nquement (par exemple températures, \nvaleurs mesurées)x x   x x   \n 1 Fonctions d’analyse de tendances et \ndétermination de la consommationx x x  x x x  \n 2 Analyse, évaluation de la performance, \nétalonnagex x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "7.4 Compte-rendu des informations concernant la consommation énergétique et les conditions intérieures"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "7.5",
+      "group": "GTB",
+      "title": "Production locale / ENR",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Génération non régulée en fonction de",
+            "lines": [
+              "Génération non régulée en fonction de",
+              "la disponibilité variable des sources",
+              "d’énergies renouvelables et/ou du temps",
+              "de production combinée de chaleur et",
+              "d’électricité; le surplus sera transféré",
+              "dans le réseau x x x x"
+            ],
+            "cleaned_lines": [
+              "Génération non régulée en fonction de",
+              "la disponibilité variable des sources",
+              "d’énergies renouvelables et/ou du temps",
+              "de production combinée de chaleur et",
+              "d’électricité; le surplus sera transféré",
+              "dans le réseau"
+            ]
+          },
+          "raw": {
+            "header": "0 Génération non régulée en fonction de",
+            "lines": [
+              "0 Génération non régulée en fonction de",
+              "la disponibilité variable des sources",
+              "d’énergies renouvelables et/ou du temps",
+              "de production combinée de chaleur et",
+              "d’électricité; le surplus sera transféré",
+              "dans le réseau x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Coordination des sources d’énergies",
+            "lines": [
+              "Coordination des sources d’énergies",
+              "renouvelables et de la production combinée de chaleur et d’électricité en fonction",
+              "du profil de la demande énergétique",
+              "locale incluant la gestion du stockage de",
+              "l’énergie; optimisation de la consommation propre x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Coordination des sources d’énergies",
+              "renouvelables et de la production combinée de chaleur et d’électricité en fonction",
+              "du profil de la demande énergétique",
+              "locale incluant la gestion du stockage de",
+              "l’énergie; optimisation de la consommation propre"
+            ]
+          },
+          "raw": {
+            "header": "1 Coordination des sources d’énergies",
+            "lines": [
+              "1 Coordination des sources d’énergies",
+              "renouvelables et de la production combinée de chaleur et d’électricité en fonction",
+              "du profil de la demande énergétique",
+              "locale incluant la gestion du stockage de",
+              "l’énergie; optimisation de la consommation propre x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Production locale/ENR présente"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.5 Production d’énergie locale et énergies renouvelables\n 0 Génération non régulée en fonction de \nla disponibilité variable des sources \nd’énergies renouvelables et/ou du temps \nde production combinée de chaleur et \nd’électricité; le surplus sera transféré \ndans le réseaux x   x x   \n 1 Coordination des sources d’énergies \nrenouvelables et de la production combi -\nnée de chaleur et d’électricité en fonction \ndu profil de la demande énergétique \nlocale incluant la gestion du stockage de \nl’énergie; optimisation de la consomma -\ntion proprex x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "7.5 Production d’énergie locale et énergies renouvelables"
+        ]
+      },
+      "footnotes": {}
+    },
+    {
+      "rule_id": "7.6",
+      "group": "GTB",
+      "title": "Récupération/transfert de chaleur",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Utilisation instantanée des déperditions de",
+            "lines": [
+              "Utilisation instantanée des déperditions de",
+              "chaleur ou du transfert de chaleur x x"
+            ],
+            "cleaned_lines": [
+              "Utilisation instantanée des déperditions de",
+              "chaleur ou du transfert de chaleur"
+            ]
+          },
+          "raw": {
+            "header": "0 Utilisation instantanée des déperditions de",
+            "lines": [
+              "0 Utilisation instantanée des déperditions de",
+              "chaleur ou du transfert de chaleur x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Utilisation maîtrisée des déperditions",
+            "lines": [
+              "Utilisation maîtrisée des déperditions",
+              "de chaleur ou du transfert de chaleur (y",
+              "compris le stockage/la consommation de",
+              "l’énergie thermique stockée)x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Utilisation maîtrisée des déperditions",
+              "de chaleur ou du transfert de chaleur (y",
+              "compris le stockage/la consommation de",
+              "l’énergie thermique stockée)"
+            ]
+          },
+          "raw": {
+            "header": "1 Utilisation maîtrisée des déperditions",
+            "lines": [
+              "1 Utilisation maîtrisée des déperditions",
+              "de chaleur ou du transfert de chaleur (y",
+              "compris le stockage/la consommation de",
+              "l’énergie thermique stockée)x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Récupération/transfert présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.6 Récupération des déperditions de chaleur et transfert de chaleur\n 0 Utilisation instantanée des déperditions de \nchaleur ou du transfert de chaleurx    x    \na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  36AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n 1 Utilisation maîtrisée des déperditions \nde chaleur ou du transfert de chaleur (y \ncompris le stockage/la consommation de \nl’énergie thermique stockée)x x x x x x x x\n",
+      "function_text": {
+        "lines": [
+          "7.6 Récupération des déperditions de chaleur et transfert de chaleur"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les"
+      }
+    },
+    {
+      "rule_id": "7.7",
+      "group": "GTB",
+      "title": "Intégration réseau intelligent",
+      "levels": {
+        "0": {
+          "text": {
+            "header": "Aucune harmonisation entre le réseau et",
+            "lines": [
+              "Aucune harmonisation entre le réseau et",
+              "les systèmes énergétiques du bâtiment; le",
+              "bâtiment est exploité indépendamment de",
+              "la charge du réseau x x x x"
+            ],
+            "cleaned_lines": [
+              "Aucune harmonisation entre le réseau et",
+              "les systèmes énergétiques du bâtiment; le",
+              "bâtiment est exploité indépendamment de",
+              "la charge du réseau"
+            ]
+          },
+          "raw": {
+            "header": "0 Aucune harmonisation entre le réseau et",
+            "lines": [
+              "0 Aucune harmonisation entre le réseau et",
+              "les systèmes énergétiques du bâtiment; le",
+              "bâtiment est exploité indépendamment de",
+              "la charge du réseau x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        },
+        "1": {
+          "text": {
+            "header": "Les systèmes énergétiques du bâtiment",
+            "lines": [
+              "Les systèmes énergétiques du bâtiment",
+              "sont gérés et exploités en fonction de la",
+              "charge du réseau; la gestion de la demande",
+              "est utilisée pour le transfert de charges x x x x x x x x"
+            ],
+            "cleaned_lines": [
+              "Les systèmes énergétiques du bâtiment",
+              "sont gérés et exploités en fonction de la",
+              "charge du réseau; la gestion de la demande",
+              "est utilisée pour le transfert de charges"
+            ]
+          },
+          "raw": {
+            "header": "1 Les systèmes énergétiques du bâtiment",
+            "lines": [
+              "1 Les systèmes énergétiques du bâtiment",
+              "sont gérés et exploités en fonction de la",
+              "charge du réseau; la gestion de la demande",
+              "est utilisée pour le transfert de charges x x x x x x x x"
+            ]
+          },
+          "x": {
+            "tokens": [
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x",
+              "x"
+            ]
+          },
+          "eligible_classes": null
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Fonction smart grid pertinente"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.7 Intégration dans un réseau intelligent\n 0 Aucune harmonisation entre le réseau et \nles systèmes énergétiques du bâtiment; le \nbâtiment est exploité indépendamment de \nla charge du réseaux x   x x   \n 1 Les systèmes énergétiques du bâtiment \nsont gérés et exploités en fonction de la \ncharge du réseau; la gestion de la demande \nest utilisée pour le transfert de chargesx x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).\n5.7\t Application\tdes\tfonctions\tBAC\tà\tun\tSMÉ\tet \tmaintien\tde\tl’efficacité\ténergétique\tde\t\nBAC\n5.7.1 Généralités\nUne fois qu’un système d’automatisation et de régulation du bâtiment (BACS) est installé, deux questions \nprincipales se posent au regard de ce document:\na) Comment une automatisation et une régulation du bâtiment (BAC) peuvent-elles venir à l’appui \nd’un système de management de l’énergie (SMÉ) pour la partie bâtiment?\nb) Quelles activités connexes doivent être prévues pour maintenir et renforcer l’impact d’un système \nBAC/GTB sur l’efficacité énergétique au sein des bâtiments et pour améliorer sa classe actuelle?\n5.7.2 Application des fonctions BAC à un SMÉ\nLe SMÉ spécifié par l’ISO 50001 est destiné à améliorer la performance énergétique par la gestion \nsystématique de la consommation d’énergie. L’ISO 50001 spécifie les exigences visant à améliorer en \ncontinu l’efficacité et le caractère durable de l’usage énergétique pour la production/le traitement, le \ntransport et les bâtiments.\nL’utilisation des systèmes BAC/GTB encourage différents niveaux et fonctions d’organisation à mettre \nen œuvre un SMÉ dans les bâtiments, et simplifie et améliore nettement le processus continu de SMÉ \npour les bâtiments.\nUne bonne méthode est décrite dans l’ Annexe  E. Cette annexe explique en détail l’application et \nl’utilisation des systèmes BAC/GTB pour un SMÉ destiné aux bâtiments.\nLe Tableau  E.1 donne un aperçu des exigences des systèmes BAC/GTB ainsi que des options et fonctions \nutilisées pour soutenir la mise en œuvre et le traitement des différents stades de l’ISO 50001 concernant \nle SMÉ dans les bâtiments.\nL’Annexe  E indique également qu’une équipe compétente et dédiée aux systèmes BAC/GTB doit être \naffectée au projet.ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 37AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03",
+      "function_text": {
+        "lines": [
+          "7.7 Intégration dans un réseau intelligent"
+        ]
+      },
+      "footnotes": {
+        "a": "a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.",
+        "b": "b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.). 5.7 Application des fonctions BAC à un SMÉ et maintien de l’efficacité énergétique de BAC 5.7.1 Généralités Une fois qu’un système d’automatisation et de régulation du bâtiment (BACS) est installé, deux questions principales se posent au regard de ce document: a) Comment une automatisation et une régulation du bâtiment (BAC) peuvent-elles venir à l’appui d’un système de management de l’énergie (SMÉ) pour la partie bâtiment? b) Quelles activités connexes doivent être prévues pour maintenir et renforcer l’impact d’un système BAC/GTB sur l’efficacité énergétique au sein des bâtiments et pour améliorer sa classe actuelle? 5.7.2 Application des fonctions BAC à un SMÉ Le SMÉ spécifié par l’ISO 50001 est destiné à améliorer la performance énergétique par la gestion systématique de la consommation d’énergie. L’ISO 50001 spécifie les exigences visant à améliorer en continu l’efficacité et le caractère durable de l’usage énergétique pour la production/le traitement, le transport et les bâtiments. L’utilisation des systèmes BAC/GTB encourage différents niveaux et fonctions d’organisation à mettre en œuvre un SMÉ dans les bâtiments, et simplifie et améliore nettement le processus continu de SMÉ pour les bâtiments. Une bonne méthode est décrite dans l’ Annexe E. Cette annexe explique en détail l’application et l’utilisation des systèmes BAC/GTB pour un SMÉ destiné aux bâtiments. Le Tableau E.1 donne un aperçu des exigences des systèmes BAC/GTB ainsi que des options et fonctions utilisées pour soutenir la mise en œuvre et le traitement des différents stades de l’ISO 50001 concernant le SMÉ dans les bâtiments. L’Annexe E indique également qu’une équipe compétente et dédiée aux systèmes BAC/GTB doit être"
+      }
+    }
+  ]
+}

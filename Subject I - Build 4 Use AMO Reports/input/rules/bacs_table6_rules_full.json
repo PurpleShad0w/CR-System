@@ -1,0 +1,1839 @@
+{
+  "meta": {
+    "standard": "NF EN ISO 52120-1:2022",
+    "source": "Tableau 6 — Listes des fonctions et affectation aux classes d’efficacité de BAC",
+    "classes": [
+      "D",
+      "C",
+      "B",
+      "A"
+    ],
+    "scopes": [
+      "Résidentiel",
+      "Non résidentiel"
+    ],
+    "license_note": "This JSON intentionally avoids verbatim ISO text. Use tools/extract_table6_from_pdf.py to generate a locally enriched JSON with full phrasing from your licensed PDF."
+  },
+  "rules": [
+    {
+      "rule_id": "1.1",
+      "group": "Chauffage",
+      "title": "Régulation de l’émission (pièce)",
+      "levels": {
+        "0": {
+          "label": "Aucune régulation",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Régulation centrale",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Régulation individuelle par pièce",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Modulante avec communication",
+          "description_full": ""
+        },
+        "4": {
+          "label": "Communication + détection d’occupation",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [
+        "Classe A non applicable aux émetteurs à forte inertie (plancher, murs)."
+      ],
+      "raw_text_excerpt": "1.1 Régulation de l’émission\n La fonction de régulation est appliquée à l’émetteur de chaleur (radiateurs, plancher chauffant, ventilo-\nconvecteur, unité intérieure) au niveau de la pièce; pour le type 1, une seule fonction de régulation peut \nréguler plusieurs pièces\n 0 Aucune régulation automatique x    x    \n 1 Régulation centrale automatique x    x    \n 2 Régulation individuelle par pièce x x   x x   \n 3 Régulation modulante individuelle par \npièce avec communicationx x x xa x x x xa\n 4 Régulation modulante individuelle par \npièce avec communication et détec -\ntion d’occupation (ne s’applique pas \naux systèmes d’émission de chaleur à \nréaction lente, comme le chauffage par le \nplancher)x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\n© ISO 2021 – Tous droits réservés   \n 27AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "description_full": "1.1 Régulation de l’émission La fonction de régulation est appliquée à l’émetteur de chaleur (radiateurs, plancher chauffant, ventilo- convecteur, unité intérieure) au niveau de la pièce; pour le type 1, une seule fonction de régulation peut réguler plusieurs pièces 0 Aucune régulation automatique x x 1 Régulation centrale automatique x x 2 Régulation individuelle par pièce x x x x 3 Régulation modulante individuelle par pièce avec communicationx x x xa x x x xa 4 Régulation modulante individuelle par pièce avec communication et détec - tion d’occupation (ne s’applique pas aux systèmes d’émission de chaleur à réaction lente, comme le chauffage par le plancher)x x x x x x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) © ISO 2021 – Tous droits réservés 27AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A"
+    },
+    {
+      "rule_id": "1.2",
+      "group": "Chauffage",
+      "title": "Émission TABS (chauffage)",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Centrale auto",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Centrale évoluée",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Évoluée + intermittence/rétroaction",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Système thermo-actif présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.2 Régulation de l’émission pour système thermo-actif (mode de chauffage)\n 0 Aucune régulation automatique x    x    \n 1 Régulation centrale automatique x x   x x   \n 2 Régulation centrale automatique évoluée x x x  x x x  \n 3 Régulation centrale automatique évoluée \navec fonctionnement par intermittence \net/ou commande à rétroaction de tempé -\nrature ambiantex x x x x x x x\n",
+      "description_full": "1.2 Régulation de l’émission pour système thermo-actif (mode de chauffage) 0 Aucune régulation automatique x x 1 Régulation centrale automatique x x x x 2 Régulation centrale automatique évoluée x x x x x x 3 Régulation centrale automatique évoluée avec fonctionnement par intermittence et/ou commande à rétroaction de tempé - rature ambiantex x x x x x x x"
+    },
+    {
+      "rule_id": "1.3",
+      "group": "Chauffage",
+      "title": "Température réseau (loi d’eau)",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Selon T° extérieure",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Selon besoins",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.3 Régulation de la température de l’eau chaude du réseau de distribution (en départ ou en retour)\n Une fonction similaire peut être appliquée à la régulation des réseaux pour le chauffage électrique direct\n 0 Aucune régulation automatique x    x    \n 1 Régulation en fonction de la température \nextérieurex x   x x   \n 2 Régulation en fonction des besoins x x x x x x x x\n",
+      "description_full": "1.3 Régulation de la température de l’eau chaude du réseau de distribution (en départ ou en retour) Une fonction similaire peut être appliquée à la régulation des réseaux pour le chauffage électrique direct 0 Aucune régulation automatique x x 1 Régulation en fonction de la température extérieurex x x x 2 Régulation en fonction des besoins x x x x x x x x"
+    },
+    {
+      "rule_id": "1.4",
+      "group": "Chauffage",
+      "title": "Commande des pompes de distribution",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Marche/arrêt",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Multi-vitesses",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Vitesse variable (Δp interne)",
+          "description_full": ""
+        },
+        "4": {
+          "label": "Vitesse variable (demande externe)",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.4 Régulation des pompes de distribution du réseau\n Les pompes régulées peuvent être installées à différents niveaux dans le réseau\n 0 Aucune régulation automatique x    x    \n 1 Commande de mise en marche/arrêt x x   x x   \n 2 Commande multi-niveau x x x  x x x  \n 3 Commande des pompes à vitesse va -\nriable (estimations (internes) du groupe \nde pompes)x x x x x x x x\n 4 Commande des pompes à vitesse \nvariable (signal de demande externe)x x x x x x x x\n",
+      "description_full": "1.4 Régulation des pompes de distribution du réseau Les pompes régulées peuvent être installées à différents niveaux dans le réseau 0 Aucune régulation automatique x x 1 Commande de mise en marche/arrêt x x x x 2 Commande multi-niveau x x x x x x 3 Commande des pompes à vitesse va - riable (estimations (internes) du groupe de pompes)x x x x x x x x 4 Commande des pompes à vitesse variable (signal de demande externe)x x x x x x x x"
+    },
+    {
+      "rule_id": "1.4.a",
+      "group": "Chauffage",
+      "title": "Équilibrage hydronique distribution chaud",
+      "levels": {
+        "0": {
+          "label": "Aucun",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Statique émetteurs",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Statique émetteurs+groupe",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Statique + dynamique groupe",
+          "description_full": ""
+        },
+        "4": {
+          "label": "Dynamique par émetteur",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [
+          ">10 émetteurs"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.4.a Équilibrage hydronique du système de distribution de chaleur (y compris la contribution à l’équilibrage \ndu côté de l’émission)\n L’équilibrage hydronique est appliqué à un émetteur ou à un groupe comprenant plus de 10 émetteurs \nde chaleur \n 0 Aucun équilibrage x    x    \n 1 Équilibrage statique de chaque émetteur, \nsans équilibrage du groupex x  x   \n 2 Équilibrage statique de chaque émetteur \net équilibrage statique du groupe x x x\n3 Équilibrage statique de chaque émetteur \net équilibrage dynamique du groupe x x x x x\n4 Équilibrage dynamique de chaque émet -\nteur x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  28AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "description_full": "1.4.a Équilibrage hydronique du système de distribution de chaleur (y compris la contribution à l’équilibrage du côté de l’émission) L’équilibrage hydronique est appliqué à un émetteur ou à un groupe comprenant plus de 10 émetteurs de chaleur 0 Aucun équilibrage x x 1 Équilibrage statique de chaque émetteur, sans équilibrage du groupex x x 2 Équilibrage statique de chaque émetteur et équilibrage statique du groupe x x x 3 Équilibrage statique de chaque émetteur et équilibrage dynamique du groupe x x x x x 4 Équilibrage dynamique de chaque émet - teur x x x x x x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 28AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A"
+    },
+    {
+      "rule_id": "1.5",
+      "group": "Chauffage",
+      "title": "Régulation intermittente émission/distribution",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Programme fixe",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Optimisation marche/arrêt",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Évaluation des besoins",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.5 Régulation intermittente de l’émission et/ou de la distribution\n Un seul régulateur peut réguler plusieurs pièces/zones ayant les mêmes profils d’occupation\n 0 Aucune régulation automatique x    x    \n 1 Régulation automatique avec pro -\ngramme fixex x   x x   \n 2 Régulation automatique avec optimisa -\ntion de la mise en marche/arrêtx x x  x x x  \n 3 Régulation automatique avec évaluation \ndes besoinsx x x x x x x x\n",
+      "description_full": "1.5 Régulation intermittente de l’émission et/ou de la distribution Un seul régulateur peut réguler plusieurs pièces/zones ayant les mêmes profils d’occupation 0 Aucune régulation automatique x x 1 Régulation automatique avec pro - gramme fixex x x x 2 Régulation automatique avec optimisa - tion de la mise en marche/arrêtx x x x x x 3 Régulation automatique avec évaluation des besoinsx x x x x x x x"
+    },
+    {
+      "rule_id": "1.6",
+      "group": "Chauffage",
+      "title": "Commande générateurs (combustion/chauffage urbain)",
+      "levels": {
+        "0": {
+          "label": "T° constante",
+          "description_full": ""
+        },
+        "1": {
+          "label": "T° variable selon T° ext",
+          "description_full": ""
+        },
+        "2": {
+          "label": "T° variable selon charge",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.6 Commande de générateurs de chaleur (combustion et chauffage urbain)\n 0 Régulation de température constante x    x    \n 1 Régulation de température variable en \nfonction de la température extérieurex x   x x   \n 2 Régulation de température variable en \nfonction de la chargex x x x x x x x\n",
+      "description_full": "1.6 Commande de générateurs de chaleur (combustion et chauffage urbain) 0 Régulation de température constante x x 1 Régulation de température variable en fonction de la température extérieurex x x x 2 Régulation de température variable en fonction de la chargex x x x x x x x"
+    },
+    {
+      "rule_id": "1.7",
+      "group": "Chauffage",
+      "title": "Commande générateurs (pompe à chaleur)",
+      "levels": {
+        "0": {
+          "label": "T° constante",
+          "description_full": ""
+        },
+        "1": {
+          "label": "T° variable selon T° ext",
+          "description_full": ""
+        },
+        "2": {
+          "label": "T° variable selon charge",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.7 Régulation des générateurs de chaleur (pompe à chaleur)\n 0 Régulation de température constante x    x    \n 1 Régulation de température variable en \nfonction de la température extérieurex x   x x   \n 2 Régulation de température variable en \nfonction de la chargex x x x x x x x\n",
+      "description_full": "1.7 Régulation des générateurs de chaleur (pompe à chaleur) 0 Régulation de température constante x x 1 Régulation de température variable en fonction de la température extérieurex x x x 2 Régulation de température variable en fonction de la chargex x x x x x x x"
+    },
+    {
+      "rule_id": "1.8",
+      "group": "Chauffage",
+      "title": "Commande générateurs (unité extérieure)",
+      "levels": {
+        "0": {
+          "label": "Marche/arrêt",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Multi-paliers",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Progressive",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.8 Régulation des générateurs de chaleur (unité extérieure)\n 0 Commande de mise en marche/arrêt du \ngénérateur de chaleurx    x    \n 1 Régulation à plusieurs niveaux (paliers) \ndu générateur de chaleurx x x  x x x  \n 2 Régulation progressive du générateur de \nchaleurx x x x x x x x\n",
+      "description_full": "1.8 Régulation des générateurs de chaleur (unité extérieure) 0 Commande de mise en marche/arrêt du générateur de chaleurx x 1 Régulation à plusieurs niveaux (paliers) du générateur de chaleurx x x x x x 2 Régulation progressive du générateur de chaleurx x x x x x x x"
+    },
+    {
+      "rule_id": "1.9",
+      "group": "Chauffage",
+      "title": "Priorité des générateurs",
+      "levels": {
+        "0": {
+          "label": "Temps de fonctionnement",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Liste fixe",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Liste dynamique rendement",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Dynamique + prédictions",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.9 Ordre de priorité des différents générateurs de chaleur\n 0 Priorités uniquement basées sur le \ntemps de fonctionnementx    x    \n 1 Régulation basée sur une liste fixe des \nprioritésx x   x x   \n 2 Régulation basée sur une liste dyna -\nmique des priorités x x x  x x x  \n 3 Régulation basée sur une liste dyna -\nmique des priorités reposant sur des \nprédictionsx x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 29AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "description_full": "1.9 Ordre de priorité des différents générateurs de chaleur 0 Priorités uniquement basées sur le temps de fonctionnementx x 1 Régulation basée sur une liste fixe des prioritésx x x x 2 Régulation basée sur une liste dyna - mique des priorités x x x x x x 3 Régulation basée sur une liste dyna - mique des priorités reposant sur des prédictionsx x x x x x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 29AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A"
+    },
+    {
+      "rule_id": "1.10",
+      "group": "Chauffage",
+      "title": "Stockage thermique (TES)",
+      "levels": {
+        "0": {
+          "label": "Stockage continu",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Régulation 2 capteurs",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Prédictions de charges",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Stockage thermique présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "1.10 Régulation du fonctionnement du stockage de l’énergie thermique (TES)\n 0 Stockage continu x    x    \n 1 Régulation du stockage au moyen de 2 \ncapteursx x   x x   \n 2 Stockage basé sur les prédictions de \nchargesx x x x x x x x\n2 Régulation de l’alimentation en eau chaude sanitaire\n",
+      "description_full": "1.10 Régulation du fonctionnement du stockage de l’énergie thermique (TES) 0 Stockage continu x x 1 Régulation du stockage au moyen de 2 capteursx x x x 2 Stockage basé sur les prédictions de chargesx x x x x x x x 2 Régulation de l’alimentation en eau chaude sanitaire"
+    },
+    {
+      "rule_id": "2.1",
+      "group": "ECS",
+      "title": "Stockage ECS (élec/PAC intégrée)",
+      "levels": {
+        "0": {
+          "label": "Marche/arrêt",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Marche/arrêt + programmation",
+          "description_full": ""
+        },
+        "2": {
+          "label": "+ multi-capteurs / selon besoins",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Production ECS présente"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "2.1 Régulation du stockage de l’eau chaude sanitaire avec chauffage électrique direct ou pompe à chaleur \nélectrique intégrée\n 0 Commande automatique de mise en \nmarche/arrêtx    x    \n 1 Commande automatique de mise en \nmarche/arrêt et programmation du \ntemps de chargex x   x x   \n 2 Commande automatique de mise en \nmarche/arrêt et programmation du \ntemps de charge et gestion du stockage \navec plusieurs capteursx x x x x x x x\n",
+      "description_full": "2.1 Régulation du stockage de l’eau chaude sanitaire avec chauffage électrique direct ou pompe à chaleur électrique intégrée 0 Commande automatique de mise en marche/arrêtx x 1 Commande automatique de mise en marche/arrêt et programmation du temps de chargex x x x 2 Commande automatique de mise en marche/arrêt et programmation du temps de charge et gestion du stockage avec plusieurs capteursx x x x x x x x"
+    },
+    {
+      "rule_id": "2.2",
+      "group": "ECS",
+      "title": "Stockage ECS (générateur eau chaude)",
+      "levels": {
+        "0": {
+          "label": "Marche/arrêt",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Marche/arrêt + programmation",
+          "description_full": ""
+        },
+        "2": {
+          "label": "+ selon besoins / multi-capteurs",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "2.2 Régulation du stockage de l’eau chaude sanitaire en utilisant un générateur d’eau chaude\n 0 Commande automatique de mise en \nmarche/arrêtx    x    \n 1 Commande automatique de mise en \nmarche/arrêt et programmation du \ntemps de chargex x   x x   \n 2 Commande automatique de mise en \nmarche/arrêt, programmation du temps \nde charge et régulation de la tempéra -\nture d’alimentation selon les besoins \nou gestion du stockage avec plusieurs \ncapteursx x x x x x x x \n",
+      "description_full": "2.2 Régulation du stockage de l’eau chaude sanitaire en utilisant un générateur d’eau chaude 0 Commande automatique de mise en marche/arrêtx x 1 Commande automatique de mise en marche/arrêt et programmation du temps de chargex x x x 2 Commande automatique de mise en marche/arrêt, programmation du temps de charge et régulation de la tempéra - ture d’alimentation selon les besoins ou gestion du stockage avec plusieurs capteursx x x x x x x x"
+    },
+    {
+      "rule_id": "2.3",
+      "group": "ECS",
+      "title": "Stockage ECS solaire + appoint",
+      "levels": {
+        "0": {
+          "label": "Manuelle",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Auto priorité solaire",
+          "description_full": ""
+        },
+        "2": {
+          "label": "+ selon besoins / multi-capteurs",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Solaire thermique présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "2.3 Régulation du stockage de l’eau chaude sanitaire avec collecteur d’énergie solaire et génération de chaleur \nsupplémentaire\n 0 Régulation manuelle x    x    \n 1 Régulation automatique du stockage de \nl’énergie solaire (Priorité 1) et stockage \nsupplémentaire (Priorité 2)x x   x x   \n 2 Régulation automatique du stockage de \nl’énergie solaire (Priorité 1) et stockage \nsupplémentaire (Priorité 2) plus régu -\nlation de la température d’alimentation \nselon les besoins ou gestion du stockage \navec plusieurs capteursx x x x x x x x \na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  30AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "description_full": "2.3 Régulation du stockage de l’eau chaude sanitaire avec collecteur d’énergie solaire et génération de chaleur supplémentaire 0 Régulation manuelle x x 1 Régulation automatique du stockage de l’énergie solaire (Priorité 1) et stockage supplémentaire (Priorité 2)x x x x 2 Régulation automatique du stockage de l’énergie solaire (Priorité 1) et stockage supplémentaire (Priorité 2) plus régu - lation de la température d’alimentation selon les besoins ou gestion du stockage avec plusieurs capteursx x x x x x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 30AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A"
+    },
+    {
+      "rule_id": "2.4",
+      "group": "ECS",
+      "title": "Pompe de circulation ECS",
+      "levels": {
+        "0": {
+          "label": "Continu",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Programmation",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "2.4 Commande de la pompe de circulation d’eau chaude sanitaire\n 0 Sans régulation, fonctionnement continu x    x    \n 1 Avec programmation x x x x x x x x \n3 Régulation du refroidissement\n",
+      "description_full": "2.4 Commande de la pompe de circulation d’eau chaude sanitaire 0 Sans régulation, fonctionnement continu x x 1 Avec programmation x x x x x x x x 3 Régulation du refroidissement"
+    },
+    {
+      "rule_id": "3.1",
+      "group": "Refroidissement",
+      "title": "Régulation de l’émission (pièce)",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Centrale",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Individuelle",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Modulante + communication",
+          "description_full": ""
+        },
+        "4": {
+          "label": "+ détection occupation",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 2,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Système de refroidissement présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.1 Régulation de l’émission\n La fonction de régulation est appliquée au niveau des émetteurs (panneau de refroidissement, ventilo-\nconvecteur ou unité intérieure) ou des pièces; pour le type 1, une seule fonction peut réguler plusieurs pièces\n 0 Aucune régulation automatique x    x    \n 1 Régulation centrale automatique x    x    \n 2 Régulation individuelle par pièce x x   x x   \n 3 Régulation modulante individuelle par \npièce avec communicationx x x xa x x x xa\n 4 Régulation modulante individuelle par \npièce avec communication et détection \nd’occupation (ne s’applique pas aux \nsystèmes d’émission de froid à réaction \nlente, comme le refroidissement par le \nplancher)x x x x x x x x\n",
+      "description_full": "3.1 Régulation de l’émission La fonction de régulation est appliquée au niveau des émetteurs (panneau de refroidissement, ventilo- convecteur ou unité intérieure) ou des pièces; pour le type 1, une seule fonction peut réguler plusieurs pièces 0 Aucune régulation automatique x x 1 Régulation centrale automatique x x 2 Régulation individuelle par pièce x x x x 3 Régulation modulante individuelle par pièce avec communicationx x x xa x x x xa 4 Régulation modulante individuelle par pièce avec communication et détection d’occupation (ne s’applique pas aux systèmes d’émission de froid à réaction lente, comme le refroidissement par le plancher)x x x x x x x x"
+    },
+    {
+      "rule_id": "3.2",
+      "group": "Refroidissement",
+      "title": "Émission TABS (refroidissement)",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Centrale auto",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Centrale évoluée",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Évoluée + intermittence/rétroaction",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Système thermo-actif présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.2 Régulation de l’émission pour système thermo-actif (mode de refroidissement)\n0 Aucune régulation automatique x    x    \n1 Régulation centrale automatique x x   x x   \n2 Régulation centrale automatique évoluée x x x  x x x  \n3 Régulation centrale automatique évoluée \navec fonctionnement par intermittence \net/ou commande à rétroaction de tempé -\nrature ambiantex x x x x x x x\n",
+      "description_full": "3.2 Régulation de l’émission pour système thermo-actif (mode de refroidissement) 0 Aucune régulation automatique x x 1 Régulation centrale automatique x x x x 2 Régulation centrale automatique évoluée x x x x x x 3 Régulation centrale automatique évoluée avec fonctionnement par intermittence et/ou commande à rétroaction de tempé - rature ambiantex x x x x x x x"
+    },
+    {
+      "rule_id": "3.3",
+      "group": "Refroidissement",
+      "title": "Température réseau froid",
+      "levels": {
+        "0": {
+          "label": "T° constante",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Selon T° extérieure",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Selon besoins",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.3 Régulation de la température de l’eau réfrigérée du réseau de distribution (en départ ou en retour)\n Une fonction similaire peut être appliquée à la régulation d’un refroidissement électrique direct (par \nexemple, des unités de refroidissement compactes, des unités séparées) pour les pièces individuelles\n 0 Régulation de température constante x    x    \n 1 Régulation en fonction de la température \nextérieurex x   x x   \n 2 Régulation en fonction des besoins x x x x x x x x\n",
+      "description_full": "3.3 Régulation de la température de l’eau réfrigérée du réseau de distribution (en départ ou en retour) Une fonction similaire peut être appliquée à la régulation d’un refroidissement électrique direct (par exemple, des unités de refroidissement compactes, des unités séparées) pour les pièces individuelles 0 Régulation de température constante x x 1 Régulation en fonction de la température extérieurex x x x 2 Régulation en fonction des besoins x x x x x x x x"
+    },
+    {
+      "rule_id": "3.4",
+      "group": "Refroidissement",
+      "title": "Commande des pompes de distribution",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Marche/arrêt",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Multi-niveau",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Vitesse variable (Δp interne)",
+          "description_full": ""
+        },
+        "4": {
+          "label": "Vitesse variable (demande externe)",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.4 Régulation des pompes de distribution du réseau\n Les pompes régulées peuvent être installées à différents niveaux dans le réseau\n 0 Aucune régulation automatique x    x    \n 1 Commande de mise en marche/arrêt x x   x x   \n 2 Commande multi-niveau x x x  x x x  \n 3 Commande des pompes à vitesse va -\nriable (estimations (internes) du groupe \nde pompes)x x x x x x x x\n 4 Commande des pompes à vitesse \nvariable (signal de demande externe)x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 31AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "description_full": "3.4 Régulation des pompes de distribution du réseau Les pompes régulées peuvent être installées à différents niveaux dans le réseau 0 Aucune régulation automatique x x 1 Commande de mise en marche/arrêt x x x x 2 Commande multi-niveau x x x x x x 3 Commande des pompes à vitesse va - riable (estimations (internes) du groupe de pompes)x x x x x x x x 4 Commande des pompes à vitesse variable (signal de demande externe)x x x x x x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 31AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A"
+    },
+    {
+      "rule_id": "3.4.a",
+      "group": "Refroidissement",
+      "title": "Équilibrage hydronique distribution froid",
+      "levels": {
+        "0": {
+          "label": "Aucun",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Statique émetteurs",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Statique émetteurs+groupe",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Statique + dynamique groupe",
+          "description_full": ""
+        },
+        "4": {
+          "label": "Dynamique par émetteur",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [
+          ">10 émetteurs"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.4.a Équilibrage hydronique du système de distribution de froid (y compris la contribution à l’équilibrage du \ncôté de l’émission)\n L’équilibrage hydronique est appliqué à un groupe comprenant plus de 10 émetteurs de froid (panneau de \nrefroidissement, ventilo-convecteur ou unité intérieure), en plus de l’équilibrage statique des émetteurs \nde froid individuels\n 0 Aucun équilibrage x x\n 1 Équilibrage statique de chaque émetteur, \nsans équilibrage du groupex x x\n 2 Équilibrage statique de chaque émetteur \net équilibrage statique du groupex x x\n3 Équilibrage statique de chaque émetteur \net équilibrage dynamique du groupex x x x x\n4 Équilibrage dynamique de chaque émet -\nteurx x x x x x x x\n",
+      "description_full": "3.4.a Équilibrage hydronique du système de distribution de froid (y compris la contribution à l’équilibrage du côté de l’émission) L’équilibrage hydronique est appliqué à un groupe comprenant plus de 10 émetteurs de froid (panneau de refroidissement, ventilo-convecteur ou unité intérieure), en plus de l’équilibrage statique des émetteurs de froid individuels 0 Aucun équilibrage x x 1 Équilibrage statique de chaque émetteur, sans équilibrage du groupex x x 2 Équilibrage statique de chaque émetteur et équilibrage statique du groupex x x 3 Équilibrage statique de chaque émetteur et équilibrage dynamique du groupex x x x x 4 Équilibrage dynamique de chaque émet - teurx x x x x x x x"
+    },
+    {
+      "rule_id": "3.5",
+      "group": "Refroidissement",
+      "title": "Régulation intermittente émission/distribution",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Programme fixe",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Optimisation marche/arrêt",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Évaluation des besoins",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.5 Régulation par intermittence de l’émission et/ou de la distribution\n Un seul régulateur peut réguler plusieurs pièces/zones ayant les mêmes profils d’occupation\n 0 Aucune régulation automatique x    x    \n 1 Régulation automatique avec pro -\ngramme fixex x   x x   \n 2 Régulation automatique avec optimisa -\ntion de la mise en marche/arrêtx x x  x x x  \n 3 Régulation automatique avec évaluation \ndes besoinsx x x x x x x x\n",
+      "description_full": "3.5 Régulation par intermittence de l’émission et/ou de la distribution Un seul régulateur peut réguler plusieurs pièces/zones ayant les mêmes profils d’occupation 0 Aucune régulation automatique x x 1 Régulation automatique avec pro - gramme fixex x x x 2 Régulation automatique avec optimisa - tion de la mise en marche/arrêtx x x x x x 3 Régulation automatique avec évaluation des besoinsx x x x x x x x"
+    },
+    {
+      "rule_id": "3.6",
+      "group": "Refroidissement",
+      "title": "Asservissement chauffage/refroidissement",
+      "levels": {
+        "0": {
+          "label": "Aucun",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Partiel",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Total",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.6 Asservissement entre la régulation du chauffage et celle du refroidissement pour l’émission et/ou la \ndistribution\n 0 Aucun asservissement x    x    \n 1 Asservissement partiel (en fonction du \nsystème de chauffage, de ventilation et \nde climatisation (CVC))x x x  x x x  \n 2 Asservissement total x x x x x x x x\n",
+      "description_full": "3.6 Asservissement entre la régulation du chauffage et celle du refroidissement pour l’émission et/ou la distribution 0 Aucun asservissement x x 1 Asservissement partiel (en fonction du système de chauffage, de ventilation et de climatisation (CVC))x x x x x x 2 Asservissement total x x x x x x x x"
+    },
+    {
+      "rule_id": "3.7",
+      "group": "Refroidissement",
+      "title": "Régulation générateurs de froid",
+      "levels": {
+        "0": {
+          "label": "T° constante",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Selon T° extérieure",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Selon charge",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.7 Régulation de générateurs de froid\n Le but recherché est en général d’augmenter le plus possible la température du départ d’eau réfrigérée\n 0 Régulation de température constante x    x    \n 1 Régulation de température variable en \nfonction de la température extérieurex x x  x x x  \n 2 Régulation de température variable en \nfonction de la chargex x x x x x x x\n",
+      "description_full": "3.7 Régulation de générateurs de froid Le but recherché est en général d’augmenter le plus possible la température du départ d’eau réfrigérée 0 Régulation de température constante x x 1 Régulation de température variable en fonction de la température extérieurex x x x x x 2 Régulation de température variable en fonction de la chargex x x x x x x x"
+    },
+    {
+      "rule_id": "3.8",
+      "group": "Refroidissement",
+      "title": "Priorité générateurs de froid",
+      "levels": {
+        "0": {
+          "label": "Temps de fonctionnement",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Charges",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Rendement/Caractéristiques",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Prédictions",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.8 Ordre de priorité des générateurs de froid\n 0 Priorités uniquement basées sur le \ntemps de fonctionnementx    x    \n 1 Priorités uniquement basées sur les \nchargesx x   x x   \na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  32AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n 2 Priorités basées sur le rendement et les \ncaractéristiques des générateursx x x  x x x  \n 3 Ordre de priorité basé sur les prédic -\ntions de chargesx x x x x x x x\n",
+      "description_full": "3.8 Ordre de priorité des générateurs de froid 0 Priorités uniquement basées sur le temps de fonctionnementx x 1 Priorités uniquement basées sur les chargesx x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 32AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A 2 Priorités basées sur le rendement et les caractéristiques des générateursx x x x x x 3 Ordre de priorité basé sur les prédic - tions de chargesx x x x x x x x"
+    },
+    {
+      "rule_id": "3.9",
+      "group": "Refroidissement",
+      "title": "Stockage thermique (TES)",
+      "levels": {
+        "0": {
+          "label": "Continu",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Programmé",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Prédictions",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Stockage thermique présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "3.9 Régulation du stockage de l’énergie thermique (TES, Thermal Energy Storage)\n 0 Stockage continu x    x    \n 1 Stockage programmé x x   x x   \n 2 Stockage basé sur les prédictions de \nchargesx x x x x x x x\n4 Régulation de la ventilation et de la climatisation\n",
+      "description_full": "3.9 Régulation du stockage de l’énergie thermique (TES, Thermal Energy Storage) 0 Stockage continu x x 1 Stockage programmé x x x x 2 Stockage basé sur les prédictions de chargesx x x x x x x x 4 Régulation de la ventilation et de la climatisation"
+    },
+    {
+      "rule_id": "4.1",
+      "group": "Ventilation",
+      "title": "Débit d’air au niveau pièce",
+      "levels": {
+        "0": {
+          "label": "Aucune (constant)",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Programmée",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Selon occupation",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Selon besoins IAQ",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.1 Régulation de l’alimentation en air au niveau de la pièce\n 0 Aucune régulation automatique x    x    \n 1 Régulation programmée x x x  x x x  \n 2 Régulation basée sur l’occupation x x x x x x\n3 Régulation en fonction des besoins x x x x x x x x\n",
+      "description_full": "4.1 Régulation de l’alimentation en air au niveau de la pièce 0 Aucune régulation automatique x x 1 Régulation programmée x x x x x x 2 Régulation basée sur l’occupation x x x x x x 3 Régulation en fonction des besoins x x x x x x x x"
+    },
+    {
+      "rule_id": "4.2",
+      "group": "Ventilation",
+      "title": "Température air ambiant (tout air)",
+      "levels": {
+        "0": {
+          "label": "Marche/arrêt",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Régulation continue",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Régulation optimisée",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.2 Régulation de la température de l’air ambiant (systèmes tout air)\n 0 Commande de mise en marche/arrêt x    x    \n 1 Régulation continue x x   x x   \n 2 Régulation optimisée x x x x x x x x\n",
+      "description_full": "4.2 Régulation de la température de l’air ambiant (systèmes tout air) 0 Commande de mise en marche/arrêt x x 1 Régulation continue x x x x 2 Régulation optimisée x x x x x x x x"
+    },
+    {
+      "rule_id": "4.3",
+      "group": "Ventilation",
+      "title": "Coordination air/ système statique",
+      "levels": {
+        "0": {
+          "label": "Non coordonnée",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Coordonnée",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.3 Régulation de la température de l’air ambiant (systèmes air-eau combinés)\n 0 Aucune coordination x    x    \n 1 Avec coordination x x x x x x x x\n",
+      "description_full": "4.3 Régulation de la température de l’air ambiant (systèmes air-eau combinés) 0 Aucune coordination x x 1 Avec coordination x x x x x x x x"
+    },
+    {
+      "rule_id": "4.4",
+      "group": "Ventilation",
+      "title": "Débit/rapport air extérieur",
+      "levels": {
+        "0": {
+          "label": "Fixe",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Étagé calendrier",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Étagé occupation",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Progressif capteurs",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.4 Régulation du débit d’air extérieur\n 0 Rapport ou débit d’air extérieur fixe x x   x  x   \n 1 Rapport ou débit d’air extérieur (faible/\nélevé) étagé (calendrier et horaires)x x x  x x  x  \n 2 Rapport ou débit d’air extérieur (faible/\nélevé) étagé (selon l’occupation)x x x  x x x  \n 3 Régulation progressive x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 33AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "description_full": "4.4 Régulation du débit d’air extérieur 0 Rapport ou débit d’air extérieur fixe x x x x 1 Rapport ou débit d’air extérieur (faible/ élevé) étagé (calendrier et horaires)x x x x x x 2 Rapport ou débit d’air extérieur (faible/ élevé) étagé (selon l’occupation)x x x x x x 3 Régulation progressive x x x x x x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 33AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A"
+    },
+    {
+      "rule_id": "4.5",
+      "group": "Ventilation",
+      "title": "Débit/pression au niveau CTA",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Horaires marche/arrêt",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Multi-niveau",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Auto sans réinit",
+          "description_full": ""
+        },
+        "4": {
+          "label": "Auto avec réinit",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 3,
+          "A": 4
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.5 Régulation du débit ou de la pression d’air au niveau de la centrale de traitement d’air\n 0 Aucune régulation automatique x    x    \n 1 Programmation des heures de mise en \nmarche/arrêtx x   x x   \n 2 Régulation multi-niveau x x x  x x x  \n 3 Régulation automatique du débit ou de la \npression (sans réinitialisation)x x x x x x x x\n 4 Régulation automatique du débit ou de la \npression (avec réinitialisation)x x x x x x x x\n",
+      "description_full": "4.5 Régulation du débit ou de la pression d’air au niveau de la centrale de traitement d’air 0 Aucune régulation automatique x x 1 Programmation des heures de mise en marche/arrêtx x x x 2 Régulation multi-niveau x x x x x x 3 Régulation automatique du débit ou de la pression (sans réinitialisation)x x x x x x x x 4 Régulation automatique du débit ou de la pression (avec réinitialisation)x x x x x x x x"
+    },
+    {
+      "rule_id": "4.6",
+      "group": "Ventilation",
+      "title": "Récupération chaleur: antigel",
+      "levels": {
+        "0": {
+          "label": "Sans protection",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Avec protection",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.6 Régulation de la récupération de chaleur: protection contre le gel\n 0 Sans protection contre le gel x    x    \n 1 Avec protection contre le gel x x x x x x x x\n",
+      "description_full": "4.6 Régulation de la récupération de chaleur: protection contre le gel 0 Sans protection contre le gel x x 1 Avec protection contre le gel x x x x x x x x"
+    },
+    {
+      "rule_id": "4.7",
+      "group": "Ventilation",
+      "title": "Récupération chaleur: surchauffe",
+      "levels": {
+        "0": {
+          "label": "Sans régulation",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Avec régulation",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.7 Régulation de la récupération de chaleur: prévention des surchauffes\n 0 Sans régulation des surchauffes x    x    \n 1 Avec régulation des surchauffes x x x x x x x x\n",
+      "description_full": "4.7 Régulation de la récupération de chaleur: prévention des surchauffes 0 Sans régulation des surchauffes x x 1 Avec régulation des surchauffes x x x x x x x x"
+    },
+    {
+      "rule_id": "4.8",
+      "group": "Ventilation",
+      "title": "Free cooling",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Nocturne",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Naturel",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Enthalpie",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.8 Refroidissement mécanique naturel\n 0 Aucune régulation automatique x    x    \n 1 Refroidissement nocturne x x   x x   \n 2 Refroidissement naturel x x x x x x\n 3 Régulation directe h,x (enthalpie) x x x x x x x x\n",
+      "description_full": "4.8 Refroidissement mécanique naturel 0 Aucune régulation automatique x x 1 Refroidissement nocturne x x x x 2 Refroidissement naturel x x x x x x 3 Régulation directe h,x (enthalpie) x x x x x x x x"
+    },
+    {
+      "rule_id": "4.9",
+      "group": "Ventilation",
+      "title": "Température air soufflé (CTA)",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Consigne constante",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Variable selon T° ext",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Variable selon charge",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.9 Régulation de la température de l’air introduit\n 0 Aucune régulation automatique x    x    \n 1 Point de consigne constant x x   x x   \n 2 Point de consigne variable avec compen -\nsation de la température extérieurex x x  x x x  \n 3 Point de consigne variable avec compen -\nsation en fonction de la chargex x x x x x x x\n",
+      "description_full": "4.9 Régulation de la température de l’air introduit 0 Aucune régulation automatique x x 1 Point de consigne constant x x x x 2 Point de consigne variable avec compen - sation de la température extérieurex x x x x x 3 Point de consigne variable avec compen - sation en fonction de la chargex x x x x x x x"
+    },
+    {
+      "rule_id": "4.10",
+      "group": "Ventilation",
+      "title": "Humidité",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Point de rosée",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Régulation directe",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "4.10 Régulation de l’humidité\n 0 Aucune régulation automatique x    x    \n 1 Régulation en fonction du point de rosée x x   x x   \n 2 Régulation d’humidité directe x x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  34AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n5 Commande de l’éclairage\n",
+      "description_full": "4.10 Régulation de l’humidité 0 Aucune régulation automatique x x 1 Régulation en fonction du point de rosée x x x x 2 Régulation d’humidité directe x x x x x x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 34AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A 5 Commande de l’éclairage"
+    },
+    {
+      "rule_id": "5.1",
+      "group": "Éclairage",
+      "title": "Commande basée sur l’occupation",
+      "levels": {
+        "0": {
+          "label": "Manuel",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Manuel + extinction auto",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Auto (présence)",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Manuel + auto partiel",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "5.1 Commande basée sur l’occupation\n 0 Interrupteur manuel de mise en marche/\narrêtx x   x    \n 1 Interrupteur manuel de mise en marche/\narrêt + signal supplémentaire d’extinc -\ntionx x x  x x   \n 2 Détection automatique (mise en marche \nautomatique)bx x x x x x x  x\n 3 Détection automatique (mise en marche \nmanuelle) bx x x x x x x x\n",
+      "description_full": "5.1 Commande basée sur l’occupation 0 Interrupteur manuel de mise en marche/ arrêtx x x 1 Interrupteur manuel de mise en marche/ arrêt + signal supplémentaire d’extinc - tionx x x x x 2 Détection automatique (mise en marche automatique)bx x x x x x x x 3 Détection automatique (mise en marche manuelle) bx x x x x x x x"
+    },
+    {
+      "rule_id": "5.2",
+      "group": "Éclairage",
+      "title": "Régulation lumière naturelle",
+      "levels": {
+        "0": {
+          "label": "Manuelle centralisée",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Manuelle zone",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Commutation auto",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Modulation auto",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "5.2 Régulation de l’intensité lumineuse/de la lumière naturelle\n 0 Manuelle (centrale) x    x x   \n 1 Manuelle (par pièce/zone) x x x  x x   \n 2 Commutation automatique b x x x  x x x  \n 3 Modulation automatique b x x x x x x x x\n6 Commande des stores\n 0 Fonctionnement manuel x    x    \n 1 Fonctionnement motorisé avec com -\nmande manuellex x   x    \n 2 Fonctionnement motorisé avec com -\nmande automatiquex x x  x x   \n 3 Commande combinée de l’éclairage, des \nstores et du système de chauffage, de \nventilation et de climatisation (CVC)x x x x x x x x\n7 Gestion technique pour les foyers domestiques et les bâtiments\n",
+      "description_full": "5.2 Régulation de l’intensité lumineuse/de la lumière naturelle 0 Manuelle (centrale) x x x 1 Manuelle (par pièce/zone) x x x x x 2 Commutation automatique b x x x x x x 3 Modulation automatique b x x x x x x x x 6 Commande des stores 0 Fonctionnement manuel x x 1 Fonctionnement motorisé avec com - mande manuellex x x 2 Fonctionnement motorisé avec com - mande automatiquex x x x x 3 Commande combinée de l’éclairage, des stores et du système de chauffage, de ventilation et de climatisation (CVC)x x x x x x x x 7 Gestion technique pour les foyers domestiques et les bâtiments"
+    },
+    {
+      "rule_id": "6.1",
+      "group": "Stores",
+      "title": "Commande des stores",
+      "levels": {
+        "0": {
+          "label": "Manuelle",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Motorisée manuelle",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Motorisée automatique",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Commande combinée (éclairage+stores+CVC)",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "",
+      "description_full": ""
+    },
+    {
+      "rule_id": "7.1",
+      "group": "GTB",
+      "title": "Gestion des points de consigne",
+      "levels": {
+        "0": {
+          "label": "Réglage manuel local",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Adaptation décentralisée",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Adaptation centrale",
+          "description_full": ""
+        },
+        "3": {
+          "label": "Centrale + rétroaction utilisateurs",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 3
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.1 Gestion des points de consigne\n 0 Réglage manuel individuel pièce par \npiècex x   x    \n 1 Adaptation uniquement à partir de \npièces réparties/décentraliséesx x x  x x   \n 2 Adaptation à partir d’une pièce centrale x x x x x x x  \n 3 Adaptation à partir d’une pièce centrale \navec rétroaction fréquente des entrées \ndes utilisateursx x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 35AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n",
+      "description_full": "7.1 Gestion des points de consigne 0 Réglage manuel individuel pièce par piècex x x 1 Adaptation uniquement à partir de pièces réparties/décentraliséesx x x x x 2 Adaptation à partir d’une pièce centrale x x x x x x x 3 Adaptation à partir d’une pièce centrale avec rétroaction fréquente des entrées des utilisateursx x x x x x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 35AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A"
+    },
+    {
+      "rule_id": "7.2",
+      "group": "GTB",
+      "title": "Gestion des temps de fonctionnement",
+      "levels": {
+        "0": {
+          "label": "Réglage manuel",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Horaire fixe + préconditionnement fixe",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Horaire + adaptation centrale + préconditionnement variable",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 2,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.2 Gestion des temps de fonctionnement\n 0 Réglage manuel (activation de l’installa -\ntion)x x   x    \n 1 Réglage individuel d’après un horaire \nprédéfini incluant des phases de précon -\nditionnement fixesx x x  x x   \n 2 Réglage individuel d’après un horaire \nprédéfini; adaptation à partir d’une pièce \ncentrale; phases de préconditionnement \nvariablesx x x x x x x x\n",
+      "description_full": "7.2 Gestion des temps de fonctionnement 0 Réglage manuel (activation de l’installa - tion)x x x 1 Réglage individuel d’après un horaire prédéfini incluant des phases de précon - ditionnement fixesx x x x x 2 Réglage individuel d’après un horaire prédéfini; adaptation à partir d’une pièce centrale; phases de préconditionnement variablesx x x x x x x x"
+    },
+    {
+      "rule_id": "7.3",
+      "group": "GTB",
+      "title": "Détection des défauts & aide au diagnostic",
+      "levels": {
+        "0": {
+          "label": "Aucune indication centralisée",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Alarmes centralisées",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Alarmes + diagnostic",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 1,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.3 Détection des défauts des systèmes techniques du bâtiment et aide au diagnostic de ces défauts\n 0 Aucune indication centralisée des \ndéfauts détectés et des alarmesx x   x    \n 1 Avec indication centralisée des défauts \ndétectés et des alarmesx x x  x x   \n 2 Avec indication centralisée des défauts \ndétectés et des alarmes/fonctions de \ndiagnosticx x x x x x x x\n",
+      "description_full": "7.3 Détection des défauts des systèmes techniques du bâtiment et aide au diagnostic de ces défauts 0 Aucune indication centralisée des défauts détectés et des alarmesx x x 1 Avec indication centralisée des défauts détectés et des alarmesx x x x x 2 Avec indication centralisée des défauts détectés et des alarmes/fonctions de diagnosticx x x x x x x x"
+    },
+    {
+      "rule_id": "7.4",
+      "group": "GTB",
+      "title": "Reporting conso & conditions intérieures",
+      "levels": {
+        "0": {
+          "label": "Valeurs réelles uniquement",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Tendances + conso",
+          "description_full": ""
+        },
+        "2": {
+          "label": "Analyse + performance + étalonnage",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 2
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 1,
+          "A": 2
+        }
+      },
+      "applicability": {
+        "conditions": [],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.4 Compte-rendu des informations concernant la consommation énergétique et les conditions intérieures\n 0 Indication des valeurs réelles uni -\nquement (par exemple températures, \nvaleurs mesurées)x x   x x   \n 1 Fonctions d’analyse de tendances et \ndétermination de la consommationx x x  x x x  \n 2 Analyse, évaluation de la performance, \nétalonnagex x x x x x x x\n",
+      "description_full": "7.4 Compte-rendu des informations concernant la consommation énergétique et les conditions intérieures 0 Indication des valeurs réelles uni - quement (par exemple températures, valeurs mesurées)x x x x 1 Fonctions d’analyse de tendances et détermination de la consommationx x x x x x 2 Analyse, évaluation de la performance, étalonnagex x x x x x x x"
+    },
+    {
+      "rule_id": "7.5",
+      "group": "GTB",
+      "title": "Production locale / ENR",
+      "levels": {
+        "0": {
+          "label": "Non régulée",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Coordination + stockage + autoconsommation",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Production locale/ENR présente"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.5 Production d’énergie locale et énergies renouvelables\n 0 Génération non régulée en fonction de \nla disponibilité variable des sources \nd’énergies renouvelables et/ou du temps \nde production combinée de chaleur et \nd’électricité; le surplus sera transféré \ndans le réseaux x   x x   \n 1 Coordination des sources d’énergies \nrenouvelables et de la production combi -\nnée de chaleur et d’électricité en fonction \ndu profil de la demande énergétique \nlocale incluant la gestion du stockage de \nl’énergie; optimisation de la consomma -\ntion proprex x x x x x x x\n",
+      "description_full": "7.5 Production d’énergie locale et énergies renouvelables 0 Génération non régulée en fonction de la disponibilité variable des sources d’énergies renouvelables et/ou du temps de production combinée de chaleur et d’électricité; le surplus sera transféré dans le réseaux x x x 1 Coordination des sources d’énergies renouvelables et de la production combi - née de chaleur et d’électricité en fonction du profil de la demande énergétique locale incluant la gestion du stockage de l’énergie; optimisation de la consomma - tion proprex x x x x x x x"
+    },
+    {
+      "rule_id": "7.6",
+      "group": "GTB",
+      "title": "Récupération/transfert de chaleur",
+      "levels": {
+        "0": {
+          "label": "Instantané",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Maîtrisé (incluant stockage)",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Récupération/transfert présent"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.6 Récupération des déperditions de chaleur et transfert de chaleur\n 0 Utilisation instantanée des déperditions de \nchaleur ou du transfert de chaleurx    x    \na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).ISO 52120-1:2021(F)\nTableau 6 (suite)\n   © ISO 2021 – Tous droits réservés\n  36AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03\n   Définition\tdes\tclasses\n   Résidentiel Non résidentiel\n   D C B A D C B A\n 1 Utilisation maîtrisée des déperditions \nde chaleur ou du transfert de chaleur (y \ncompris le stockage/la consommation de \nl’énergie thermique stockée)x x x x x x x x\n",
+      "description_full": "7.6 Récupération des déperditions de chaleur et transfert de chaleur 0 Utilisation instantanée des déperditions de chaleur ou du transfert de chaleurx x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.).ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 36AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03 Définition des classes Résidentiel Non résidentiel D C B A D C B A 1 Utilisation maîtrisée des déperditions de chaleur ou du transfert de chaleur (y compris le stockage/la consommation de l’énergie thermique stockée)x x x x x x x x"
+    },
+    {
+      "rule_id": "7.7",
+      "group": "GTB",
+      "title": "Intégration réseau intelligent",
+      "levels": {
+        "0": {
+          "label": "Aucune",
+          "description_full": ""
+        },
+        "1": {
+          "label": "Gestion selon charge réseau (demand response)",
+          "description_full": ""
+        }
+      },
+      "class_requirements": {
+        "Résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        },
+        "Non résidentiel": {
+          "C": 0,
+          "B": 0,
+          "A": 1
+        }
+      },
+      "applicability": {
+        "conditions": [
+          "Fonction smart grid pertinente"
+        ],
+        "exclusions": []
+      },
+      "notes": [],
+      "raw_text_excerpt": "7.7 Intégration dans un réseau intelligent\n 0 Aucune harmonisation entre le réseau et \nles systèmes énergétiques du bâtiment; le \nbâtiment est exploité indépendamment de \nla charge du réseaux x   x x   \n 1 Les systèmes énergétiques du bâtiment \nsont gérés et exploités en fonction de la \ncharge du réseau; la gestion de la demande \nest utilisée pour le transfert de chargesx x x x x x x x\na Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage \nmural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3.\nb Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les \nescaliers, les couloirs, etc.).\n5.7\t Application\tdes\tfonctions\tBAC\tà\tun\tSMÉ\tet \tmaintien\tde\tl’efficacité\ténergétique\tde\t\nBAC\n5.7.1 Généralités\nUne fois qu’un système d’automatisation et de régulation du bâtiment (BACS) est installé, deux questions \nprincipales se posent au regard de ce document:\na) Comment une automatisation et une régulation du bâtiment (BAC) peuvent-elles venir à l’appui \nd’un système de management de l’énergie (SMÉ) pour la partie bâtiment?\nb) Quelles activités connexes doivent être prévues pour maintenir et renforcer l’impact d’un système \nBAC/GTB sur l’efficacité énergétique au sein des bâtiments et pour améliorer sa classe actuelle?\n5.7.2 Application des fonctions BAC à un SMÉ\nLe SMÉ spécifié par l’ISO 50001 est destiné à améliorer la performance énergétique par la gestion \nsystématique de la consommation d’énergie. L’ISO 50001 spécifie les exigences visant à améliorer en \ncontinu l’efficacité et le caractère durable de l’usage énergétique pour la production/le traitement, le \ntransport et les bâtiments.\nL’utilisation des systèmes BAC/GTB encourage différents niveaux et fonctions d’organisation à mettre \nen œuvre un SMÉ dans les bâtiments, et simplifie et améliore nettement le processus continu de SMÉ \npour les bâtiments.\nUne bonne méthode est décrite dans l’ Annexe  E. Cette annexe explique en détail l’application et \nl’utilisation des systèmes BAC/GTB pour un SMÉ destiné aux bâtiments.\nLe Tableau  E.1 donne un aperçu des exigences des systèmes BAC/GTB ainsi que des options et fonctions \nutilisées pour soutenir la mise en œuvre et le traitement des différents stades de l’ISO 50001 concernant \nle SMÉ dans les bâtiments.\nL’Annexe  E indique également qu’une équipe compétente et dédiée aux systèmes BAC/GTB doit être \naffectée au projet.ISO 52120-1:2021(F)\nTableau 6 (suite)\n© ISO 2021 – Tous droits réservés   \n 37AFNOR \nRUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03",
+      "description_full": "7.7 Intégration dans un réseau intelligent 0 Aucune harmonisation entre le réseau et les systèmes énergétiques du bâtiment; le bâtiment est exploité indépendamment de la charge du réseaux x x x 1 Les systèmes énergétiques du bâtiment sont gérés et exploités en fonction de la charge du réseau; la gestion de la demande est utilisée pour le transfert de chargesx x x x x x x x a Dans le cas des systèmes d’émission de chaleur et de froid à réaction lente (par exemple, chauffage par le sol, chauffage mural, etc.), la classe d’efficacité A est affectée aux fonctions 1.1.3 et 3.1.3. b Dans les bâtiments résidentiels, il est généralement appliqué uniquement aux espaces publics (par exemple, les escaliers, les couloirs, etc.). 5.7 Application des fonctions BAC à un SMÉ et maintien de l’efficacité énergétique de BAC 5.7.1 Généralités Une fois qu’un système d’automatisation et de régulation du bâtiment (BACS) est installé, deux questions principales se posent au regard de ce document: a) Comment une automatisation et une régulation du bâtiment (BAC) peuvent-elles venir à l’appui d’un système de management de l’énergie (SMÉ) pour la partie bâtiment? b) Quelles activités connexes doivent être prévues pour maintenir et renforcer l’impact d’un système BAC/GTB sur l’efficacité énergétique au sein des bâtiments et pour améliorer sa classe actuelle? 5.7.2 Application des fonctions BAC à un SMÉ Le SMÉ spécifié par l’ISO 50001 est destiné à améliorer la performance énergétique par la gestion systématique de la consommation d’énergie. L’ISO 50001 spécifie les exigences visant à améliorer en continu l’efficacité et le caractère durable de l’usage énergétique pour la production/le traitement, le transport et les bâtiments. L’utilisation des systèmes BAC/GTB encourage différents niveaux et fonctions d’organisation à mettre en œuvre un SMÉ dans les bâtiments, et simplifie et améliore nettement le processus continu de SMÉ pour les bâtiments. Une bonne méthode est décrite dans l’ Annexe E. Cette annexe explique en détail l’application et l’utilisation des systèmes BAC/GTB pour un SMÉ destiné aux bâtiments. Le Tableau E.1 donne un aperçu des exigences des systèmes BAC/GTB ainsi que des options et fonctions utilisées pour soutenir la mise en œuvre et le traitement des différents stades de l’ISO 50001 concernant le SMÉ dans les bâtiments. L’Annexe E indique également qu’une équipe compétente et dédiée aux systèmes BAC/GTB doit être affectée au projet.ISO 52120-1:2021(F) Tableau 6 (suite) © ISO 2021 – Tous droits réservés 37AFNOR RUSU STPHANIE (stephanie.rusu@crsystem.eu) Pour : CR SYSTEMNF EN ISO 52120-12022-03"
+    }
+  ]
+}
