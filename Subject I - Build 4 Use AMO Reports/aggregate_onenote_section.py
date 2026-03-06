@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-aggregate_onenote_section.py
+"""aggregate_onenote_section.py
 
 Purpose
 -------
@@ -13,11 +12,20 @@ from the whole section.
 
 Inputs
 ------
-process/onenote/<notebook>/pages/*.json   (output of process_onenote.py) citeturn21fetch_file_result
+process/onenote/<notebook>/pages/*.json (output of process_onenote.py)
 
 Outputs
 -------
 process/onenote_aggregates/<notebook>/<section_slug>.json
+
+HARDENING (small addition)
+--------------------------
+Adds a canonical `section_context` object at the top-level, while keeping legacy keys:
+- notebook
+- onenote_section
+- section_slug
+
+This makes downstream artifacts self-describing and prevents ambiguity.
 
 Usage
 -----
@@ -31,18 +39,13 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+from section_context import build_section_context, slugify
+
 
 def norm(s: str) -> str:
     s = (s or "").lower()
     s = re.sub(r"\s+", " ", s).strip()
     return s
-
-
-def slugify(s: str) -> str:
-    s = (s or "").strip().lower()
-    s = re.sub(r"[^a-z0-9]+", "_", s)
-    s = re.sub(r"_+", "_", s).strip("_")
-    return s or "section"
 
 
 def load_pages(onenote_root: Path) -> List[Dict[str, Any]]:
@@ -60,7 +63,7 @@ def load_pages(onenote_root: Path) -> List[Dict[str, Any]]:
 
 def extract_text_blocks(page: Dict[str, Any]) -> List[Tuple[str, str]]:
     """Return (type, text) from heading/paragraph/image_ocr/audio blocks."""
-    out = []
+    out: List[Tuple[str, str]] = []
     for b in page.get("blocks", []) or []:
         t = b.get("type")
         if t in ("heading", "paragraph", "image_ocr"):
@@ -78,7 +81,7 @@ def equipment_family(title: str) -> str:
     """Very lightweight equipment clustering based on page title."""
     t = norm(title)
     # HVAC / air handling
-    if re.search(r"\bcta\b", t) or "centrale de traitement d'air" in t or "centrale de traitement d air" in t:
+    if re.search(r"cta", t) or "centrale de traitement d'air" in t or "centrale de traitement d air" in t:
         return "CTA / Traitement d'air"
     if "extracteur" in t or "extraction" in t:
         return "Extracteurs / Ventilation"
@@ -90,7 +93,7 @@ def equipment_family(title: str) -> str:
     # Electrical
     if "tgbt" in t:
         return "Électrique / TGBT"
-    if re.search(r"\btd\b", t) or "tableau divisionnaire" in t:
+    if re.search(r"td", t) or "tableau divisionnaire" in t:
         return "Électrique / TD"
     # Control / GTB
     if "supervision" in t:
@@ -116,17 +119,18 @@ def main():
 
     pages = load_pages(onenote_root)
 
-    # Filter pages by OneNote section name (page packs contain 'section') citeturn21fetch_file_result
+    # Filter pages by OneNote section name (page packs contain 'section')
     selected = [p for p in pages if (p.get("section") or p.get("metadata", {}).get("section")) == target_section]
     if not selected:
         # helpful error message with available sections
         secs = sorted({(p.get("section") or p.get("metadata", {}).get("section") or "") for p in pages if (p.get("section") or p.get("metadata", {}).get("section"))})
-        raise SystemExit(f"No pages found for section='{target_section}'. Available sections: {secs[:30]}{' ...' if len(secs)>30 else ''}")
+        raise SystemExit(
+            f"No pages found for section='{target_section}'. Available sections: {secs[:30]}{' ...' if len(secs)>30 else ''}"
+        )
 
     # Build aggregation
-    clusters = defaultdict(list)
-    page_index = []
-
+    clusters: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    page_index: List[Dict[str, Any]] = []
     for p in selected:
         pid = p.get("page_id") or p.get("metadata", {}).get("page_id") or ""
         title = p.get("title") or p.get("metadata", {}).get("title") or pid
@@ -137,35 +141,49 @@ def main():
         auds = (p.get("assets", {}) or {}).get("audio", []) or []
         text_blocks = extract_text_blocks(p)
 
-        page_index.append({
-            "page_id": pid,
-            "title": title,
-            "family": fam,
-            "num_images": len(imgs),
-            "num_audio": len(auds),
-            "text_blocks": [{"type": t, "text": txt[:800]} for t, txt in text_blocks],
-            "images": imgs[:12],  # keep some paths for future template mapping
-        })
+        page_index.append(
+            {
+                "page_id": pid,
+                "title": title,
+                "family": fam,
+                "num_images": len(imgs),
+                "num_audio": len(auds),
+                "text_blocks": [{"type": t, "text": txt[:800]} for t, txt in text_blocks],
+                "images": imgs[:12],
+            }
+        )
 
-        clusters[fam].append({
-            "page_id": pid,
-            "title": title,
-            "num_images": len(imgs),
-            "notable_text": [txt for _, txt in text_blocks if len(txt) > 3][:20],
-        })
+        clusters[fam].append(
+            {
+                "page_id": pid,
+                "title": title,
+                "num_images": len(imgs),
+                "notable_text": [txt for _, txt in text_blocks if len(txt) > 3][:20],
+            }
+        )
 
-    inventory = []
+    inventory: List[Dict[str, Any]] = []
     for fam, items in sorted(clusters.items(), key=lambda x: (-len(x[1]), x[0])):
-        inventory.append({
-            "family": fam,
-            "count": len(items),
-            "titles": [it["title"] for it in items][:30],
-        })
+        inventory.append(
+            {
+                "family": fam,
+                "count": len(items),
+                "titles": [it["title"] for it in items][:30],
+            }
+        )
+
+    # HARDENING: canonical section identity
+    ctx = build_section_context(notebook, target_section)
 
     agg = {
-        "notebook": notebook,
-        "onenote_section": target_section,
-        "section_slug": slugify(target_section),
+        "section_context": ctx,
+        "aggregation_version": "1.0",
+
+        # Legacy keys kept for backward compatibility
+        "notebook": ctx["onenote_notebook"],
+        "onenote_section": ctx["onenote_section_name"],
+        "section_slug": ctx["section_slug"],
+
         "page_count": len(selected),
         "inventory": inventory,
         "pages": page_index,
@@ -176,7 +194,7 @@ def main():
 
     out_root = Path(args.out).resolve() / notebook
     out_root.mkdir(parents=True, exist_ok=True)
-    out_path = out_root / f"{slugify(target_section)}.json"
+    out_path = out_root / f"{ctx['section_slug']}.json"
     out_path.write_text(json.dumps(agg, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Wrote: {out_path}")
 
