@@ -8,12 +8,21 @@ Convert a per-case plan into LLM-ready section writing jobs:
 - macro-parts 1-3 only
 - per selected bucket: evidence from OneNote + prompt text
 
+PATCH (quality/context)
+----------------------
+This patch improves *contextual quality* by injecting:
+1) Section-level OneNote synthesis (already present)
+2) **Style exemplars** from historical audit reports (optional corpus)
+3) **Explicit intent constraints** (forbidden lexicon per macro-part) inside the prompt
+4) **Evidence reuse guard** (reduce mp1/mp3 overlap when possible)
+
 Inputs
 ------
 process/plans/<case_id>.json
 process/onenote/<notebook>/pages/*.json
 input/config/prompt_templates.json
 process/onenote_aggregates/<notebook>/<section_slug>.json (optional, recommended)
+process/learning/processed_reports/Rapports_d_audit/docs/*.json (optional, style corpus)
 
 Outputs
 -------
@@ -21,13 +30,6 @@ process/drafts/<case_id>/
   draft_bundle.json
   prompts.txt
   prompts/<bucket_id>.txt
-
-HARDENING (small additions)
---------------------------
-- Persist `section_context` in draft_bundle.json (top-level + per section).
-- Inject an explicit section identity header into the prompt (grounding).
-
-No logic is removed; this is metadata propagation only.
 """
 
 import argparse
@@ -52,10 +54,11 @@ INTENT_RULES = {
             "iso", "52120",
             "objectif", "à atteindre",
             "projeté", "futur", "travaux",
+            "mise en œuvre", "mettre en place", "il faut", "il est nécessaire",
         ],
         "note": (
             "Objectif : décrire strictement l’existant à partir des preuves OneNote. "
-            "Aucune interprétation normative ni projection."
+            "Aucune interprétation normative, aucune recommandation, aucune projection."
         ),
     },
     "SCORE_EXISTING": {
@@ -64,17 +67,26 @@ INTENT_RULES = {
             "objectif", "futur", "projeté",
         ],
         "note": (
-            "Objectif : expliquer le scoring actuel selon l’ISO 52120‑1 "
-            "à partir des capacités observées."
+            "Objectif : expliquer le scoring actuel (ISO 52120‑1) à partir des capacités observées. "
+            "Ne pas parler du projeté."
         ),
     },
     "PROJECT_FUTURE": {
         "forbidden": [],
         "note": (
-            "Objectif : décrire une cible normative (classe B a minima). "
-            "L’inférence est autorisée."
+            "Objectif : décrire une cible (projection) à partir des preuves disponibles. "
+            "L’inférence est autorisée uniquement si elle est explicitement justifiée par les preuves."
         ),
     },
+}
+
+# --- Style mapping (historical reports) --------------------
+STYLE_SECTION_BY_BUCKET = {
+    "BACS_SCORING": {
+        "ETAT_DES_LIEUX_GTB": ["État des lieux du BACS", "Présentation du site et application du Décret BACS"],
+        "SCORING_ACTUEL": ["Scoring GTB selon ISO 52120-1"],
+        "SCORING_PROJETE": ["Travaux et TRI", "Scoring GTB selon ISO 52120-1"],
+    }
 }
 
 
@@ -110,46 +122,127 @@ def load_section_aggregate(agg_path: Path) -> Dict[str, Any]:
         return {}
 
 
+# ---------------- Style corpus loading ---------------------
+
+def load_style_corpus(corpus_dir: Path, max_files: int = 80) -> List[Dict[str, Any]]:
+    if not corpus_dir or not corpus_dir.exists():
+        return []
+    docs = []
+    for p in sorted(corpus_dir.glob("*.json"))[:max_files]:
+        try:
+            docs.append(json.loads(p.read_text(encoding="utf-8", errors="replace")))
+        except Exception:
+            continue
+    return docs
+
+
+def _flatten_text_from_doc(doc: Dict[str, Any]) -> str:
+    parts = (doc.get("parts_first3") or {})
+    chunks = []
+    for k in ("part_1", "part_2", "part_3"):
+        for it in (parts.get(k) or []):
+            t = (it.get("text") or "").strip()
+            if t:
+                chunks.append(t)
+    if chunks:
+        return "\n".join(chunks)
+    return json.dumps(doc, ensure_ascii=False)
+
+
+def select_style_exemplars(report_type: str, bucket_id: str, docs: List[Dict[str, Any]], max_snips: int = 2, max_chars: int = 900) -> List[str]:
+    wanted_sections = (STYLE_SECTION_BY_BUCKET.get(report_type, {}) or {}).get(bucket_id, [])
+    if not wanted_sections:
+        return []
+
+    targets = [norm(s) for s in wanted_sections]
+    snips: List[str] = []
+
+    for doc in docs:
+        txt = _flatten_text_from_doc(doc)
+        ntxt = norm(txt)
+        if not any(t in ntxt for t in targets):
+            continue
+        for t in targets:
+            pos = ntxt.find(t)
+            if pos < 0:
+                continue
+            start = max(0, pos - 450)
+            end = min(len(txt), pos + 900)
+            chunk = txt[start:end].strip()
+            chunk = re.sub(r"\n{3,}", "\n\n", chunk)
+            chunk = chunk[:max_chars]
+            if chunk and chunk not in snips:
+                snips.append(chunk)
+            if len(snips) >= max_snips:
+                return snips
+
+    return snips
+
+
+def build_style_block(exemplars: List[str]) -> str:
+    if not exemplars:
+        return ""
+    lines = [
+        "## Exemples (anciens rapports) — STYLE UNIQUEMENT",
+        "⚠️ Ne copie aucun fait/valeur/matériel depuis ces exemples. Ils ne servent qu’à reproduire le ton et la structure.",
+        "",
+    ]
+    for i, ex in enumerate(exemplars, start=1):
+        lines.append(f"### Exemple {i}")
+        lines.append(ex.strip())
+        lines.append("")
+    return "\n".join(lines).strip()
+
+
+# ---------------- OneNote synthesis block ------------------
+
 def build_section_context_block(agg: Dict[str, Any], keywords: List[str], max_titles: int = 12) -> str:
-    """Build a compact synthesis of the whole OneNote section."""
     if not agg:
         return ""
     sec_name = agg.get("onenote_section") or ""
     page_count = agg.get("page_count") or 0
     inv = agg.get("inventory") or []
     kw_norm = [norm(k) for k in (keywords or []) if k]
+
     lines: List[str] = []
     lines.append(f"## Synthèse OneNote (section: {sec_name}, pages: {page_count})")
     lines.append("")
+
     lines.append("### Inventaire (par familles)")
     for it in inv[:12]:
         fam = it.get("family")
         cnt = it.get("count")
         lines.append(f"- {fam}: {cnt} élément(s)")
     lines.append("")
+
     lines.append("### Pages probablement pertinentes pour ce bucket (titres)")
     picked: List[str] = []
     for it in inv:
         for t in (it.get("titles") or []):
             nt = norm(t)
-            if not kw_norm or any(k in nt for k in kw_norm):
+            if (not kw_norm) or any(k in nt for k in kw_norm):
                 picked.append(t)
             if len(picked) >= max_titles:
                 break
         if len(picked) >= max_titles:
             break
+
     if not picked:
         lines.append("(Aucun titre détecté via mots-clés; se baser sur les preuves ci-dessous.)")
     else:
         for t in picked:
             lines.append(f"- {t}")
+
     lines.append("")
     lines.append("### Consigne de rédaction (synthèse → rapport)")
     lines.append("- Si l’évidence ressemble à un inventaire matériel/équipement, PRODUIS un inventaire similaire (liste structurée) dans la section.")
     lines.append("- Regroupe les observations répétées sur plusieurs pages en paragraphes de synthèse (éviter 'page par page').")
     lines.append("")
+
     return "\n".join(lines).strip()
 
+
+# ---------------- Evidence extraction ----------------------
 
 def page_text_blocks(page: Dict[str, Any]) -> List[Tuple[str, str]]:
     out: List[Tuple[str, str]] = []
@@ -169,7 +262,7 @@ def page_text_blocks(page: Dict[str, Any]) -> List[Tuple[str, str]]:
     return out
 
 
-def extract_snippets(page: Dict[str, Any], keywords: List[str], max_snips: int = 8) -> List[str]:
+def extract_snippets(page: Dict[str, Any], keywords: List[str], max_snips: int = 10) -> List[str]:
     kws = [norm(k) for k in keywords if k]
     snips: List[str] = []
     for t, txt in page_text_blocks(page):
@@ -182,17 +275,12 @@ def extract_snippets(page: Dict[str, Any], keywords: List[str], max_snips: int =
     return snips
 
 
-def build_evidence_block(
-    case_id: str,
-    bucket_id: str,
-    keywords: List[str],
-    routed_pages: List[Dict[str, Any]],
-    pages_by_id: Dict[str, Dict[str, Any]],
-) -> str:
+def build_evidence_block(bucket_id: str, keywords: List[str], routed_pages: List[Dict[str, Any]], pages_by_id: Dict[str, Dict[str, Any]]) -> str:
     lines: List[str] = []
     lines.append(f"- Bucket: {bucket_id}")
     lines.append(f"- Mots-clés: {', '.join(keywords)}")
     lines.append("")
+
     for rp in routed_pages:
         pid = rp.get("page_id")
         score = rp.get("score")
@@ -208,18 +296,13 @@ def build_evidence_block(
             for s in snips:
                 lines.append(f"- {s}")
         lines.append("")
+
     return "\n".join(lines).strip()
 
 
-def render_prompt(
-    template_cfg: Dict[str, Any],
-    case_id: str,
-    report_type: str,
-    macro_part_num: int,
-    macro_part_name: str,
-    bucket_id: str,
-    evidence_block: str,
-) -> str:
+# ---------------- Prompt rendering -------------------------
+
+def render_prompt(template_cfg: Dict[str, Any], case_id: str, report_type: str, macro_part_num: int, macro_part_name: str, bucket_id: str, evidence_block: str) -> str:
     fmt_lines = template_cfg["section_prompt_format"]
     txt = "\n".join(fmt_lines)
     return txt.format(
@@ -232,6 +315,25 @@ def render_prompt(
     )
 
 
+def build_intent_block(intent: str) -> str:
+    rules = INTENT_RULES.get(intent) or {}
+    forb = rules.get("forbidden") or []
+    note = rules.get("note") or ""
+
+    lines = ["### Intention & contraintes (contrat)"]
+    if note:
+        lines.append(f"- {note}")
+    if forb:
+        lines.append("- Mots / thèmes interdits dans cette macro-partie :")
+        for f in forb:
+            lines.append(f"  - {f}")
+        lines.append("- Si un élément interdit est présent dans les preuves (ex: une question 'quels travaux'), le traiter en 'Points à confirmer' (information demandée, pas un fait).")
+
+    return "\n".join(lines).strip() + "\n\n"
+
+
+# ---------------- Main -------------------------------------
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--plan", required=True, help="Path to process/plans/<case_id>.json")
@@ -239,14 +341,13 @@ def main():
     ap.add_argument("--templates", default="input/config/prompt_templates.json", help="Path to input/config/prompt_templates.json")
     ap.add_argument("--out", default="process/drafts", help="Output root under process/ (default: process/drafts)")
     ap.add_argument("--section-aggregate", default="", help="Optional path to process/onenote_aggregates/<notebook>/<section_slug>.json")
+    ap.add_argument("--style-corpus", default="process/learning/processed_reports/Rapports_d_audit/docs", help="Optional folder of processed historical reports docs/*.json")
     args = ap.parse_args()
 
     plan = load_json(Path(args.plan))
-
-    # Load optional section synthesis (recommended when report unit = OneNote section)
     agg = load_section_aggregate(Path(args.section_aggregate)) if args.section_aggregate else {}
-
     tpl = load_json(Path(args.templates))
+
     onenote_root = Path(args.onenote)
     pages = load_onenote_pages(onenote_root)
 
@@ -255,14 +356,12 @@ def main():
     macro_parts = plan.get("macro_parts") or {}
     gen_parts = plan.get("generate_macro_parts") or [1, 2, 3]
 
-    # Index pages by page_id for routing lookup
     pages_by_id: Dict[str, Dict[str, Any]] = {}
     for p in pages:
         pid = p.get("page_id") or p.get("title")
         if pid:
             pages_by_id[pid] = p
 
-    # HARDENING: derive canonical section_context
     section_ctx = plan.get("section_context")
     if not section_ctx and agg:
         legacy = maybe_ctx_from_legacy_fields(agg)
@@ -271,7 +370,8 @@ def main():
     if plan.get("onenote_section") and not section_ctx:
         section_ctx = build_section_context(onenote_root.name, plan.get("onenote_section"))
 
-    # Prepare output dirs
+    style_docs = load_style_corpus(Path(args.style_corpus))
+
     out_root = Path(args.out) / case_id
     prompts_dir = out_root / "prompts"
     prompts_dir.mkdir(parents=True, exist_ok=True)
@@ -290,34 +390,48 @@ def main():
     routing = plan.get("routing") or {}
     selected_by_part = plan.get("selected_buckets_by_macro_part") or {}
 
-    # Iterate macro-parts 1..3 and create prompts per bucket
+    used_page_ids_by_mp: Dict[int, set] = {}
+
     for mp_str, mp_cfg in (macro_parts or {}).items():
         mp = int(mp_str)
         if mp not in gen_parts:
             continue
+
         mp_name = mp_cfg.get("name") if isinstance(mp_cfg, dict) else str(mp_cfg)
         mp_template = rt_templates.get(f"macro_part_{mp}", {})
         mp_instructions = mp_template.get("instructions", [])
 
         bucket_items = selected_by_part.get(str(mp)) or selected_by_part.get(mp) or []
+
         for bi in bucket_items:
             bucket_id = bi.get("bucket_id")
             if not bucket_id:
                 continue
+
             r = routing.get(bucket_id) or {}
             keywords = r.get("keywords") or []
             top_pages = r.get("top_pages") or []
 
-            # Section-level context block (inventory + grouping guidance)
+            if mp == 3 and used_page_ids_by_mp.get(1) and len(top_pages) > 2:
+                filt = [p for p in top_pages if p.get("page_id") not in used_page_ids_by_mp[1]]
+                if len(filt) >= 2:
+                    top_pages = filt
+
+            used_page_ids_by_mp.setdefault(mp, set())
+            for p in top_pages:
+                if p.get("page_id"):
+                    used_page_ids_by_mp[mp].add(p["page_id"])
+
             section_ctx_block = build_section_context_block(agg, keywords)
-            evidence = build_evidence_block(case_id, bucket_id, keywords, top_pages, pages_by_id)
-            if section_ctx_block:
-                evidence = section_ctx_block + "\n\n" + evidence
+            exemplars = select_style_exemplars(report_type, bucket_id, style_docs, max_snips=2)
+            style_block = build_style_block(exemplars)
+            evidence = build_evidence_block(bucket_id, keywords, top_pages, pages_by_id)
+
+            blocks = [b for b in [section_ctx_block, style_block, evidence] if b]
+            evidence_full = "\n\n".join(blocks).strip()
 
             intent = BACX_INTENT_BY_MACRO.get(mp_name)
-            rules = INTENT_RULES.get(intent, {})
-            forbidden = rules.get("forbidden", [])
-            _ = forbidden  # kept for possible future linting
+            intent_block = build_intent_block(intent) if intent else ""
 
             prompt = render_prompt(
                 tpl,
@@ -326,15 +440,16 @@ def main():
                 macro_part_num=mp,
                 macro_part_name=mp_name,
                 bucket_id=bucket_id,
-                evidence_block=evidence,
+                evidence_block=evidence_full,
             )
 
-            # Prepend macro-part specific instructions
             if mp_instructions:
                 header = "### Instructions macro-partie\n- " + "\n- ".join(mp_instructions) + "\n\n"
                 prompt = header + prompt
 
-            # HARDENING: explicit OneNote section identity header
+            if intent_block:
+                prompt = intent_block + prompt
+
             if isinstance(section_ctx, dict) and section_ctx.get("onenote_section_name"):
                 sec_hdr = (
                     "### Contexte OneNote\n"
@@ -350,20 +465,21 @@ def main():
                 "bucket_score": bi.get("score"),
                 "keywords": keywords,
                 "top_pages": top_pages,
-                "evidence": evidence,
+                "evidence": evidence_full,
                 "prompt": prompt,
                 "section_context": section_ctx,
             }
+
             bundle["sections"].append(section_obj)
 
             p_out = prompts_dir / f"{bucket_id}.txt"
             p_out.write_text(prompt, encoding="utf-8")
             all_prompts.append(f"\n\n===== {bucket_id} (Macro {mp}: {mp_name}) =====\n\n{prompt}")
 
-    # Write outputs
     out_root.mkdir(parents=True, exist_ok=True)
     (out_root / "draft_bundle.json").write_text(json.dumps(bundle, ensure_ascii=False, indent=2), encoding="utf-8")
     (out_root / "prompts.txt").write_text("\n".join(all_prompts).strip() + "\n", encoding="utf-8")
+
     print(f"Wrote: {out_root / 'draft_bundle.json'}")
     print(f"Wrote: {out_root / 'prompts.txt'}")
     print(f"Prompts directory: {prompts_dir}")
