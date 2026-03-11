@@ -22,6 +22,24 @@ class PipelineConfig:
     bacs_part2_slides: bool
 
 
+@dataclass
+class OneNoteExportConfig:
+    project_root: Path
+    env_path: str
+    list_only: bool
+    notebook_name: str
+    notebook_id: str
+    merge: bool
+    formats: str
+    output_dir: str
+    token_cache: str
+
+
+@dataclass
+class LearningPipelineConfig:
+    project_root: Path
+
+
 def _exists(path: str) -> bool:
     try:
         return Path(path).exists()
@@ -29,8 +47,15 @@ def _exists(path: str) -> bool:
         return False
 
 
-def build_command(cfg: PipelineConfig) -> List[str]:
-    """Build run_pipeline.py command using the project's CLI (as currently implemented)."""
+def _base_env() -> dict:
+    env = os.environ.copy()
+    env['PYTHONUNBUFFERED'] = '1'
+    env['PYTHONUTF8'] = '1'
+    env['PYTHONIOENCODING'] = 'utf-8'
+    return env
+
+
+def build_pipeline_command(cfg: PipelineConfig) -> List[str]:
     py = sys.executable
     cmd = [py, str(cfg.project_root / 'run_pipeline.py')]
 
@@ -57,15 +82,41 @@ def build_command(cfg: PipelineConfig) -> List[str]:
     return cmd
 
 
-def run_streaming(cfg: PipelineConfig) -> Tuple[int, Iterable[str]]:
-    cmd = build_command(cfg)
+def build_onenote_export_command(cfg: OneNoteExportConfig) -> List[str]:
+    py = sys.executable
+    cmd = [py, '-m', 'onenote_exporter.cli', '--config', cfg.env_path]
 
-    env = os.environ.copy()
-    env['PYTHONUNBUFFERED'] = '1'
+    if cfg.list_only:
+        cmd += ['--list']
+        return cmd
 
+    if cfg.notebook_name:
+        cmd += ['--notebook', cfg.notebook_name]
+    if cfg.notebook_id:
+        cmd += ['--notebook-id', cfg.notebook_id]
+
+    if cfg.merge:
+        cmd += ['--merge']
+    if cfg.formats:
+        cmd += ['--formats', cfg.formats]
+    if cfg.output_dir:
+        cmd += ['--output-dir', cfg.output_dir]
+    if cfg.token_cache:
+        cmd += ['--token-cache', cfg.token_cache]
+
+    return cmd
+
+
+def build_learning_pipeline_command(cfg: LearningPipelineConfig) -> List[str]:
+    py = sys.executable
+    return [py, str(cfg.project_root / 'run_learning_pipeline.py')]
+
+
+def run_streaming(cmd: List[str], *, cwd: Path) -> Tuple[int, Iterable[str]]:
+    env = _base_env()
     proc = subprocess.Popen(
         cmd,
-        cwd=str(cfg.project_root),
+        cwd=str(cwd),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -83,12 +134,23 @@ def run_streaming(cfg: PipelineConfig) -> Tuple[int, Iterable[str]]:
     return proc.pid, _iter_lines()
 
 
+def run_pipeline_streaming(cfg: PipelineConfig) -> Tuple[int, Iterable[str]]:
+    return run_streaming(build_pipeline_command(cfg), cwd=cfg.project_root)
+
+
+def run_onenote_export_streaming(cfg: OneNoteExportConfig) -> Tuple[int, Iterable[str]]:
+    return run_streaming(build_onenote_export_command(cfg), cwd=cfg.project_root)
+
+
+def run_learning_pipeline_streaming(cfg: LearningPipelineConfig) -> Tuple[int, Iterable[str]]:
+    return run_streaming(build_learning_pipeline_command(cfg), cwd=cfg.project_root)
+
+
 def compute_expected_outputs(project_root: Path, case_id: str) -> dict:
     out_pptx = project_root / 'output' / 'reports' / case_id / 'Rapport_Audit.pptx'
     assembled = project_root / 'process' / 'drafts' / case_id / 'assembled_report.json'
     generated = project_root / 'process' / 'drafts' / case_id / 'generated_bundle.json'
     quality = project_root / 'process' / 'drafts' / case_id / 'quality_report.json'
-
     return {
         'pptx': out_pptx,
         'assembled': assembled,

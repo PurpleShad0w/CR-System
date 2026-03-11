@@ -9,7 +9,7 @@ def load_json(path: Path) -> Dict[str, Any]:
     return json.loads(path.read_text(encoding='utf-8'))
 
 
-def safe_read_text(path: Path, limit: int = 60_000) -> str:
+def safe_read_text(path: Path, limit: int = 80_000) -> str:
     if not path.exists():
         return ''
     txt = path.read_text(encoding='utf-8', errors='replace')

@@ -2,36 +2,43 @@
 # -*- coding: utf-8 -*-
 """run_pipeline.py
 
-Single entrypoint to run the full GTB / BACS report generation pipeline.
+FIXES (Goussonville default run):
+1) Aggregate file path:
+   aggregate_onenote_section.py writes
+     process/onenote_aggregates/<notebook>/<section_slug>.json
+   so we must read that file (not <case_id>.json).
 
-DEFAULTS PATCH
---------------
-- Keeps default execution with no CLI args.
-- BUT: always passes BACS rules to run_llm_jobs.py if the rules file exists.
-  This avoids the current behavior where Tableau 6 scoring is only activated
-  when --onenote-section is set.
+2) run_llm_jobs.py does NOT accept --section_aggregate.
+   It scores from the draft bundle directly, so we must NOT pass that arg.
 
-This matches the intended process:
-- Part 1: use OneNote evidence
-- Part 2/3: scoring/travaux driven by rules (when rules file is available)
+Defaults:
+- case-id: P060011
+- onenote-section: Clinique - Goussonville
 
+Also hardens console output on Windows cp1252.
 """
 
 import argparse
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
 
 from section_context import build_section_context, assert_same_section_context
 
+# --- Console encoding hardening (Windows cp1252) ---
+try:
+    sys.stdout.reconfigure(errors="replace")
+    sys.stderr.reconfigure(errors="replace")
+except Exception:
+    pass
+
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-DEFAULT_CASE_ID = "P050011"
+DEFAULT_CASE_ID = "P060011"
 DEFAULT_NOTEBOOK_NAME = "test"
-DEFAULT_ONENOTE_SECTION = ""  # keep empty by default (case mode)
+DEFAULT_ONENOTE_SECTION = "Clinique - Goussonville"
 
 ROOT = Path(__file__).resolve().parent
 
@@ -49,24 +56,17 @@ DRAFTS_ROOT = PROCESS_ROOT / "drafts"
 SKELETONS_DIR = PROCESS_ROOT / "learning" / "skeletons"
 OUTPUT_ROOT = ROOT / "output"
 
-DEFAULT_MIN_QUALITY_SCORE = 0.0  # dev-friendly default; can be raised by CLI
+DEFAULT_MIN_QUALITY_SCORE = 0.0
 LLM_TEMPERATURE = "0.2"
 LLM_MAX_TOKENS = "1500"
 DEFAULT_LLM_MODE = "multistep"
 
 
-try:
-    sys.stdout.reconfigure(errors="replace")
-    sys.stderr.reconfigure(errors="replace")
-except Exception:
-    pass
-
-
 def run(cmd: list[str], *, cwd: Path = ROOT):
-    print("\n▶", " ".join(cmd))
+    print("\n>", " ".join(cmd))
     res = subprocess.run(cmd, cwd=cwd)
     if res.returncode != 0:
-        print(f"\n❌ Pipeline failed at step: {' '.join(cmd)}")
+        print(f"\nERROR: Pipeline failed at step: {' '.join(cmd)}")
         sys.exit(res.returncode)
 
 
@@ -85,15 +85,9 @@ def main():
 
     args = ap.parse_args()
 
-    def slugify_local(s: str) -> str:
-        s = (s or "").strip().lower()
-        s = re.sub(r"[^a-z0-9]+", "_", s)
-        s = re.sub(r"_+", "_", s).strip("_")
-        return s or "section"
-
     notebook_name = args.notebook
     onenote_section = (args.onenote_section or "").strip()
-    case_id = slugify_local(onenote_section) if onenote_section else args.case_id
+    case_id = (args.case_id or "").strip() or DEFAULT_CASE_ID
 
     llm_mode = args.mode
     min_quality = args.min_quality
@@ -119,7 +113,7 @@ def main():
         "--transcribe",
     ])
 
-    # 2) Section aggregation (only when section mode)
+    # 2) Section aggregation
     agg_path = None
     if onenote_section:
         run([
@@ -132,7 +126,12 @@ def main():
             "--out",
             str((ROOT / "process" / "onenote_aggregates")),
         ])
-        agg_path = (ROOT / "process" / "onenote_aggregates" / notebook_name / f"{case_id}.json").resolve()
+
+        section_slug = expected_ctx.get('section_slug') if isinstance(expected_ctx, dict) else None
+        if not section_slug:
+            section_slug = build_section_context(notebook_name, onenote_section).get('section_slug')
+
+        agg_path = (ROOT / "process" / "onenote_aggregates" / notebook_name / f"{section_slug}.json").resolve()
         agg_obj = json.loads(agg_path.read_text(encoding="utf-8"))
         if expected_ctx and isinstance(agg_obj.get("section_context"), dict):
             assert_same_section_context(expected_ctx, agg_obj["section_context"], "onenote_aggregate")
@@ -188,7 +187,6 @@ def main():
         str(min_quality),
     ]
 
-    # KEY CHANGE: pass rules whenever file exists
     rules_path = Path(args.bacs_rules)
     if rules_path.exists():
         llm_cmd += [
@@ -202,9 +200,7 @@ def main():
         if args.bacs_part2_slides:
             llm_cmd += ["--bacs_part2_slides"]
 
-    # still pass section_aggregate if we have one
-    if agg_path and agg_path.exists():
-        llm_cmd += ["--section_aggregate", str(agg_path)]
+    # IMPORTANT FIX: do NOT pass --section_aggregate (run_llm_jobs.py has no such arg)
 
     run(llm_cmd)
 
@@ -221,8 +217,8 @@ def main():
         str(out_pptx),
     ])
 
-    print("\n✅ Pipeline completed successfully")
-    print(f"📄 Output: {out_pptx}")
+    print("\nOK: Pipeline completed successfully")
+    print(f"Output: {out_pptx}")
 
 
 if __name__ == "__main__":
