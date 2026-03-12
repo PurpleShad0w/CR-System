@@ -36,6 +36,16 @@ class OneNoteExportConfig:
 
 
 @dataclass
+class OneNoteProcessConfig:
+    project_root: Path
+    notebook: str
+    input_root: str
+    out_root: str
+    transcribe: bool
+    copy_assets: bool
+
+
+@dataclass
 class LearningPipelineConfig:
     project_root: Path
 
@@ -107,6 +117,22 @@ def build_onenote_export_command(cfg: OneNoteExportConfig) -> List[str]:
     return cmd
 
 
+def build_onenote_process_command(cfg: OneNoteProcessConfig) -> List[str]:
+    py = sys.executable
+    cmd = [py, str(cfg.project_root / 'process_onenote.py'), cfg.notebook]
+
+    if cfg.input_root:
+        cmd += ['--input', cfg.input_root]
+    if cfg.out_root:
+        cmd += ['--out', cfg.out_root]
+    if cfg.transcribe:
+        cmd += ['--transcribe']
+    if cfg.copy_assets:
+        cmd += ['--copy-assets']
+
+    return cmd
+
+
 def build_learning_pipeline_command(cfg: LearningPipelineConfig) -> List[str]:
     py = sys.executable
     return [py, str(cfg.project_root / 'run_learning_pipeline.py')]
@@ -140,6 +166,10 @@ def run_pipeline_streaming(cfg: PipelineConfig) -> Tuple[int, Iterable[str]]:
 
 def run_onenote_export_streaming(cfg: OneNoteExportConfig) -> Tuple[int, Iterable[str]]:
     return run_streaming(build_onenote_export_command(cfg), cwd=cfg.project_root)
+
+
+def run_onenote_process_streaming(cfg: OneNoteProcessConfig) -> Tuple[int, Iterable[str]]:
+    return run_streaming(build_onenote_process_command(cfg), cwd=cfg.project_root)
 
 
 def run_learning_pipeline_streaming(cfg: LearningPipelineConfig) -> Tuple[int, Iterable[str]]:
