@@ -148,6 +148,8 @@ def run_streaming(cmd: List[str], *, cwd: Path) -> Tuple[int, Iterable[str]]:
         text=True,
         bufsize=1,
         universal_newlines=True,
+        encoding="utf-8",
+        errors="replace",
         env=env,
     )
 

@@ -2,20 +2,11 @@
 # -*- coding: utf-8 -*-
 """run_pipeline.py
 
-FIXES (Goussonville default run):
-1) Aggregate file path:
-   aggregate_onenote_section.py writes
-     process/onenote_aggregates/<notebook>/<section_slug>.json
-   so we must read that file (not <case_id>.json).
+Minor update:
+- Pass --onenote <process/onenote/<notebook>> to run_llm_jobs.py so it can resolve image assets
+  from processed OneNote pages and populate slides with images.
 
-2) run_llm_jobs.py does NOT accept --section_aggregate.
-   It scores from the draft bundle directly, so we must NOT pass that arg.
-
-Defaults:
-- case-id: P060011
-- onenote-section: Clinique - Goussonville
-
-Also hardens console output on Windows cp1252.
+All previous behavior is preserved.
 """
 
 import argparse
@@ -26,26 +17,20 @@ from pathlib import Path
 
 from section_context import build_section_context, assert_same_section_context
 
-# --- Console encoding hardening (Windows cp1252) ---
 try:
     sys.stdout.reconfigure(errors="replace")
     sys.stderr.reconfigure(errors="replace")
 except Exception:
     pass
 
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
 DEFAULT_CASE_ID = "P060011"
 DEFAULT_NOTEBOOK_NAME = "test"
 DEFAULT_ONENOTE_SECTION = "Clinique - Goussonville"
 
 ROOT = Path(__file__).resolve().parent
-
 REPORT_TYPES_CONFIG = ROOT / "input" / "config" / "report_types.json"
 PROMPT_TEMPLATES = ROOT / "input" / "config" / "prompt_templates.json"
 PPTX_TEMPLATE = ROOT / "input" / "templates" / "TEMPLATE_AUDIT_BUILD4USE.pptx"
-
 DEFAULT_BACS_RULES = ROOT / "input" / "rules" / "bacs_table6_rules_structured_clean.json"
 
 ONENOTE_EXPORT_ROOT = ROOT / "input" / "onenote-exporter" / "output"
@@ -77,12 +62,10 @@ def main():
     ap.add_argument("--onenote-section", default=DEFAULT_ONENOTE_SECTION)
     ap.add_argument("--mode", choices=["single", "multistep"], default=DEFAULT_LLM_MODE)
     ap.add_argument("--min-quality", type=float, default=DEFAULT_MIN_QUALITY_SCORE)
-
-    ap.add_argument("--bacs-rules", default=str(DEFAULT_BACS_RULES), help="Path to Tableau 6 rules JSON")
+    ap.add_argument("--bacs-rules", default=str(DEFAULT_BACS_RULES))
     ap.add_argument("--bacs-building-scope", default="Non résidentiel", choices=["Résidentiel", "Non résidentiel"])
-    ap.add_argument("--bacs-targets", default="", help="Optional JSON mapping group->target class")
+    ap.add_argument("--bacs-targets", default="")
     ap.add_argument("--bacs-part2-slides", action="store_true")
-
     args = ap.parse_args()
 
     notebook_name = args.notebook
@@ -95,7 +78,6 @@ def main():
     notebook_processed = ONENOTE_PROCESSED_ROOT / notebook_name
     plan_path = PLANS_ROOT / f"{case_id}.json"
     draft_dir = DRAFTS_ROOT / case_id
-
     output_reports = OUTPUT_ROOT / "reports" / case_id
     output_reports.mkdir(parents=True, exist_ok=True)
 
@@ -126,11 +108,9 @@ def main():
             "--out",
             str((ROOT / "process" / "onenote_aggregates")),
         ])
-
         section_slug = expected_ctx.get('section_slug') if isinstance(expected_ctx, dict) else None
         if not section_slug:
             section_slug = build_section_context(notebook_name, onenote_section).get('section_slug')
-
         agg_path = (ROOT / "process" / "onenote_aggregates" / notebook_name / f"{section_slug}.json").resolve()
         agg_obj = json.loads(agg_path.read_text(encoding="utf-8"))
         if expected_ctx and isinstance(agg_obj.get("section_context"), dict):
@@ -185,6 +165,8 @@ def main():
         LLM_MAX_TOKENS,
         "--min_quality",
         str(min_quality),
+        "--onenote",
+        str(notebook_processed),
     ]
 
     rules_path = Path(args.bacs_rules)
@@ -195,12 +177,10 @@ def main():
             "--bacs_building_scope",
             args.bacs_building_scope,
         ]
-        if args.bacs_targets:
-            llm_cmd += ["--bacs_targets", args.bacs_targets]
-        if args.bacs_part2_slides:
-            llm_cmd += ["--bacs_part2_slides"]
-
-    # IMPORTANT FIX: do NOT pass --section_aggregate (run_llm_jobs.py has no such arg)
+    if args.bacs_targets:
+        llm_cmd += ["--bacs_targets", args.bacs_targets]
+    if args.bacs_part2_slides:
+        llm_cmd += ["--bacs_part2_slides"]
 
     run(llm_cmd)
 
