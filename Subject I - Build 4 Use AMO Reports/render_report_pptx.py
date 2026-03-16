@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""render_report_pptx.py (v3 - slide schema + robust tokens + images)
+"""render_report_pptx.py
 
-Fixes implemented
------------------
-- Placeholder replacement at *shape* text level (not run-level), to handle split runs.
-- Optional rendering from assembled_report.json["slides"].
-- Actual image placement into image placeholders when slide spec includes image paths.
-- Post-render guardrails: hard fail if any {{TOKEN}} remains.
-
-Note
-----
-The renderer remains "mechanical": it transcribes slides[] into PPTX and does not
-interpret content.
+Fixes
+-----
+1) Robust placeholder replacement at *shape* text level (not run-level), so split-runs are handled.
+2) When cloning ANY slide, we now apply a global token map (PART1..PART5 titles + date/version/contact)
+   to avoid leftover {{PART2_TITLE}} etc on slides that reuse the TOC block.
+3) Legacy tolerance: remove evidence lines ("Preuve:" / "page_id=") from bodies before writing.
+4) Images are inserted into IMAGE_1/2/3 placeholder shapes when provided.
+5) Guardrails: fail if any {{TOKEN}} or page_id= remains (with offender preview).
 """
 
 import argparse
@@ -49,12 +46,34 @@ def normalize_whitespace(text: str) -> str:
     return t.strip()
 
 
+def sanitize_client_body(text: str) -> str:
+    if not text:
+        return ""
+    t = normalize_whitespace(strip_markdown(text))
+    out = []
+    for ln in t.splitlines():
+        s = ln.strip()
+        if not s:
+            out.append("")
+            continue
+        if re.search(r"\bpage_id\s*=", s, flags=re.IGNORECASE):
+            continue
+        if re.match(r"^\s*preuve\s*:", s, flags=re.IGNORECASE):
+            continue
+        if "preuve:" in s.lower():
+            continue
+        out.append(ln)
+    cleaned = "\n".join(out)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    return cleaned
+
+
 # -----------------------------
 # PPTX cloning utilities
 # -----------------------------
 
 def clone_slide(prs_out: Presentation, slide_in) -> Any:
-    blank_layout = prs_out.slide_layouts[6]  # blank
+    blank_layout = prs_out.slide_layouts[6]
     new_slide = prs_out.slides.add_slide(blank_layout)
     try:
         new_slide._element.get_or_add_bg()._set_bg(slide_in._element.get_or_add_bg())
@@ -79,7 +98,6 @@ def replace_text_in_shape(shape, mapping: Dict[str, str]):
         if k in replaced:
             replaced = replaced.replace(k, v)
     if replaced != full:
-        # Setting tf.text rewrites runs but solves split-run placeholders reliably.
         tf.text = replaced
 
 
@@ -100,12 +118,15 @@ def set_bullets_in_shape(shape, text: str, font_size_pt: int = 16):
     tf = shape.text_frame
     tf.clear()
     tf.word_wrap = True
+
+    text = sanitize_client_body(text)
     text = normalize_whitespace(strip_markdown(text))
+
     lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
     if not lines:
-        p = tf.paragraphs[0]
-        p.text = ""
+        tf.paragraphs[0].text = ""
         return
+
     for i, ln in enumerate(lines):
         is_bullet = ln.startswith("- ")
         content = ln[2:].strip() if is_bullet else ln
@@ -156,24 +177,20 @@ def _resolve_image_path(img: str, base_dir: Path) -> Optional[Path]:
     p = Path(img)
     if p.is_absolute() and p.exists():
         return p
-    # try relative to assembled json folder
     cand = (base_dir / img).resolve()
     if cand.exists():
         return cand
-    # try relative as-is
     if p.exists():
         return p
     return None
 
 
 def place_images_on_slide(slide, images: List[str], *, base_dir: Path):
-    # Template uses IMAGE_1/2/3 tokens in text boxes.
     tokens = ["{{IMAGE_1}}", "{{IMAGE_2}}", "{{IMAGE_3}}"]
     for idx, tok in enumerate(tokens):
         shape = find_shape_containing(slide, tok)
         if not shape:
             continue
-        # Clear token text
         try:
             shape.text_frame.text = ""
         except Exception:
@@ -183,11 +200,7 @@ def place_images_on_slide(slide, images: List[str], *, base_dir: Path):
         img_path = _resolve_image_path(images[idx], base_dir)
         if not img_path:
             continue
-        # Insert picture within shape bounds
-        left = shape.left
-        top = shape.top
-        width = shape.width
-        height = shape.height
+        left, top, width, height = shape.left, shape.top, shape.width, shape.height
         slide.shapes.add_picture(str(img_path), left, top, width=width, height=height)
 
 
@@ -212,20 +225,8 @@ def build_deck(template_path: Path, assembled_path: Path, out_path: Path, slide_
     prs_out.slide_width = tpl.slide_width
     prs_out.slide_height = tpl.slide_height
 
-    # Core mappings
-    cover_map = {
-        "{{AUDIT_TYPE}}": report_type,
-        "{{CLIENT}}": "N/A",
-        "{{SITE}}": site_label,
-        "{{VILLE}}": "",
-        "{{CASE_CODE}}": case_id,
-        "{{DATE}}": today,
-        "{{VERSION}}": "1",
-        "{{CONTACT_EMAIL}}": "contact@build4use.eu",
-    }
-
-    # Part titles for TOC
-    part_titles = {1: "Partie 1", 2: "Partie 2", 3: "Partie 3"}
+    # Part titles for TOC and global replacement
+    part_titles = {1: "Partie 1", 2: "Partie 2", 3: "Partie 3", 4: "", 5: ""}
     for mp in (data.get("macro_parts") or []):
         try:
             mp_num = int(mp.get("macro_part"))
@@ -234,15 +235,24 @@ def build_deck(template_path: Path, assembled_path: Path, out_path: Path, slide_
         except Exception:
             pass
 
-    toc_map = {
+    global_map = {
         "{{PART1_TITLE}}": part_titles.get(1, "Partie 1"),
         "{{PART2_TITLE}}": part_titles.get(2, "Partie 2"),
         "{{PART3_TITLE}}": part_titles.get(3, "Partie 3"),
-        "{{PART4_TITLE}}": "",
-        "{{PART5_TITLE}}": "",
+        "{{PART4_TITLE}}": part_titles.get(4, ""),
+        "{{PART5_TITLE}}": part_titles.get(5, ""),
         "{{DATE}}": today,
         "{{VERSION}}": "1",
         "{{CONTACT_EMAIL}}": "contact@build4use.eu",
+    }
+
+    cover_map = {
+        "{{AUDIT_TYPE}}": report_type,
+        "{{CLIENT}}": "N/A",
+        "{{SITE}}": site_label,
+        "{{VILLE}}": "",
+        "{{CASE_CODE}}": case_id,
+        **global_map,
     }
 
     # ---- COVER ----
@@ -253,22 +263,22 @@ def build_deck(template_path: Path, assembled_path: Path, out_path: Path, slide_
     # ---- TOC ----
     if "TOC" in catalog:
         s_toc = clone_slide(prs_out, catalog["TOC"])
-        replace_placeholders(s_toc, toc_map)
+        replace_placeholders(s_toc, global_map)
 
     slides_spec = data.get("slides")
+
+    def apply_global(slide):
+        # Some template slides repeat TOC block; always apply global map
+        replace_placeholders(slide, global_map)
 
     def emit_part_divider(part: int, title: str):
         slide_in = catalog.get("PART_DIVIDER")
         if not slide_in:
             return
         s_div = clone_slide(prs_out, slide_in)
-        # divider uses {{PART1_TITLE}} token in template; reuse it for any part
-        replace_placeholders(s_div, {
-            "{{PART1_TITLE}}": title,
-            "{{DATE}}": today,
-            "{{VERSION}}": "1",
-            "{{CONTACT_EMAIL}}": "contact@build4use.eu",
-        })
+        apply_global(s_div)
+        # Divider title token is usually PART1_TITLE, but we want the current part name
+        replace_placeholders(s_div, {"{{PART1_TITLE}}": title})
         badge_num = f"{int(part):02d}"
         for sh in s_div.shapes:
             if getattr(sh, "has_text_frame", False) and sh.has_text_frame:
@@ -277,82 +287,50 @@ def build_deck(template_path: Path, assembled_path: Path, out_path: Path, slide_
 
     def emit_content_slide(stype: str, title: str, body: str, images: Optional[List[str]] = None):
         images = images or []
-        if stype == "PART_DIVIDER":
-            # handled separately
-            emit_part_divider(0, title)
-            return
-
-        slide_in = catalog.get(stype) or catalog.get(slide_types_cfg.get("defaults", {}).get("content_type", "CONTENT_TEXT")) or catalog.get("CONTENT_TEXT")
+        slide_in = catalog.get(stype) or catalog.get("CONTENT_TEXT")
         if not slide_in:
             return
         slide_out = clone_slide(prs_out, slide_in)
-
-        replace_placeholders(slide_out, {
-            "{{SLIDE_TITLE}}": title,
-            "{{DATE}}": today,
-            "{{VERSION}}": "1",
-            "{{CONTACT_EMAIL}}": "contact@build4use.eu",
-        })
+        apply_global(slide_out)
+        replace_placeholders(slide_out, {"{{SLIDE_TITLE}}": title})
 
         shape = find_shape_containing(slide_out, "{{TEXTE_BULLETS}}")
         if shape:
             set_bullets_in_shape(shape, body, font_size_pt=16)
 
-        # Place images if any
         place_images_on_slide(slide_out, images, base_dir=assembled_path.parent)
 
-    # New schema path: explicit slides list
     if isinstance(slides_spec, list) and slides_spec:
         for s in slides_spec:
             stype = (s.get("type") or "CONTENT_TEXT").strip()
             if stype == "PART_DIVIDER":
-                part = s.get("part") or 0
-                title = (s.get("title") or "").strip() or f"Partie {part}"
-                emit_part_divider(int(part), title)
+                emit_part_divider(int(s.get("part") or 0), (s.get("title") or "").strip())
                 continue
-            title = (s.get("title") or "").strip()
-            body = (s.get("bullets") or s.get("body") or "").strip()
-            imgs = s.get("images") or []
-            emit_content_slide(stype, title, body, imgs)
+            emit_content_slide(stype, (s.get("title") or "").strip(), (s.get("bullets") or s.get("body") or ""), s.get("images") or [])
     else:
-        # Legacy: macro_parts (kept for backward compatibility)
-        macro_parts = data.get("macro_parts") or []
-        divider_in = catalog.get("PART_DIVIDER")
+        # Legacy fallback
         for mp_num in [1, 2, 3]:
-            mp = next((x for x in macro_parts if int(x.get("macro_part", -1)) == mp_num), None)
+            mp = next((x for x in (data.get("macro_parts") or []) if int(x.get("macro_part", -1)) == mp_num), None)
             if not mp:
                 continue
-            mp_name = mp.get("macro_part_name") or f"Partie {mp_num}"
-            if divider_in:
-                emit_part_divider(mp_num, mp_name)
-            for sec in mp.get("sections") or []:
-                bucket_id = sec.get("bucket_id") or "SECTION"
-                sec_text = sec.get("text") or ""
-                emit_content_slide(slide_types_cfg.get("defaults", {}).get("content_type", "CONTENT_TEXT"), bucket_id, sec_text, [])
+            emit_part_divider(mp_num, mp.get("macro_part_name") or f"Partie {mp_num}")
+            for sec in (mp.get("sections") or []):
+                emit_content_slide(slide_types_cfg.get("defaults", {}).get("content_type", "CONTENT_TEXT"), sec.get("bucket_id") or "SECTION", sec.get("text") or "", [])
 
-        # Legacy conclusion slide
-        if "CONCLUSION" in catalog:
-            concl_in = catalog["CONCLUSION"]
-            s_concl = clone_slide(prs_out, concl_in)
-            replace_placeholders(s_concl, {
-                "{{CONCLUSION_TEXTE}}": "Synthèse à compléter (données de conclusion non fournies dans l'export).",
-                "{{DATE}}": today,
-                "{{VERSION}}": "1",
-                "{{CONTACT_EMAIL}}": "contact@build4use.eu",
-            })
-
-    # ---- POST-RENDER GUARDRAILS ----
-    leftovers = []
-    for slide in prs_out.slides:
+    # ---- POST-RENDER GUARDRAILS (with diagnostics) ----
+    offenders = []
+    for si, slide in enumerate(prs_out.slides, start=1):
         for shape in slide.shapes:
             if getattr(shape, "has_text_frame", False) and shape.has_text_frame:
                 txt = shape.text_frame.text or ""
-                if "{{" in txt:
-                    leftovers.append(txt.strip())
-                if "page_id=" in txt:
-                    leftovers.append("page_id_leak")
-    if leftovers:
-        raise SystemExit("❌ Unreplaced template tokens or page_id leak detected in rendered deck")
+                if "{{" in txt or "page_id=" in txt:
+                    offenders.append({
+                        "slide": si,
+                        "text": (txt.strip().replace("\n", " ")[:160] + ("..." if len(txt) > 160 else "")),
+                    })
+    if offenders:
+        preview = " | ".join([f"S{d['slide']}: {d['text']}" for d in offenders[:6]])
+        raise SystemExit("❌ Unreplaced template tokens or page_id leak detected in rendered deck. Offenders: " + preview)
 
     prs_out.save(str(out_path))
 
