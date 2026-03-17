@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 """render_report_pptx.py
 
-Renderer (base template + boss info template).
+Patch: PPT cleanliness (TOC duplicates + legend placeholders)
 
+- Ensures PART_DIVIDER is not mistakenly the TOC slide.
+- Removes duplicated TOC slides if they still appear.
+- Clears any remaining "Légende Photo" placeholders when no captions are provided.
+
+Keeps existing behavior:
 - Base template: cover / TOC / part dividers / conclusion
-- Info template (Templates Slides.pptx): content slides with images + legends
-
-Supports slides[].images as list of:
-- str paths
-- dicts {path, caption, page_id, page_title}
+- Info template: content slides with images + legends
 
 """
 
@@ -24,8 +25,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from pptx import Presentation
-from pptx.util import Pt
 from pptx.enum.text import PP_ALIGN
+from pptx.util import Pt
 
 
 def load_json(path: Path) -> Dict[str, Any]:
@@ -118,12 +119,20 @@ def detect_template_slide_types(tpl: Presentation, slide_types_cfg: Dict[str, An
     return found
 
 
-def find_shape_containing(slide, token: str):
+def find_slide_by_predicate(tpl: Presentation, pred) -> Optional[Any]:
+    for sl in tpl.slides:
+        if pred(slide_text(sl)):
+            return sl
+    return None
+
+
+def find_shapes_containing(slide, token: str) -> List[Any]:
+    out = []
     for shape in slide.shapes:
         if getattr(shape, 'has_text_frame', False) and shape.has_text_frame:
             if token in (shape.text_frame.text or ''):
-                return shape
-    return None
+                out.append(shape)
+    return out
 
 
 def find_shapes_exact(slide, exact: str) -> List[Any]:
@@ -207,12 +216,24 @@ def overlay_images(slide, images: List[Any], base_dir: Path) -> None:
 
 def fill_legends(slide, images: List[Any]) -> None:
     pairs = _images_to_pairs(images)
-    legend_shapes = find_shapes_exact(slide, 'Légende Photo')
+    # broaden matching: sometimes the placeholder isn't exact
+    legend_shapes = find_shapes_exact(slide, 'Légende Photo') + find_shapes_containing(slide, 'Légende Photo')
+    # unique
+    seen = set()
+    uniq = []
+    for sh in legend_shapes:
+        if id(sh) in seen:
+            continue
+        seen.add(id(sh))
+        uniq.append(sh)
+    legend_shapes = uniq
+
     pic_shapes = [sh for sh in slide.shapes if getattr(sh, 'shape_type', None) == 13]
     if not pairs:
         for sh in legend_shapes:
             set_text(sh, '')
         return
+
     assignments: Dict[int, int] = {}
     unused = set(range(len(legend_shapes)))
     for i, pic in enumerate(pic_shapes):
@@ -231,6 +252,7 @@ def fill_legends(slide, images: List[Any]) -> None:
         if best is not None:
             assignments[i] = best
             unused.remove(best)
+
     for i, (path, cap) in enumerate(pairs):
         cap = (cap or '').strip() or Path(path).stem
         cap = cap.replace('_', ' ').strip()
@@ -241,25 +263,42 @@ def fill_legends(slide, images: List[Any]) -> None:
             j = i
         if j is not None and j < len(legend_shapes):
             set_text(legend_shapes[j], cap)
+
     for j in unused:
         set_text(legend_shapes[j], '')
 
 
 def fill_info_slide(slide, *, title: str, body: str, part_label: str, page_label: str,
     images: List[Any], base_dir: Path) -> None:
-    # clear template placeholders
-    for sh in find_shapes_exact(slide, 'User flow'):
+    # clear placeholders
+    for sh in find_shapes_containing(slide, 'User flow'):
         set_text(sh, '')
+    for sh in find_shapes_containing(slide, 'Info Clé'):
+        # only clear header if it is exactly placeholder; leave actual content elsewhere
+        if (sh.text_frame.text or '').strip() == 'Info Clé':
+            set_text(sh, '')
     # Title
-    ts = find_shape_containing(slide, 'Titre section')
+    ts = None
+    for sh in slide.shapes:
+        if getattr(sh, 'has_text_frame', False) and sh.has_text_frame and 'Titre section' in (sh.text_frame.text or ''):
+            ts = sh
+            break
     if ts:
         set_text(ts, title)
     # Part label
-    ps = find_shape_containing(slide, 'Etat des lieux')
+    ps = None
+    for sh in slide.shapes:
+        if getattr(sh, 'has_text_frame', False) and sh.has_text_frame and 'Etat des lieux' in (sh.text_frame.text or ''):
+            ps = sh
+            break
     if ps and part_label:
         set_text(ps, part_label)
-    # Page
-    pg = find_shape_containing(slide, 'Page')
+    # Page label
+    pg = None
+    for sh in slide.shapes:
+        if getattr(sh, 'has_text_frame', False) and sh.has_text_frame and (sh.text_frame.text or '').strip().startswith('Page'):
+            pg = sh
+            break
     if pg and page_label:
         set_text(pg, page_label)
     # Body
@@ -271,19 +310,14 @@ def fill_info_slide(slide, *, title: str, body: str, part_label: str, page_label
                 break
     if body_shape:
         set_bullets(body_shape, body)
-    # Info clé
-    detail = find_shape_containing(slide, 'Texte Détail Info Clé')
-    if detail:
-        # simple: first line without '- '
-        first = ''
-        for ln in sanitize_client_body(body).split('\n'):
-            ln = ln.strip()
-            if ln:
-                first = ln.lstrip('- ').strip()
-                break
-        set_text(detail, first[:90] if first else '')
     fill_legends(slide, images)
     overlay_images(slide, images, base_dir)
+
+
+def is_toc_slide_text(txt: str) -> bool:
+    # heuristic: TOC contains "Sommaire" and numbered lines
+    t = txt or ''
+    return ('Sommaire' in t) and ('01' in t or '01 –' in t or '01 -' in t)
 
 
 def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_types_path: Path,
@@ -292,6 +326,12 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
     data = load_json(assembled_path)
     slide_types_cfg = load_json(slide_types_path) if slide_types_path.exists() else {'types': {}, 'defaults': {}}
     catalog = detect_template_slide_types(base_tpl, slide_types_cfg)
+
+    # Fix: ensure PART_DIVIDER != TOC
+    if 'TOC' in catalog and 'PART_DIVIDER' in catalog and catalog['TOC'] == catalog['PART_DIVIDER']:
+        alt = find_slide_by_predicate(base_tpl, lambda t: ('{{PART1_TITLE}}' in t) and ('Sommaire' not in t))
+        if alt is not None:
+            catalog['PART_DIVIDER'] = alt
 
     info_tpl = Presentation(str(info_template)) if info_template and info_template.exists() else None
     info_slide6 = info_tpl.slides[0] if info_tpl and len(info_tpl.slides) >= 1 else None
@@ -338,6 +378,7 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
     if 'COVER' in catalog:
         s_cover = clone_slide(prs_out, catalog['COVER'])
         replace_placeholders(s_cover, cover_map)
+
     if 'TOC' in catalog:
         s_toc = clone_slide(prs_out, catalog['TOC'])
         replace_placeholders(s_toc, global_map)
@@ -364,6 +405,7 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
         body = (s.get('bullets') or s.get('body') or '')
         images = s.get('images') or []
         part = int(s.get('part') or 0)
+
         if info_tpl and stype in ('CONTENT_TEXT', 'CONTENT_TEXT_IMAGES') and (info_slide6 or info_slide4):
             pairs = _images_to_pairs(images)
             chosen = info_slide6 if (len(pairs) > 4 and info_slide6 is not None) else (info_slide4 or info_slide6)
@@ -375,7 +417,7 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
                 fill_info_slide(slide_out, title=title, body=body, part_label=part_label, page_label=page_label,
                     images=images, base_dir=assembled_path.parent)
                 return
-        # fallback base content
+
         slide_in = catalog.get(stype) or catalog.get('CONTENT_TEXT')
         if not slide_in:
             return
@@ -408,9 +450,26 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
         apply_global(s_conc)
         replace_placeholders(s_conc, {'{{CONCLUSION_TEXTE}}': sanitize_client_body(data.get('conclusion', '') or '')[:900] or 'Synthèse à compléter.'})
 
-    # guardrails
+    # 4) Remove duplicated TOC slides (if any)
+    keep = []
+    seen_toc = False
+    for sl in prs_out.slides:
+        stxt = slide_text(sl)
+        if is_toc_slide_text(stxt):
+            if seen_toc:
+                continue
+            seen_toc = True
+        keep.append(sl)
+
+    prs_final = Presentation()
+    prs_final.slide_width = prs_out.slide_width
+    prs_final.slide_height = prs_out.slide_height
+    for sl in keep:
+        clone_slide(prs_final, sl)
+
+    # Guardrails
     offenders: List[Tuple[int, str]] = []
-    for si, sl in enumerate(prs_out.slides, start=1):
+    for si, sl in enumerate(prs_final.slides, start=1):
         for sh in sl.shapes:
             if getattr(sh, 'has_text_frame', False) and sh.has_text_frame:
                 txt = sh.text_frame.text or ''
@@ -420,7 +479,7 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
         preview = ' | '.join([f"S{a}: {b}" for a, b in offenders[:6]])
         raise SystemExit('❌ Unreplaced template tokens or page_id leak detected. Offenders: ' + preview)
 
-    prs_out.save(str(out_path))
+    prs_final.save(str(out_path))
 
 
 def main() -> None:
