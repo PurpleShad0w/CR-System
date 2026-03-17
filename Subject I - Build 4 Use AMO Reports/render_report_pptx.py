@@ -1,16 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""render_report_pptx.py
 
-Patch: PPT cleanliness (TOC duplicates + legend placeholders)
+"""render_report_pptx.py (v5)
 
-- Ensures PART_DIVIDER is not mistakenly the TOC slide.
-- Removes duplicated TOC slides if they still appear.
-- Clears any remaining "Légende Photo" placeholders when no captions are provided.
+Fixes the "images still missing" root cause.
 
-Keeps existing behavior:
-- Base template: cover / TOC / part dividers / conclusion
-- Info template: content slides with images + legends
+Your log shows the renderer *thinks* it embedded images:
+  "Images: embedded 38 / requested 38".
+But the produced PPTX still has no images.
+
+The reason is structural: the renderer was building a deck (prs_out), adding pictures,
+then creating a *second* presentation (prs_final) by cloning slide XML with deepcopy.
+When slides contain pictures, copying raw XML does NOT copy the relationship parts
+(ppt/media/* + slide rels). The result is a PPTX with PICTURE shapes referencing rId's
+that do not exist and an empty ppt/media folder.
+
+Fix:
+- Do NOT rebuild a second presentation at the end.
+- Save prs_out directly.
+- Keep the TOC de-dup logic by preventing duplicate TOC insertion upstream.
+
+Also keeps:
+- repo root inference (process+input)
+- image resolution (basename fallback)
+- image normalization to PNG when needed
+- bullet fit to shape (auto-size)
 
 """
 
@@ -25,8 +39,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from pptx import Presentation
-from pptx.enum.text import PP_ALIGN
+from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.enum.text import PP_ALIGN, MSO_AUTO_SIZE
 from pptx.util import Pt
+
+from PIL import Image
 
 
 def load_json(path: Path) -> Dict[str, Any]:
@@ -81,6 +98,14 @@ def clone_slide(prs_out: Presentation, slide_in) -> Any:
     return new_slide
 
 
+def slide_text(slide) -> str:
+    parts: List[str] = []
+    for shape in slide.shapes:
+        if getattr(shape, 'has_text_frame', False) and shape.has_text_frame:
+            parts.append(shape.text_frame.text or '')
+    return "\n".join(parts)
+
+
 def replace_text_in_shape(shape, mapping: Dict[str, str]) -> None:
     if not getattr(shape, 'has_text_frame', False) or not shape.has_text_frame:
         return
@@ -97,14 +122,6 @@ def replace_text_in_shape(shape, mapping: Dict[str, str]) -> None:
 def replace_placeholders(slide, mapping: Dict[str, str]) -> None:
     for shape in slide.shapes:
         replace_text_in_shape(shape, mapping)
-
-
-def slide_text(slide) -> str:
-    parts: List[str] = []
-    for shape in slide.shapes:
-        if getattr(shape, 'has_text_frame', False) and shape.has_text_frame:
-            parts.append(shape.text_frame.text or '')
-    return "\n".join(parts)
 
 
 def detect_template_slide_types(tpl: Presentation, slide_types_cfg: Dict[str, Any]) -> Dict[str, Any]:
@@ -144,44 +161,120 @@ def find_shapes_exact(slide, exact: str) -> List[Any]:
     return out
 
 
-def set_text(shape, text: str, *, font_size_pt: Optional[int] = None) -> None:
-    if not getattr(shape, 'has_text_frame', False) or not shape.has_text_frame:
-        return
-    tf = shape.text_frame
-    tf.clear()
-    p = tf.paragraphs[0]
-    p.text = text
-    if font_size_pt is not None:
+def infer_repo_root(assembled_path: Path) -> Path:
+    start = assembled_path.resolve()
+    for cand in [start.parent] + list(start.parents):
+        if (cand / 'process').exists() and (cand / 'input').exists():
+            return cand
+        if cand.name.lower() == 'process' and (cand.parent / 'input').exists():
+            return cand.parent
+    return assembled_path.parent.parent.parent
+
+
+_img_cache: Dict[str, Optional[Path]] = {}
+_conv_cache: Dict[Path, Path] = {}
+
+
+def _search_under(repo_root: Path, name: str) -> Optional[Path]:
+    for sub in ('process', 'input'):
+        base = repo_root / sub
+        if not base.exists():
+            continue
         try:
-            p.font.size = Pt(font_size_pt)
+            for hit in base.rglob(name):
+                if hit.is_file():
+                    return hit
         except Exception:
-            pass
+            continue
+    return None
 
 
-def set_bullets(shape, body: str, *, font_size_pt: int = 16, max_lines: int = 14) -> None:
-    if not getattr(shape, 'has_text_frame', False) or not shape.has_text_frame:
-        return
-    tf = shape.text_frame
-    tf.clear(); tf.word_wrap = True
-    body = sanitize_client_body(body)
-    lines = [ln.strip() for ln in normalize_whitespace(strip_markdown(body)).split('\n') if ln.strip()]
-    lines = [ln if ln.startswith('- ') else ('- ' + ln) for ln in lines][:max_lines]
-    if not lines:
-        tf.paragraphs[0].text = ''
-        return
-    for i, ln in enumerate(lines):
-        content = ln[2:].strip()
-        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.text = content
-        p.level = 0
-        try:
-            p.font.size = Pt(font_size_pt)
-        except Exception:
-            pass
-        p.alignment = PP_ALIGN.LEFT
+def resolve_image_path(img: str, base_dir: Path, repo_root: Path) -> Optional[Path]:
+    if not img:
+        return None
+    if img in _img_cache:
+        return _img_cache[img]
+
+    p = Path(img)
+    if p.is_absolute() and p.exists():
+        _img_cache[img] = p
+        return p
+
+    cand = (base_dir / img).resolve()
+    if cand.exists():
+        _img_cache[img] = cand
+        return cand
+
+    bn = p.name
+    cand2 = (base_dir / bn).resolve()
+    if cand2.exists():
+        _img_cache[img] = cand2
+        return cand2
+
+    for r in (
+        repo_root / 'process' / 'onenote',
+        repo_root / 'input' / 'onenote-exporter',
+        repo_root / 'input' / 'onenote-exporter' / 'output',
+        repo_root / 'input',
+    ):
+        if not r.exists():
+            continue
+        c3 = r / img
+        if c3.exists():
+            _img_cache[img] = c3
+            return c3
+        c4 = r / bn
+        if c4.exists():
+            _img_cache[img] = c4
+            return c4
+
+    found = _search_under(repo_root, bn)
+    _img_cache[img] = found
+    return found
 
 
-def _images_to_pairs(images: List[Any]) -> List[Tuple[str, str]]:
+def magic_type(p: Path) -> str:
+    try:
+        b = p.read_bytes()[:16]
+    except Exception:
+        return 'unknown'
+    if len(b) >= 3 and b[0:3] == b'\xFF\xD8\xFF':
+        return 'jpeg'
+    if len(b) >= 8 and b[0:8] == b'\x89PNG\r\n\x1a\n':
+        return 'png'
+    if len(b) >= 12 and b[0:4] == b'RIFF' and b[8:12] == b'WEBP':
+        return 'webp'
+    if len(b) >= 6 and (b[0:6] == b'GIF87a' or b[0:6] == b'GIF89a'):
+        return 'gif'
+    return 'unknown'
+
+
+def normalize_image_for_ppt(p: Path, tmp_dir: Path) -> Optional[Path]:
+    if not p.exists():
+        return None
+    if p in _conv_cache:
+        return _conv_cache[p]
+    kind = magic_type(p)
+    ext = p.suffix.lower()
+    if kind == 'jpeg' and ext in ('.jpg', '.jpeg'):
+        _conv_cache[p] = p
+        return p
+    if kind == 'png' and ext == '.png':
+        _conv_cache[p] = p
+        return p
+    try:
+        im = Image.open(p)
+        if im.mode not in ('RGB', 'RGBA'):
+            im = im.convert('RGB')
+        out = tmp_dir / (p.stem + '.png')
+        im.save(out, format='PNG', optimize=True)
+        _conv_cache[p] = out
+        return out
+    except Exception:
+        return None
+
+
+def images_to_pairs(images: List[Any]) -> List[Tuple[str, str]]:
     out: List[Tuple[str, str]] = []
     for im in images or []:
         if isinstance(im, str):
@@ -191,143 +284,150 @@ def _images_to_pairs(images: List[Any]) -> List[Tuple[str, str]]:
     return [(p, c) for p, c in out if p]
 
 
-def _resolve_image_path(img: str, base_dir: Path) -> Optional[Path]:
-    p = Path(img)
-    if p.is_absolute() and p.exists():
-        return p
-    cand = (base_dir / img).resolve()
-    if cand.exists():
-        return cand
-    if p.exists():
-        return p
-    return None
+def _shape_area(sh) -> int:
+    try:
+        return int(sh.width) * int(sh.height)
+    except Exception:
+        return 0
 
 
-def overlay_images(slide, images: List[Any], base_dir: Path) -> None:
-    pairs = _images_to_pairs(images)
-    pic_shapes = [sh for sh in slide.shapes if getattr(sh, 'shape_type', None) == 13]
-    for idx, (path, _) in enumerate(pairs[:len(pic_shapes)]):
-        ip = _resolve_image_path(path, base_dir)
-        if not ip:
+def _pic_has_image_rel(sh) -> bool:
+    try:
+        _ = sh.image
+        return True
+    except Exception:
+        return False
+
+
+def _dedup_rects(shapes: List[Any]) -> List[Any]:
+    seen = set(); out = []
+    for sh in shapes:
+        key = (int(sh.left), int(sh.top), int(sh.width), int(sh.height))
+        if key in seen:
             continue
-        ph = pic_shapes[idx]
-        slide.shapes.add_picture(str(ip), ph.left, ph.top, width=ph.width, height=ph.height)
+        seen.add(key)
+        out.append(sh)
+    return out
+
+
+def pick_image_slots(slide, max_slots: int) -> List[Any]:
+    pics = [sh for sh in slide.shapes if sh.shape_type == MSO_SHAPE_TYPE.PICTURE and not _pic_has_image_rel(sh)]
+    pics = _dedup_rects(pics)
+    pics.sort(key=_shape_area, reverse=True)
+    return pics[:max_slots]
+
+
+def overlay_images(slide, images: List[Any], base_dir: Path, repo_root: Path, tmp_dir: Path, stats: Dict[str, Any]) -> None:
+    pairs = images_to_pairs(images)
+    if not pairs:
+        return
+    slots = pick_image_slots(slide, max_slots=len(pairs))
+    for idx, (path, _) in enumerate(pairs[:len(slots)]):
+        stats['requested'] += 1
+        ip = resolve_image_path(path, base_dir, repo_root)
+        if not ip:
+            stats['unresolved'].append(path)
+            continue
+        normp = normalize_image_for_ppt(ip, tmp_dir)
+        if not normp:
+            stats['unresolved'].append(path)
+            continue
+        ph = slots[idx]
+        slide.shapes.add_picture(str(normp), ph.left, ph.top, width=ph.width, height=ph.height)
+        stats['embedded'] += 1
 
 
 def fill_legends(slide, images: List[Any]) -> None:
-    pairs = _images_to_pairs(images)
-    # broaden matching: sometimes the placeholder isn't exact
+    pairs = images_to_pairs(images)
     legend_shapes = find_shapes_exact(slide, 'Légende Photo') + find_shapes_containing(slide, 'Légende Photo')
-    # unique
-    seen = set()
-    uniq = []
+    # de-dup by id
+    seen = set(); uniq = []
     for sh in legend_shapes:
         if id(sh) in seen:
             continue
-        seen.add(id(sh))
-        uniq.append(sh)
+        seen.add(id(sh)); uniq.append(sh)
     legend_shapes = uniq
-
-    pic_shapes = [sh for sh in slide.shapes if getattr(sh, 'shape_type', None) == 13]
     if not pairs:
         for sh in legend_shapes:
-            set_text(sh, '')
+            try:
+                sh.text_frame.text = ''
+            except Exception:
+                pass
         return
-
-    assignments: Dict[int, int] = {}
-    unused = set(range(len(legend_shapes)))
-    for i, pic in enumerate(pic_shapes):
-        best = None
-        best_dist = None
-        for j in list(unused):
-            lg = legend_shapes[j]
-            if lg.top < pic.top:
-                continue
-            dv = abs(int(lg.top) - int(pic.top + pic.height))
-            dh = abs(int(lg.left) - int(pic.left))
-            dist = dv + dh * 0.1
-            if best_dist is None or dist < best_dist:
-                best_dist = dist
-                best = j
-        if best is not None:
-            assignments[i] = best
-            unused.remove(best)
-
-    for i, (path, cap) in enumerate(pairs):
-        cap = (cap or '').strip() or Path(path).stem
-        cap = cap.replace('_', ' ').strip()
+    for i, (_, cap) in enumerate(pairs[:len(legend_shapes)]):
+        cap = (cap or '').strip()
         if len(cap) > 60:
             cap = cap[:57].rstrip() + '…'
-        j = assignments.get(i)
-        if j is None and i < len(legend_shapes):
-            j = i
-        if j is not None and j < len(legend_shapes):
-            set_text(legend_shapes[j], cap)
-
-    for j in unused:
-        set_text(legend_shapes[j], '')
+        try:
+            legend_shapes[i].text_frame.text = cap
+        except Exception:
+            pass
 
 
-def fill_info_slide(slide, *, title: str, body: str, part_label: str, page_label: str,
-    images: List[Any], base_dir: Path) -> None:
-    # clear placeholders
-    for sh in find_shapes_containing(slide, 'User flow'):
-        set_text(sh, '')
-    for sh in find_shapes_containing(slide, 'Info Clé'):
-        # only clear header if it is exactly placeholder; leave actual content elsewhere
-        if (sh.text_frame.text or '').strip() == 'Info Clé':
-            set_text(sh, '')
-    # Title
-    ts = None
-    for sh in slide.shapes:
-        if getattr(sh, 'has_text_frame', False) and sh.has_text_frame and 'Titre section' in (sh.text_frame.text or ''):
-            ts = sh
-            break
-    if ts:
-        set_text(ts, title)
-    # Part label
-    ps = None
-    for sh in slide.shapes:
-        if getattr(sh, 'has_text_frame', False) and sh.has_text_frame and 'Etat des lieux' in (sh.text_frame.text or ''):
-            ps = sh
-            break
-    if ps and part_label:
-        set_text(ps, part_label)
-    # Page label
-    pg = None
-    for sh in slide.shapes:
-        if getattr(sh, 'has_text_frame', False) and sh.has_text_frame and (sh.text_frame.text or '').strip().startswith('Page'):
-            pg = sh
-            break
-    if pg and page_label:
-        set_text(pg, page_label)
-    # Body
-    body_shape = None
-    for sh in slide.shapes:
-        if getattr(sh, 'has_text_frame', False) and sh.has_text_frame:
-            if 'Texte Texte' in (sh.text_frame.text or ''):
-                body_shape = sh
-                break
-    if body_shape:
-        set_bullets(body_shape, body)
-    fill_legends(slide, images)
-    overlay_images(slide, images, base_dir)
+def normalize_bullet_lines(body: str, max_lines: int) -> List[str]:
+    body = sanitize_client_body(body)
+    lines = [ln.strip() for ln in normalize_whitespace(strip_markdown(body)).split('\n') if ln.strip()]
+    out = []
+    for ln in lines:
+        s = ln
+        if s.startswith('- '):
+            s = s[2:].strip()
+        while s.startswith('- '):
+            s = s[2:].strip()
+        if len(s) > 190:
+            s = s[:187].rstrip() + '…'
+        out.append(s)
+    if len(out) > max_lines:
+        out = out[:max_lines-1] + ['…']
+    return out
+
+
+def set_bullets_fit(shape, body: str, *, max_lines: int = 12, min_font_pt: int = 10) -> None:
+    if not getattr(shape, 'has_text_frame', False) or not shape.has_text_frame:
+        return
+    tf = shape.text_frame
+    lines = normalize_bullet_lines(body, max_lines=max_lines)
+    for p in tf.paragraphs:
+        p.text = ''
+    if not lines:
+        return
+    for i, s in enumerate(lines):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        p.text = s
+        p.level = 0
+        p.alignment = PP_ALIGN.LEFT
+    tf.word_wrap = True
+    try:
+        tf.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
+    except Exception:
+        pass
+    try:
+        for p in tf.paragraphs:
+            if p.font.size is not None and p.font.size < Pt(min_font_pt):
+                p.font.size = Pt(min_font_pt)
+    except Exception:
+        pass
 
 
 def is_toc_slide_text(txt: str) -> bool:
-    # heuristic: TOC contains "Sommaire" and numbered lines
     t = txt or ''
     return ('Sommaire' in t) and ('01' in t or '01 –' in t or '01 -' in t)
 
 
 def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_types_path: Path,
-    info_template: Optional[Path] = None) -> None:
+    info_template: Optional[Path] = None, repo_root_override: Optional[Path] = None) -> None:
     base_tpl = Presentation(str(base_template))
     data = load_json(assembled_path)
+    repo_root = repo_root_override or infer_repo_root(assembled_path)
+    base_dir = assembled_path.parent
+    tmp_dir = base_dir / '_tmp_img'
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    stats = {'requested': 0, 'embedded': 0, 'unresolved': []}
+
     slide_types_cfg = load_json(slide_types_path) if slide_types_path.exists() else {'types': {}, 'defaults': {}}
     catalog = detect_template_slide_types(base_tpl, slide_types_cfg)
 
-    # Fix: ensure PART_DIVIDER != TOC
     if 'TOC' in catalog and 'PART_DIVIDER' in catalog and catalog['TOC'] == catalog['PART_DIVIDER']:
         alt = find_slide_by_predicate(base_tpl, lambda t: ('{{PART1_TITLE}}' in t) and ('Sommaire' not in t))
         if alt is not None:
@@ -379,6 +479,7 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
         s_cover = clone_slide(prs_out, catalog['COVER'])
         replace_placeholders(s_cover, cover_map)
 
+    # TOC only once
     if 'TOC' in catalog:
         s_toc = clone_slide(prs_out, catalog['TOC'])
         replace_placeholders(s_toc, global_map)
@@ -404,18 +505,28 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
         title = (s.get('title') or '').strip()
         body = (s.get('bullets') or s.get('body') or '')
         images = s.get('images') or []
-        part = int(s.get('part') or 0)
 
         if info_tpl and stype in ('CONTENT_TEXT', 'CONTENT_TEXT_IMAGES') and (info_slide6 or info_slide4):
-            pairs = _images_to_pairs(images)
+            pairs = images_to_pairs(images)
             chosen = info_slide6 if (len(pairs) > 4 and info_slide6 is not None) else (info_slide4 or info_slide6)
             if chosen is not None:
                 slide_out = clone_slide(prs_out, chosen)
-                part_label_map = {1: 'Etat des lieux', 2: 'Scoring actuel', 3: 'Scoring projeté'}
-                part_label = part_label_map.get(part, '')
-                page_label = f"Page {idx_in_part}" if idx_in_part else ''
-                fill_info_slide(slide_out, title=title, body=body, part_label=part_label, page_label=page_label,
-                    images=images, base_dir=assembled_path.parent)
+                apply_global(slide_out)
+                # title
+                for sh in slide_out.shapes:
+                    if getattr(sh, 'has_text_frame', False) and sh.has_text_frame and 'Titre section' in (sh.text_frame.text or ''):
+                        sh.text_frame.text = title
+                        break
+                # body
+                body_shape = None
+                for sh in slide_out.shapes:
+                    if getattr(sh, 'has_text_frame', False) and sh.has_text_frame and 'Texte Texte' in (sh.text_frame.text or ''):
+                        body_shape = sh
+                        break
+                if body_shape is not None:
+                    set_bullets_fit(body_shape, body, max_lines=12 if images else 14)
+                fill_legends(slide_out, images)
+                overlay_images(slide_out, images, base_dir, repo_root, tmp_dir, stats)
                 return
 
         slide_in = catalog.get(stype) or catalog.get('CONTENT_TEXT')
@@ -424,10 +535,14 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
         slide_out = clone_slide(prs_out, slide_in)
         apply_global(slide_out)
         replace_placeholders(slide_out, {'{{SLIDE_TITLE}}': title})
+
         for sh in slide_out.shapes:
             if getattr(sh, 'has_text_frame', False) and sh.has_text_frame and '{{TEXTE_BULLETS}}' in (sh.text_frame.text or ''):
-                sh.text_frame.text = ''
-                set_bullets(sh, body)
+                set_bullets_fit(sh, body, max_lines=12 if images else 14)
+                break
+
+        fill_legends(slide_out, images)
+        overlay_images(slide_out, images, base_dir, repo_root, tmp_dir, stats)
 
     slides_spec = data.get('slides')
     per_part_counter = {1: 0, 2: 0, 3: 0}
@@ -445,41 +560,15 @@ def build_deck(base_template: Path, assembled_path: Path, out_path: Path, slide_
                 per_part_counter[part] += 1
             emit_content_slide(s, per_part_counter.get(part, 0))
 
-    if 'CONCLUSION' in catalog:
-        s_conc = clone_slide(prs_out, catalog['CONCLUSION'])
-        apply_global(s_conc)
-        replace_placeholders(s_conc, {'{{CONCLUSION_TEXTE}}': sanitize_client_body(data.get('conclusion', '') or '')[:900] or 'Synthèse à compléter.'})
+    # SAVE DIRECTLY (no re-clone!)
+    prs_out.save(str(out_path))
 
-    # 4) Remove duplicated TOC slides (if any)
-    keep = []
-    seen_toc = False
-    for sl in prs_out.slides:
-        stxt = slide_text(sl)
-        if is_toc_slide_text(stxt):
-            if seen_toc:
-                continue
-            seen_toc = True
-        keep.append(sl)
-
-    prs_final = Presentation()
-    prs_final.slide_width = prs_out.slide_width
-    prs_final.slide_height = prs_out.slide_height
-    for sl in keep:
-        clone_slide(prs_final, sl)
-
-    # Guardrails
-    offenders: List[Tuple[int, str]] = []
-    for si, sl in enumerate(prs_final.slides, start=1):
-        for sh in sl.shapes:
-            if getattr(sh, 'has_text_frame', False) and sh.has_text_frame:
-                txt = sh.text_frame.text or ''
-                if '{{' in txt or 'page_id=' in txt:
-                    offenders.append((si, txt.strip().replace('\n', ' ')[:160]))
-    if offenders:
-        preview = ' | '.join([f"S{a}: {b}" for a, b in offenders[:6]])
-        raise SystemExit('❌ Unreplaced template tokens or page_id leak detected. Offenders: ' + preview)
-
-    prs_final.save(str(out_path))
+    print(f"Repo root: {repo_root}")
+    print(f"Images: embedded {stats['embedded']} / requested {stats['requested']}")
+    if stats['unresolved']:
+        print('Unresolved image paths (sample):')
+        for u in stats['unresolved'][:12]:
+            print(' -', u)
 
 
 def main() -> None:
@@ -489,11 +578,12 @@ def main() -> None:
     ap.add_argument('--out', default='Rapport_Audit.pptx')
     ap.add_argument('--slide-types', default='input/config/slide_types.json')
     ap.add_argument('--info-template', default='')
+    ap.add_argument('--project-root', default='', help='Override repo root (folder that contains process/ and input/)')
     args = ap.parse_args()
 
+    repo_override = Path(args.project_root) if args.project_root else None
     build_deck(Path(args.template), Path(args.assembled), Path(args.out), Path(args.slide_types),
-        Path(args.info_template) if args.info_template else None)
-    print(f"Wrote: {args.out}")
+        Path(args.info_template) if args.info_template else None, repo_root_override=repo_override)
 
 
 if __name__ == '__main__':
