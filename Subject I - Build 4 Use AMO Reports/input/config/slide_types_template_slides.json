@@ -1,0 +1,27 @@
+{
+  "version": "1.1",
+  "description": "Slide type detection for Templates Slides.pptx using visible marker text.",
+  "types": {
+    "CONTENT_TEXT": {
+      "repeatable": true,
+      "detect_tokens": [
+        "Titre section",
+        "Texte Texte"
+      ],
+      "max_images": 0
+    },
+    "CONTENT_TEXT_IMAGES": {
+      "repeatable": true,
+      "detect_tokens": [
+        "Titre section",
+        "Texte Texte",
+        "Légende Photo"
+      ],
+      "max_images": 6
+    }
+  },
+  "defaults": {
+    "content_type": "CONTENT_TEXT",
+    "content_type_with_images": "CONTENT_TEXT_IMAGES"
+  }
+}

@@ -30,24 +30,14 @@ def _push(out: List[Dict[str, str]], p: str, c: str = '') -> None:
 	p = (p or '').strip()
 	if not p:
 		return
-	# keep only likely image paths if extension present
 	if Path(p).suffix and not _is_image_path(p):
 		return
-	d = {'path': p, 'caption': (c or '')}
-	out.append(d)
+	out.append({'path': p, 'caption': (c or '')})
 
 
 def collect_images(page: Dict[str, Any]) -> List[Dict[str, str]]:
-	"""Schema-flexible image collection from a page dict.
-
-	Supports:
-	- top-level lists: images/pics/pictures/media/attachments
-	- nested: assets.images
-	- blocks: {type:'image', path:'...'}
-	"""
 	out: List[Dict[str, str]] = []
 
-	# 1) top-level list keys
 	for key in ('images', 'pics', 'pictures', 'media', 'attachments'):
 		raw = page.get(key)
 		if isinstance(raw, list):
@@ -56,7 +46,6 @@ def collect_images(page: Dict[str, Any]) -> List[Dict[str, str]]:
 				if d.get('path'):
 					_push(out, d['path'], d.get('caption', ''))
 
-	# 2) nested assets.images (common in your page JSON snippets)
 	assets = page.get('assets')
 	if isinstance(assets, dict):
 		imgs = assets.get('images')
@@ -66,7 +55,6 @@ def collect_images(page: Dict[str, Any]) -> List[Dict[str, str]]:
 				if d.get('path'):
 					_push(out, d['path'], d.get('caption', ''))
 
-	# 3) blocks-based image items
 	blocks = page.get('blocks')
 	if isinstance(blocks, list):
 		for b in blocks:
@@ -79,9 +67,7 @@ def collect_images(page: Dict[str, Any]) -> List[Dict[str, str]]:
 			elif p and _is_image_path(p):
 				_push(out, p, '')
 
-	# de-dup by path preserving order
-	seen = set()
-	uniq = []
+	seen = set(); uniq = []
 	for d in out:
 		p = d.get('path')
 		if not p or p in seen:
@@ -92,7 +78,6 @@ def collect_images(page: Dict[str, Any]) -> List[Dict[str, str]]:
 
 
 def pick_best(images: List[Dict[str, str]], *, max_images: int = 3) -> List[Dict[str, str]]:
-	"""Deterministic policy (no ML): prefer items with captions."""
 	if not images:
 		return []
 	imgs = sorted(images, key=lambda d: (0 if (d.get('caption') or '').strip() else 1, len(d.get('path') or '')))

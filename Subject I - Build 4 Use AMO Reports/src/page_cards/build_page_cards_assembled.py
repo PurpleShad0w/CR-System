@@ -9,14 +9,13 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Make `src/` importable so `import legacy...` works when running as a script
+# Ensure src/ importable
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC = REPO_ROOT / 'src'
 if str(SRC) not in sys.path:
 	sys.path.insert(0, str(SRC))
 
 from legacy.section_names import DEFAULT_SECTION_NAME, normalize_section_name
-
 from page_text import collect_text, to_bullets
 from page_images import collect_images, pick_best
 
@@ -33,19 +32,13 @@ def save_json(p: Path, obj: Any) -> None:
 	p.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
-def repo_root_from_here() -> Path:
-	return REPO_ROOT
-
-
 def find_existing_pages_source(hint: Path) -> Optional[Path]:
-	root = repo_root_from_here()
 	candidates = [
 		hint,
-		root / 'process' / 'onenote' / 'pages_index.json',
-		root / 'process' / 'onenote' / 'manifest.json',
-		root / 'process' / 'onenote' / 'manifest' / 'manifest.json',
-		root / 'process' / 'onenote' / 'manifest' / 'index.json',
-		root / 'input' / 'onenote-exporter' / 'output' / 'manifest.json',
+		REPO_ROOT / 'process' / 'onenote' / 'pages_index.json',
+		REPO_ROOT / 'process' / 'onenote' / 'manifest.json',
+		REPO_ROOT / 'process' / 'onenote' / 'manifest' / 'manifest.json',
+		REPO_ROOT / 'input' / 'onenote-exporter' / 'output' / 'manifest.json',
 	]
 	for c in candidates:
 		try:
@@ -53,7 +46,7 @@ def find_existing_pages_source(hint: Path) -> Optional[Path]:
 				return c
 		except Exception:
 			continue
-	base = root / 'process' / 'onenote'
+	base = REPO_ROOT / 'process' / 'onenote'
 	if base.exists():
 		for cand in base.rglob('manifest.json'):
 			if cand.is_file():
@@ -70,15 +63,14 @@ def iter_pages_from_pages_index(obj: Any) -> List[Dict[str, Any]]:
 
 
 def _find_page_json_file(page_id: str) -> Optional[Path]:
-	root = repo_root_from_here()
 	candidates = [
-		root / 'process' / 'onenote' / 'pages' / f'{page_id}.json',
-		root / 'process' / 'onenote' / f'{page_id}.json',
+		REPO_ROOT / 'process' / 'onenote' / 'pages' / f'{page_id}.json',
+		REPO_ROOT / 'process' / 'onenote' / f'{page_id}.json',
 	]
 	for c in candidates:
 		if c.exists() and c.is_file():
 			return c
-	base = root / 'process' / 'onenote'
+	base = REPO_ROOT / 'process' / 'onenote'
 	if base.exists():
 		for cand in base.rglob(f'{page_id}.json'):
 			if cand.is_file():
@@ -92,19 +84,38 @@ def iter_pages_from_manifest(obj: Any) -> List[Dict[str, Any]]:
 	page_ids = obj.get('processed_pages')
 	if not isinstance(page_ids, list) or not page_ids:
 		return []
-	pages = []
+	pages: List[Dict[str, Any]] = []
+	seen = set()
 	for pid in page_ids:
-		if not isinstance(pid, str) or not pid.strip():
+		if not isinstance(pid, str):
 			continue
-		pfile = _find_page_json_file(pid.strip())
+		pid = pid.strip()
+		if not pid or pid in seen:
+			continue
+		seen.add(pid)
+		pfile = _find_page_json_file(pid)
 		if pfile and pfile.exists():
 			try:
 				pages.append(load_json(pfile))
 			except Exception:
-				pages.append({'title': pid.strip(), 'blocks': [], 'assets': {}})
+				pages.append({'metadata': {'page_id': pid}, 'title': pid, 'blocks': [], 'assets': {}})
 		else:
-			pages.append({'title': pid.strip(), 'blocks': [], 'assets': {}})
-	return [p for p in pages if isinstance(p, dict)]
+			pages.append({'metadata': {'page_id': pid}, 'title': pid, 'blocks': [], 'assets': {}})
+	return pages
+
+
+def _page_id(page: Dict[str, Any]) -> str:
+	m = page.get('metadata')
+	if isinstance(m, dict) and isinstance(m.get('page_id'), str):
+		return m['page_id']
+	return ''
+
+
+def _page_section(page: Dict[str, Any]) -> str:
+	m = page.get('metadata')
+	if isinstance(m, dict) and isinstance(m.get('section'), str):
+		return m['section']
+	return ''
 
 
 def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str, max_images: int, max_bullets: int) -> None:
@@ -121,6 +132,23 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
 	if not pages:
 		raise SystemExit('No pages found (need pages_index.json with pages, or manifest.json with processed_pages + per-page JSON files).')
 
+	# Filter pages by section (avoid mixing other sections present in manifest)
+	section_norm = normalize_section_name(section_name)
+	filtered: List[Dict[str, Any]] = []
+	seen_pid = set()
+	for pg in pages:
+		pid = _page_id(pg) or (pg.get('page_id') if isinstance(pg.get('page_id'), str) else '')
+		pid = (pid or '').strip()
+		if pid and pid in seen_pid:
+			continue
+		sec = normalize_section_name(_page_section(pg))
+		if sec and section_norm and sec != section_norm:
+			continue
+		if pid:
+			seen_pid.add(pid)
+		filtered.append(pg)
+	pages = filtered
+
 	slides: List[Dict[str, Any]] = []
 	slides.append({'type': 'PART_DIVIDER', 'part': 1, 'title': 'Etat des lieux (Pages OneNote)'})
 
@@ -129,18 +157,21 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
 		text = collect_text(pg)
 		bul = to_bullets(text, max_lines=max_bullets)
 		imgs = pick_best(collect_images(pg), max_images=max_images)
+		# Attach page_id for traceability/debug
+		pid = _page_id(pg)
 		slides.append({
 			'type': 'CONTENT_TEXT_IMAGES' if imgs else 'CONTENT_TEXT',
 			'part': 1,
 			'title': title,
 			'bullets': bul,
 			'images': imgs,
+			'page_id': pid,
 		})
 
 	out = {
 		'case_id': case_id,
 		'report_type': 'PAGE_CARDS_PART1',
-		'section_context': {'onenote_section_name': section_name},
+		'section_context': {'onenote_section_name': section_norm},
 		'macro_parts': [{'macro_part': 1, 'macro_part_name': 'Etat des lieux (Pages OneNote)'}],
 		'slides': slides,
 	}
