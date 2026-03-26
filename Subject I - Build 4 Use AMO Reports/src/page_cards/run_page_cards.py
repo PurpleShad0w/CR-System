@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 from __future__ import annotations
 
 import argparse
@@ -22,21 +21,11 @@ def _run(cmd: list[str]) -> None:
 
 
 def maybe_run_process_onenote(args) -> Path:
-	"""Ensure process_onenote output exists.
-
-	process_onenote.py writes:
-	process/onenote/<notebook>/manifest.json
-	process/onenote/<notebook>/pages/*.json
-
-	OCR is parsed from [[IMAGE OCR]] lines into blocks type 'image_ocr' (no flag needed).
-	Audio transcription is enabled only if --audio-transcribe is passed.
-	"""
 	manifest = REPO_ROOT / 'process' / 'onenote' / args.notebook / 'manifest.json'
 	if not args.ensure_onenote:
 		return manifest
 	if manifest.exists():
 		return manifest
-
 	cmd = [
 		args.python_exe,
 		str(REPO_ROOT / 'process_onenote.py'),
@@ -63,7 +52,7 @@ def main() -> None:
 	ap.add_argument('--notebook', default='test')
 	ap.add_argument('--onenote-input', default='input/onenote-exporter/output')
 	ap.add_argument('--onenote-out', default='process/onenote')
-	ap.add_argument('--audio-transcribe', action='store_true', default=True, help='Pass --transcribe to process_onenote.py (audio).')
+	ap.add_argument('--audio-transcribe', action='store_true', default=True)
 	ap.add_argument('--copy-assets', action='store_true', default=False)
 	ap.add_argument('--python-exe', default=sys.executable or 'python')
 
@@ -75,12 +64,22 @@ def main() -> None:
 	ap.add_argument('--out', default='')
 	ap.add_argument('--max-images', type=int, default=6)
 	ap.add_argument('--max-bullets', type=int, default=10)
+
+	# NEW: per-slide Hugging Face rewrite (state-of-play narrative)
+	ap.add_argument('--humanize', dest='humanize', action='store_true')
+	ap.add_argument('--no-humanize', dest='humanize', action='store_false')
+	ap.set_defaults(humanize=True)
+	ap.add_argument('--humanize-temperature', type=float, default=0.2)
+	ap.add_argument('--humanize-max-tokens', type=int, default=380)
+	ap.add_argument('--humanize-top-p', type=float, default=1.0)
+	ap.add_argument('--humanize-sleep', type=float, default=0.0)
+
 	args = ap.parse_args()
 
 	manifest = maybe_run_process_onenote(args)
 	pages_src = Path(args.pages_index) if args.pages_index else manifest
-
 	section = normalize_section_name(args.section_name or DEFAULT_SECTION_NAME)
+
 	assembled = Path('process/page_cards/assembled_page_cards.json')
 	out_pptx = Path(args.out) if args.out else Path(f'output/reports/{args.case_id}/Part1_PageCards.pptx')
 	out_pptx.parent.mkdir(parents=True, exist_ok=True)
@@ -95,6 +94,19 @@ def main() -> None:
 		'--max-images', str(args.max_images),
 		'--max-bullets', str(args.max_bullets),
 	])
+
+	# NEW: rewrite each slide bullets via HF (uses llm_client.py + HF_TOKEN env var)
+	if args.humanize:
+		_run([
+			args.python_exe,
+			'src/page_cards/humanize_page_cards.py',
+			'--assembled', str(assembled),
+			'--out', str(assembled),
+			'--temperature', str(args.humanize_temperature),
+			'--max-tokens', str(args.humanize_max_tokens),
+			'--top-p', str(args.humanize_top_p),
+			'--sleep', str(args.humanize_sleep),
+		])
 
 	_run([
 		args.python_exe,
