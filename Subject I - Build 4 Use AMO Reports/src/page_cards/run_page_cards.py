@@ -65,7 +65,7 @@ def main() -> None:
 	ap.add_argument('--max-images', type=int, default=6)
 	ap.add_argument('--max-bullets', type=int, default=10)
 
-	# NEW: per-slide Hugging Face rewrite (state-of-play narrative)
+	# per-slide HF rewrite (default ON)
 	ap.add_argument('--humanize', dest='humanize', action='store_true')
 	ap.add_argument('--no-humanize', dest='humanize', action='store_false')
 	ap.set_defaults(humanize=True)
@@ -95,7 +95,6 @@ def main() -> None:
 		'--max-bullets', str(args.max_bullets),
 	])
 
-	# NEW: rewrite each slide bullets via HF (uses llm_client.py + HF_TOKEN env var)
 	if args.humanize:
 		_run([
 			args.python_exe,
