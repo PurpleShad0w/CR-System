@@ -9,11 +9,15 @@ import streamlit as st
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC = REPO_ROOT / 'src'
-if str(SRC) not in sys.path:
-	sys.path.insert(0, str(SRC))
+# Ensure repo + src are importable
+for p in (REPO_ROOT, SRC):
+	sp = str(p)
+	if sp not in sys.path:
+		sys.path.insert(0, sp)
 
 from legacy.legacy_runner import run_legacy, run_page_cards
 from legacy.section_names import DEFAULT_SECTION_NAME, normalize_section_name
+from ui.onenote_cloud import onenote_cloud_ui
 
 
 def load_presets() -> list[dict]:
@@ -33,9 +37,10 @@ def load_presets() -> list[dict]:
 def main():
 	st.set_page_config(page_title='AMO Reports', layout='wide')
 	st.title('AMO Reports Generator')
-	st.caption('Two modes: Page Cards (Part 1 only) and Legacy full pipeline (run_pipeline).')
+	st.caption('Dual app: Main (Page Cards), OneNote (Microsoft Graph download), Legacy pipeline.')
 
-	mode = st.radio('Mode', ['Page Cards (Part 1 only)', 'Legacy pipeline (full)'], horizontal=True)
+	# Tabs order requested: Main | OneNote | Legacy
+	tab_main, tab_onenote, tab_legacy = st.tabs(['Main', 'OneNote', 'Legacy'])
 
 	with st.sidebar:
 		st.header('Common')
@@ -47,7 +52,10 @@ def main():
 
 	log_area = st.empty()
 
-	if mode.startswith('Page Cards'):
+	# -------------------------
+	# MAIN TAB (Page Cards)
+	# -------------------------
+	with tab_main:
 		st.subheader('Page Cards (Part 1 only)')
 		col1, col2 = st.columns(2)
 		with col1:
@@ -69,12 +77,20 @@ def main():
 			argv += ['--max-bullets', str(int(max_bullets))]
 			if out_path.strip():
 				argv += ['--out', out_path.strip()]
-
 			code, out = run_page_cards(argv)
 			log_area.code(out or '(no output)')
 			st.success('Page Cards completed') if code == 0 else st.error(f'Page Cards failed (exit={code})')
 
-	else:
+	# -------------------------
+	# ONENOTE TAB (Graph list + download)
+	# -------------------------
+	with tab_onenote:
+		onenote_cloud_ui(REPO_ROOT)
+
+	# -------------------------
+	# LEGACY TAB
+	# -------------------------
+	with tab_legacy:
 		st.subheader('Legacy pipeline (full)')
 		st.caption('Runs run_pipeline.py. Auto-tries section name variants to avoid casing/dash mismatches.')
 
