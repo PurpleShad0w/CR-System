@@ -5,5 +5,6 @@ __pycache__/
 cache/
 db/
 output/
+output_ai/
 process/
 reports/

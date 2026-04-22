@@ -1,0 +1,42 @@
+paths:
+  db_dir: db
+  out_dir: output_ai
+
+level_defaults:
+  site:
+    id_cols: [siteId]
+    date_col: date
+    hist_file: sitehist.csv
+    pred_file: sitepred.csv
+    weath_file: siteweath.csv
+  zone:
+    id_cols: [siteId, zoneId]
+    date_col: date
+    hist_file: zonehist.csv
+    pred_file: zonepred.csv
+    weath_file: siteweath.csv
+
+features:
+  lags: [1, 2, 7, 14]
+  rolling_windows: [7, 14, 30]
+  add_calendar: true
+  add_site_id: true
+  # Will be picked from siteweath if present
+  weather_cols: [tempAmb, humidity, djF, djC, tempMin, tempMax, windSpeed, chancePluie, weekend]
+
+model:
+  type: hist_gbdt   # ridge | hist_gbdt
+  ridge:
+    alpha: 1.0
+  hist_gbdt:
+    max_depth: 8
+    learning_rate: 0.08
+    max_iter: 350
+    l2_regularization: 0.0
+
+training:
+  valid_days: 60
+
+prediction:
+  # If days is null, the script uses whatever future horizon exists in siteweath beyond last historical date.
+  days: null
