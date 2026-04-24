@@ -11,7 +11,7 @@ from .cleaning import apply_missing_sentinels, expected_range_by_group, drop_loc
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--config', required=True)
-    ap.add_argument('--level', default='site', choices=['site','zone'])
+    ap.add_argument('--level', default='site', choices=['site', 'zone'])
     args = ap.parse_args()
 
     cfg = load_config(args.config).raw
@@ -21,11 +21,11 @@ def main():
     level_cfg = cfg['level_defaults'][args.level]
     id_cols = level_cfg['id_cols']
 
-    hist, pred, weath = load_level_tables(db_dir, level_cfg)
+    hist, pred, _ = load_level_tables(db_dir, level_cfg)
 
     zero_map = {'elecTotalKwh': True, 'totalKwh': True, 'waterM3': True, 'totalWater': True}
-    measure_cols = [c for c in ['elecTotalKwh','waterM3'] if c in hist.columns]
-    pred_cols = [c for c in ['totalKwh','totalWater'] if c in pred.columns]
+    measure_cols = [c for c in ['elecTotalKwh', 'waterM3'] if c in hist.columns]
+    pred_cols = [c for c in ['totalKwh', 'totalWater'] if c in pred.columns]
 
     hist = apply_missing_sentinels(hist, measure_cols, zero_map)
     pred = apply_missing_sentinels(pred, pred_cols, zero_map)

@@ -8,7 +8,6 @@ from .io_utils import read_semicolon_csv
 def load_level_tables(db_dir: Path, level_cfg: dict):
     hist = read_semicolon_csv(db_dir / level_cfg['hist_file'])
     pred = read_semicolon_csv(db_dir / level_cfg['pred_file'])
-
     weath_path = db_dir / level_cfg['weath_file']
     weath = read_semicolon_csv(weath_path) if weath_path.exists() else pd.DataFrame()
 

@@ -21,8 +21,7 @@ features:
   rolling_windows: [7, 14, 30]
   add_calendar: true
   add_site_id: true
-  # Will be picked from siteweath if present
-  weather_cols: [tempAmb, humidity, djF, djC, tempMin, tempMax, windSpeed, chancePluie, weekend]
+  weather_cols: [tempAmb, humidity, djF, djC, tempMin, tempMax, chancePluie, windSpeed, weekend]
 
 model:
   type: hist_gbdt   # ridge | hist_gbdt
@@ -38,5 +37,4 @@ training:
   valid_days: 60
 
 prediction:
-  # If days is null, the script uses whatever future horizon exists in siteweath beyond last historical date.
   days: null

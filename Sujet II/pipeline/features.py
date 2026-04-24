@@ -1,5 +1,4 @@
 from __future__ import annotations
-import numpy as np
 import pandas as pd
 
 
@@ -22,10 +21,22 @@ def build_lag_features(df: pd.DataFrame, id_cols, date_col: str, target_col: str
 
 def build_rolling_features(df: pd.DataFrame, id_cols, date_col: str, target_col: str, windows: list[int]) -> pd.DataFrame:
     df = df.copy().sort_values(id_cols + [date_col])
-    s = df.groupby(id_cols)[target_col]
+
+    g = df.groupby(id_cols, dropna=False)[target_col]
+
     for w in windows:
-        df[f'roll_med_{w}'] = s.shift(1).rolling(w, min_periods=max(2, w//3)).median().reset_index(level=id_cols, drop=True)
-        df[f'roll_mean_{w}'] = s.shift(1).rolling(w, min_periods=max(2, w//3)).mean().reset_index(level=id_cols, drop=True)
+        minp = max(2, w // 3)
+
+        df[f'roll_med_{w}'] = (
+            g.apply(lambda x: x.shift(1).rolling(w, min_periods=minp).median())
+             .reset_index(level=id_cols, drop=True)
+        )
+
+        df[f'roll_mean_{w}'] = (
+            g.apply(lambda x: x.shift(1).rolling(w, min_periods=minp).mean())
+             .reset_index(level=id_cols, drop=True)
+        )
+
     return df
 
 
