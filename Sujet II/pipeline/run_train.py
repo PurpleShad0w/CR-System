@@ -6,14 +6,28 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.pipeline import Pipeline
 
 from .config import load_config
 from .dataset import load_level_tables
 from .io_utils import ensure_dir
-from .features import add_calendar_features, build_lag_features, build_rolling_features, select_feature_columns
+from .features import (
+    add_calendar_features,
+    build_lag_features,
+    build_rolling_features,
+    select_feature_columns,
+)
 from .modeling import make_model, save_model
+
+
+def _make_ohe():
+    # compat sklearn (sparse_output récent, sparse ancien)
+    try:
+        return OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+    except TypeError:
+        return OneHotEncoder(handle_unknown="ignore", sparse=False)
 
 
 def main():
@@ -44,12 +58,12 @@ def main():
     if len(weath) and "date" in weath.columns:
         weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
 
-    # Build base frame
+    # Base frame
     df = hist[id_cols + ["date", args.target]].copy()
     df[args.target] = pd.to_numeric(df[args.target], errors="coerce")
     df = df.dropna(subset=id_cols + ["date", args.target])
 
-    # Merge weather on (siteId, date) when possible
+    # Merge weather
     weather_cols = cfg["features"].get("weather_cols", [])
     if len(weath) and "siteId" in weath.columns and "date" in weath.columns:
         keep = ["siteId", "date"] + [c for c in weather_cols if c in weath.columns]
@@ -63,7 +77,18 @@ def main():
     df = build_lag_features(df, id_cols, "date", args.target, cfg["features"]["lags"])
     df = build_rolling_features(df, id_cols, "date", args.target, cfg["features"]["rolling_windows"])
 
-    feat_cols = select_feature_columns(df, id_cols if cfg["features"].get("add_site_id", True) else [], weather_cols)
+    feat_cols = select_feature_columns(
+        df, id_cols if cfg["features"].get("add_site_id", True) else [], weather_cols
+    )
+
+    # Drop rows where lags/rollings are missing (stabilise fortement la perf)
+    lag_cols = [f"lag_{k}" for k in cfg["features"]["lags"]]
+    roll_cols = []
+    for w in cfg["features"]["rolling_windows"]:
+        roll_cols += [f"roll_med_{w}", f"roll_mean_{w}"]
+    must_have = [c for c in (lag_cols + roll_cols) if c in df.columns]
+    if must_have:
+        df = df.dropna(subset=must_have)
 
     # Time split
     valid_days = int(cfg["training"].get("valid_days", 60))
@@ -76,19 +101,29 @@ def main():
     X_valid = valid[feat_cols].copy()
     y_valid = valid[args.target].to_numpy(dtype=float)
 
-    # --------- IMPORTANT: log1p transform ---------
+    # ✅ log1p transform
     y_train_t = np.log1p(y_train)
 
-    # --------- OneHot encoding (avoid ordinal siteId) ---------
-    # We keep only the columns that actually exist in X_train.
+    # ✅ OneHot siteId (et calendaires discrets)
     candidate_cat = ["siteId", "dow", "month", "is_weekend"]
     cat_cols = [c for c in candidate_cat if c in X_train.columns]
     num_cols = [c for c in X_train.columns if c not in cat_cols]
 
+    ohe = _make_ohe()
+
+    cat_pipe = Pipeline([
+        ("imp", SimpleImputer(strategy="most_frequent")),
+        ("ohe", ohe),
+    ])
+
+    num_pipe = Pipeline([
+        ("imp", SimpleImputer(strategy="median")),
+    ])
+
     pre = ColumnTransformer(
         transformers=[
-            ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat_cols),
-            ("num", "passthrough", num_cols),
+            ("cat", cat_pipe, cat_cols),
+            ("num", num_pipe, num_cols),
         ],
         remainder="drop",
     )
@@ -97,7 +132,7 @@ def main():
     pipe = Pipeline([("pre", pre), ("model", model)])
     pipe.fit(X_train, y_train_t)
 
-    # Save model + meta (features used + log flag)
+    # Save model + meta
     model_dir = out_dir / "models"
     model_path = model_dir / f"{args.level}_{args.target}.joblib"
     save_model(pipe, model_path)
@@ -114,15 +149,16 @@ def main():
         json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    # Validation metrics (inverse transform)
-    yhat_valid = np.expm1(pipe.predict(X_valid))
-    yhat_valid = np.maximum(yhat_valid, 0.0)
+    # Validation (inverse transform)
+    pred_log = pipe.predict(X_valid)
+    yhat = np.expm1(pred_log)
+    yhat = np.maximum(yhat, 0.0)
 
     from .modeling import mae, rmse, mape
     print("valid rows:", len(valid))
-    print("MAE", mae(y_valid, yhat_valid))
-    print("RMSE", rmse(y_valid, yhat_valid))
-    print("MAPE", mape(y_valid, yhat_valid))
+    print("MAE", mae(y_valid, yhat))
+    print("RMSE", rmse(y_valid, yhat))
+    print("MAPE", mape(y_valid, yhat))
     print("saved", model_path)
 
 

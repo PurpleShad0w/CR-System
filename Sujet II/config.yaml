@@ -21,7 +21,7 @@ features:
   rolling_windows: [7, 14, 30]
   add_calendar: true
   add_site_id: true
-  weather_cols: [tempAmb, humidity, djF, djC, tempMin, tempMax, chancePluie, windSpeed, weekend]
+  weather_cols: [tempAmb, humidity, djF, djC, tempMin, tempMax, chancePluie, windSpeed]
 
 model:
   type: hist_gbdt   # ridge | hist_gbdt

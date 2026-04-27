@@ -1,100 +1,107 @@
 from __future__ import annotations
-import argparse
-import json
 from pathlib import Path
-
 import numpy as np
-import pandas as pd
-
-from .config import load_config
-from .io_utils import ensure_dir
-from .dataset import load_level_tables
-from .features import add_calendar_features, build_lag_features, build_rolling_features
-from .modeling import load_model, mae, rmse
+import matplotlib.pyplot as plt
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--config", required=True)
-    ap.add_argument("--level", default="site", choices=["site", "zone"])
-    ap.add_argument("--target", required=True, choices=["elecTotalKwh", "waterM3"])
-    args = ap.parse_args()
-
-    cfg = load_config(args.config).raw
-    db_dir = Path(cfg["paths"]["db_dir"])
-    out_dir = ensure_dir(Path(cfg["paths"]["out_dir"]))
-
-    cleaned_path = out_dir / f"{args.level}hist_cleaned.csv"
-    if not cleaned_path.exists():
-        raise RuntimeError("Run cleaning first")
-
-    hist = pd.read_csv(cleaned_path)
-    hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
-
-    level_cfg = cfg["level_defaults"][args.level]
-    id_cols = level_cfg["id_cols"]
-
-    model_dir = out_dir / "models"
-    meta_path = model_dir / f"{args.level}_{args.target}.meta.json"
-    if not meta_path.exists():
-        raise RuntimeError("Missing model meta.json. Re-train first.")
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-
-    feat_cols = meta["feature_columns"]
-    valid_days = int(meta.get("valid_days", cfg["training"].get("valid_days", 60)))
-    log1p_target = bool(meta.get("log1p_target", False))
-
-    # Build base df
-    df = hist[id_cols + ["date", args.target]].copy()
-    df[args.target] = pd.to_numeric(df[args.target], errors="coerce")
-    df = df.dropna(subset=id_cols + ["date", args.target])
-
-    # Merge weather
-    _, _, weath = load_level_tables(db_dir, level_cfg)
-    if len(weath) and "date" in weath.columns:
-        weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
-    weather_cols = cfg["features"].get("weather_cols", [])
-
-    if len(weath) and "siteId" in weath.columns and "date" in weath.columns:
-        keep = ["siteId", "date"] + [c for c in weather_cols if c in weath.columns]
-        w = weath[keep].drop_duplicates(subset=["siteId", "date"], keep="last")
-        df = df.merge(w, on=["siteId", "date"], how="left")
-
-    if cfg["features"].get("add_calendar", True):
-        df = add_calendar_features(df, "date")
-
-    df = build_lag_features(df, id_cols, "date", args.target, cfg["features"]["lags"])
-    df = build_rolling_features(df, id_cols, "date", args.target, cfg["features"]["rolling_windows"])
-
-    cutoff = df["date"].max() - pd.Timedelta(days=valid_days)
-    valid = df[df["date"] > cutoff].copy()
-
-    X = valid[feat_cols].copy()
-    y = valid[args.target].to_numpy(dtype=float)
-
-    model = load_model(model_dir / f"{args.level}_{args.target}.joblib")
-    pred_raw = model.predict(X)
-
-    if log1p_target:
-        yhat = np.expm1(pred_raw)
-        yhat = np.maximum(yhat, 0.0)
-    else:
-        yhat = pred_raw
-
-    # WAPE (stable) + MAE/RMSE
-    denom = float(np.sum(np.abs(y)))
-    wape = float(np.sum(np.abs(y - yhat)) / denom) if denom > 0 else np.nan
-
-    rep = pd.DataFrame([{
-        "rows": int(len(valid)),
-        "MAE": mae(y, yhat),
-        "RMSE": rmse(y, yhat),
-        "WAPE": wape
-    }])
-
-    rep.to_csv(out_dir / f"eval_{args.level}_{args.target}.csv", index=False)
-    print(rep)
+def _save(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(path, dpi=160)
 
 
-if __name__ == "__main__":
-    main()
+def parity_linear_99(y_true, y_pred, title: str, out: Path):
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    m = np.isfinite(y_true) & np.isfinite(y_pred)
+    y_true = y_true[m]
+    y_pred = y_pred[m]
+    if len(y_true) == 0:
+        return
+
+    lim = float(np.nanpercentile(np.concatenate([y_true, y_pred]), 99))
+    lim = max(lim, 1e-9)
+
+    plt.figure(figsize=(5.5, 5.5))
+    plt.hexbin(y_true, y_pred, gridsize=60, bins="log", mincnt=1)
+    plt.plot([0, lim], [0, lim], color="r", linewidth=1)
+    plt.xlim(0, lim)
+    plt.ylim(0, lim)
+    plt.xlabel("Réel")
+    plt.ylabel("Prédit")
+    plt.title(title)
+    cb = plt.colorbar()
+    cb.set_label("log10(count)")
+    _save(out)
+    plt.close()
+
+
+def parity_linear_95(y_true, y_pred, title: str, out: Path):
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    m = np.isfinite(y_true) & np.isfinite(y_pred)
+    y_true = y_true[m]
+    y_pred = y_pred[m]
+    if len(y_true) == 0:
+        return
+
+    lim = float(np.nanpercentile(np.concatenate([y_true, y_pred]), 95))
+    lim = max(lim, 1e-9)
+
+    plt.figure(figsize=(5.5, 5.5))
+    plt.hexbin(y_true, y_pred, gridsize=60, bins="log", mincnt=1)
+    plt.plot([0, lim], [0, lim], color="r", linewidth=1)
+    plt.xlim(0, lim)
+    plt.ylim(0, lim)
+    plt.xlabel("Réel")
+    plt.ylabel("Prédit")
+    plt.title(title)
+    cb = plt.colorbar()
+    cb.set_label("log10(count)")
+    _save(out)
+    plt.close()
+
+
+def parity_log(y_true, y_pred, title: str, out: Path):
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    m = np.isfinite(y_true) & np.isfinite(y_pred) & (y_true > 0) & (y_pred > 0)
+    y_true = y_true[m]
+    y_pred = y_pred[m]
+    if len(y_true) == 0:
+        return
+
+    lo = max(float(np.nanpercentile(np.concatenate([y_true, y_pred]), 1)), 1e-6)
+    hi = float(np.nanpercentile(np.concatenate([y_true, y_pred]), 99))
+
+    plt.figure(figsize=(5.5, 5.5))
+    plt.hexbin(y_true, y_pred, gridsize=60, bins="log", mincnt=1)
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.plot([lo, hi], [lo, hi], color="r", linewidth=1)
+    plt.xlabel("Réel (log)")
+    plt.ylabel("Prédit (log)")
+    plt.title(title)
+    cb = plt.colorbar()
+    cb.set_label("log10(count)")
+    _save(out)
+    plt.close()
+
+
+def residual_hist(y_true, y_pred, title: str, out: Path):
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    m = np.isfinite(y_true) & np.isfinite(y_pred)
+    res = y_pred[m] - y_true[m]
+    if len(res) == 0:
+        return
+
+    p1, p99 = np.nanpercentile(res, [1, 99])
+    plt.figure(figsize=(10, 4))
+    plt.hist(res, bins=80, range=(p1, p99))
+    plt.axvline(0, color="k", linewidth=1)
+    plt.xlabel("Résidu (pred - true)")
+    plt.ylabel("Count")
+    plt.title(title)
+    _save(out)
+    plt.close()

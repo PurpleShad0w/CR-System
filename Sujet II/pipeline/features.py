@@ -12,7 +12,8 @@ def add_calendar_features(df: pd.DataFrame, date_col: str) -> pd.DataFrame:
     return df
 
 
-def build_lag_features(df: pd.DataFrame, id_cols, date_col: str, target_col: str, lags: list[int]) -> pd.DataFrame:
+def build_lag_features(
+    df: pd.DataFrame, id_cols, date_col: str, target_col: str, lags: list[int]) -> pd.DataFrame:
     df = df.copy().sort_values(id_cols + [date_col])
     g = df.groupby(id_cols, dropna=False)[target_col]
     for k in lags:
@@ -20,10 +21,11 @@ def build_lag_features(df: pd.DataFrame, id_cols, date_col: str, target_col: str
     return df
 
 
-def build_rolling_features(df: pd.DataFrame, id_cols, date_col: str, target_col: str, windows: list[int]) -> pd.DataFrame:
+def build_rolling_features(
+    df: pd.DataFrame, id_cols, date_col: str, target_col: str, windows: list[int]) -> pd.DataFrame:
     """
-    Rolling features per group.
-    IMPORTANT: implemented with groupby.apply to avoid pandas index-level issues.
+    Rolling features par groupe.
+    Implémentation robuste (évite les soucis d'index pandas).
     """
     df = df.copy().sort_values(id_cols + [date_col])
     g = df.groupby(id_cols, dropna=False)[target_col]
@@ -45,7 +47,8 @@ def build_rolling_features(df: pd.DataFrame, id_cols, date_col: str, target_col:
 
 
 def select_feature_columns(df: pd.DataFrame, id_cols, weather_cols: list[str]) -> list[str]:
-    cols = []
+    cols: list[str] = []
+
     for c in ["dow", "month", "dayofyear", "is_weekend"]:
         if c in df.columns:
             cols.append(c)

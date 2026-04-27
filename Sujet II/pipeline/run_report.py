@@ -10,7 +10,8 @@ from .config import load_config
 from .io_utils import ensure_dir
 from .dataset import load_level_tables
 from .features import add_calendar_features, build_lag_features, build_rolling_features
-from .modeling import load_model, mae, rmse
+from .modeling import load_model
+from .reporting import parity_linear_95, parity_linear_99, parity_log, residual_hist
 
 
 def main():
@@ -23,11 +24,9 @@ def main():
     cfg = load_config(args.config).raw
     db_dir = Path(cfg["paths"]["db_dir"])
     out_dir = ensure_dir(Path(cfg["paths"]["out_dir"]))
+    fig_dir = ensure_dir(out_dir / "figures")
 
     cleaned_path = out_dir / f"{args.level}hist_cleaned.csv"
-    if not cleaned_path.exists():
-        raise RuntimeError("Run cleaning first")
-
     hist = pd.read_csv(cleaned_path)
     hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
 
@@ -35,21 +34,16 @@ def main():
     id_cols = level_cfg["id_cols"]
 
     model_dir = out_dir / "models"
-    meta_path = model_dir / f"{args.level}_{args.target}.meta.json"
-    if not meta_path.exists():
-        raise RuntimeError("Missing model meta.json. Re-train first.")
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-
+    meta = json.loads((model_dir / f"{args.level}_{args.target}.meta.json").read_text(encoding="utf-8"))
     feat_cols = meta["feature_columns"]
     valid_days = int(meta.get("valid_days", cfg["training"].get("valid_days", 60)))
     log1p_target = bool(meta.get("log1p_target", False))
 
-    # Build base df
     df = hist[id_cols + ["date", args.target]].copy()
     df[args.target] = pd.to_numeric(df[args.target], errors="coerce")
     df = df.dropna(subset=id_cols + ["date", args.target])
 
-    # Merge weather
+    # weather
     _, _, weath = load_level_tables(db_dir, level_cfg)
     if len(weath) and "date" in weath.columns:
         weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
@@ -66,6 +60,14 @@ def main():
     df = build_lag_features(df, id_cols, "date", args.target, cfg["features"]["lags"])
     df = build_rolling_features(df, id_cols, "date", args.target, cfg["features"]["rolling_windows"])
 
+    lag_cols = [f"lag_{k}" for k in cfg["features"]["lags"]]
+    roll_cols = []
+    for w in cfg["features"]["rolling_windows"]:
+        roll_cols += [f"roll_med_{w}", f"roll_mean_{w}"]
+    must_have = [c for c in (lag_cols + roll_cols) if c in df.columns]
+    if must_have:
+        df = df.dropna(subset=must_have)
+
     cutoff = df["date"].max() - pd.Timedelta(days=valid_days)
     valid = df[df["date"] > cutoff].copy()
 
@@ -73,27 +75,23 @@ def main():
     y = valid[args.target].to_numpy(dtype=float)
 
     model = load_model(model_dir / f"{args.level}_{args.target}.joblib")
-    pred_raw = model.predict(X)
-
+    pred = model.predict(X)
     if log1p_target:
-        yhat = np.expm1(pred_raw)
+        yhat = np.expm1(pred)
         yhat = np.maximum(yhat, 0.0)
     else:
-        yhat = pred_raw
+        yhat = pred
 
-    # WAPE (stable) + MAE/RMSE
-    denom = float(np.sum(np.abs(y)))
-    wape = float(np.sum(np.abs(y - yhat)) / denom) if denom > 0 else np.nan
+    parity_linear_99(y, yhat, f"Parity — {args.level} {args.target} (valid)",
+                  fig_dir / f"parity_{args.level}_{args.target}_p99.png")
+    parity_linear_95(y, yhat, f"Parity — {args.level} {args.target} (valid)",
+                  fig_dir / f"parity_{args.level}_{args.target}_p95.png")
+    parity_log(y, yhat, f"Parity log — {args.level} {args.target} (valid)",
+               fig_dir / f"parity_{args.level}_{args.target}_log.png")
+    residual_hist(y, yhat, f"Residuals — {args.level} {args.target} (valid)",
+                  fig_dir / f"resid_{args.level}_{args.target}.png")
 
-    rep = pd.DataFrame([{
-        "rows": int(len(valid)),
-        "MAE": mae(y, yhat),
-        "RMSE": rmse(y, yhat),
-        "WAPE": wape
-    }])
-
-    rep.to_csv(out_dir / f"eval_{args.level}_{args.target}.csv", index=False)
-    print(rep)
+    print("wrote figures to", fig_dir)
 
 
 if __name__ == "__main__":
