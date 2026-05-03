@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -103,5 +104,77 @@ def residual_hist(y_true, y_pred, title: str, out: Path):
     plt.xlabel("Résidu (pred - true)")
     plt.ylabel("Count")
     plt.title(title)
+    _save(out)
+    plt.close()
+
+
+def ts_train_valid_site(
+    train_df,
+    valid_df,
+    date_col: str,
+    y_true_col: str,
+    y_pred_col: str,
+    cutoff,
+    title: str,
+    out: Path,
+    site_id: int | None = None,
+):
+    """
+    Plot: train truth only (blue) + valid truth (blue) and prediction (orange).
+    Assumes train_df has columns [date_col, y_true_col]
+            valid_df has columns [date_col, y_true_col, y_pred_col]
+    """
+    import numpy as np
+
+    # Defensive copy + sort
+    t = train_df.copy()
+    v = valid_df.copy()
+
+    t[date_col] = pd.to_datetime(t[date_col], errors="coerce")
+    v[date_col] = pd.to_datetime(v[date_col], errors="coerce")
+
+    t = t.dropna(subset=[date_col]).sort_values(date_col)
+    v = v.dropna(subset=[date_col]).sort_values(date_col)
+
+    plt.figure(figsize=(12, 4))
+
+    # Train: truth only (blue)
+    if len(t):
+        plt.plot(
+            t[date_col],
+            pd.to_numeric(t[y_true_col], errors="coerce").to_numpy(dtype=float),
+            color="#1f77b4",
+            linewidth=1.6,
+            label="vérité (train)",
+        )
+
+    # Valid: truth (blue) + pred (orange)
+    if len(v):
+        plt.plot(
+            v[date_col],
+            pd.to_numeric(v[y_true_col], errors="coerce").to_numpy(dtype=float),
+            color="#1f77b4",
+            linewidth=1.6,
+            label="vérité (valid)",
+        )
+        plt.plot(
+            v[date_col],
+            pd.to_numeric(v[y_pred_col], errors="coerce").to_numpy(dtype=float),
+            color="#ff7f0e",
+            linewidth=1.3,
+            label="prédiction (valid)",
+        )
+
+    plt.axvline(pd.to_datetime(cutoff), color="k", linewidth=1, alpha=0.35)
+
+    if site_id is not None:
+        plt.title(f"{title} — site {site_id}")
+    else:
+        plt.title(title)
+
+    plt.xlabel("Date")
+    plt.ylabel(y_true_col)
+    plt.legend(loc="upper right")
+
     _save(out)
     plt.close()

@@ -11,7 +11,7 @@ from .io_utils import ensure_dir
 from .dataset import load_level_tables
 from .features import add_calendar_features, build_lag_features, build_rolling_features
 from .modeling import load_model
-from .reporting import parity_linear_95, parity_linear_99, parity_log, residual_hist
+from .reporting import parity_linear_95, parity_linear_99, parity_log, residual_hist, ts_train_valid_site
 
 
 def main():
@@ -19,6 +19,7 @@ def main():
     ap.add_argument("--config", required=True)
     ap.add_argument("--level", default="site", choices=["site", "zone"])
     ap.add_argument("--target", required=True, choices=["elecTotalKwh", "waterM3"])
+    ap.add_argument("--site", type=int, default=170, help="siteId pour le graphe train/valid")
     args = ap.parse_args()
 
     cfg = load_config(args.config).raw
@@ -81,6 +82,37 @@ def main():
         yhat = np.maximum(yhat, 0.0)
     else:
         yhat = pred
+
+    # --- NEW: train/valid timeseries for a single site (default 170) ---
+    if "siteId" in df.columns:
+        dsite = df[df["siteId"] == args.site].copy().sort_values("date")
+        if len(dsite):
+            train_site = dsite[dsite["date"] <= cutoff][["date", args.target]].copy()
+            valid_site = dsite[dsite["date"] > cutoff].copy()
+
+            if len(valid_site):
+                Xs = valid_site[feat_cols].copy()
+                ps = model.predict(Xs)
+                if log1p_target:
+                    yhat_s = np.expm1(ps)
+                    yhat_s = np.maximum(yhat_s, 0.0)
+                else:
+                    yhat_s = ps
+                valid_site["yhat"] = yhat_s
+            else:
+                valid_site["yhat"] = np.nan
+
+            ts_train_valid_site(
+                train_df=train_site,
+                valid_df=valid_site[["date", args.target, "yhat"]],
+                date_col="date",
+                y_true_col=args.target,
+                y_pred_col="yhat",
+                cutoff=cutoff,
+                title=f"{args.level} {args.target} (train: vérité / valid: vérité+prédiction)",
+                out=fig_dir / f"ts_site{args.site}_{args.target}_train_valid.png",
+                site_id=args.site,
+            )
 
     parity_linear_99(y, yhat, f"Parity — {args.level} {args.target} (valid)",
                   fig_dir / f"parity_{args.level}_{args.target}_p99.png")

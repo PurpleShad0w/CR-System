@@ -24,7 +24,7 @@ features:
   weather_cols: [tempAmb, humidity, djF, djC, tempMin, tempMax, chancePluie, windSpeed]
 
 model:
-  type: hist_gbdt   # ridge | hist_gbdt
+  type: ridge   # ridge | hist_gbdt
   ridge:
     alpha: 1.0
   hist_gbdt:
