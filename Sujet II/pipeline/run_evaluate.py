@@ -17,7 +17,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--level", default="site", choices=["site", "zone"])
-    ap.add_argument("--target", required=True, choices=["elecTotalKwh", "waterM3"])
+    ap.add_argument("--target", required=True, choices=["elecTotalKwh", "waterM3", "indoorTempDegC"])
     args = ap.parse_args()
 
     cfg = load_config(args.config).raw
@@ -85,8 +85,11 @@ def main():
     else:
         yhat = pred
 
-    denom = float(np.sum(np.abs(y)))
-    wape = float(np.sum(np.abs(y - yhat)) / denom) if denom > 0 else np.nan
+    if args.target in ["elecTotalKwh", "waterM3"]:
+        denom = float(np.sum(np.abs(y)))
+        wape = float(np.sum(np.abs(y - yhat)) / denom) if denom > 0 else np.nan
+    else:
+        wape = np.nan
 
     rep = pd.DataFrame([{
         "rows": int(len(valid)),

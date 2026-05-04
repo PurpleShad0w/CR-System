@@ -34,7 +34,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--level", default="site", choices=["site", "zone"])
-    ap.add_argument("--target", required=True, choices=["elecTotalKwh", "waterM3"])
+    ap.add_argument("--target", required=True, choices=["elecTotalKwh", "waterM3", "indoorTempDegC"])
     args = ap.parse_args()
 
     cfg = load_config(args.config).raw
@@ -101,10 +101,11 @@ def main():
     X_valid = valid[feat_cols].copy()
     y_valid = valid[args.target].to_numpy(dtype=float)
 
-    # ✅ log1p transform
-    y_train_t = np.log1p(y_train)
+    # log1p uniquement pour énergie/eau (pas pour la température)
+    use_log1p = args.target in ["elecTotalKwh", "waterM3"]
+    y_train_t = np.log1p(y_train) if use_log1p else y_train
 
-    # ✅ OneHot siteId (et calendaires discrets)
+    # OneHot siteId (et calendaires discrets)
     candidate_cat = ["siteId", "dow", "month", "is_weekend"]
     cat_cols = [c for c in candidate_cat if c in X_train.columns]
     num_cols = [c for c in X_train.columns if c not in cat_cols]
@@ -142,17 +143,20 @@ def main():
         "target": args.target,
         "feature_columns": feat_cols,
         "cat_columns": cat_cols,
-        "log1p_target": True,
+        "log1p_target": use_log1p,
         "valid_days": valid_days,
     }
     (model_dir / f"{args.level}_{args.target}.meta.json").write_text(
         json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    # Validation (inverse transform)
-    pred_log = pipe.predict(X_valid)
-    yhat = np.expm1(pred_log)
-    yhat = np.maximum(yhat, 0.0)
+    # Validation (inverse transform si log1p)
+    pred_t = pipe.predict(X_valid)
+    if use_log1p:
+        yhat = np.expm1(pred_t)
+        yhat = np.maximum(yhat, 0.0)
+    else:
+        yhat = pred_t
 
     from .modeling import mae, rmse, mape
     print("valid rows:", len(valid))

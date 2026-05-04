@@ -18,7 +18,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--level", default="site", choices=["site", "zone"])
-    ap.add_argument("--target", required=True, choices=["elecTotalKwh", "waterM3"])
+    ap.add_argument("--target", required=True, choices=["elecTotalKwh", "waterM3", "indoorTempDegC"])
     ap.add_argument("--site", type=int, default=170, help="siteId pour le graphe train/valid")
     args = ap.parse_args()
 
