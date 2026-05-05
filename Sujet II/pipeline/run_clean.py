@@ -1,11 +1,13 @@
 from __future__ import annotations
 import argparse
+import numpy as np
+import pandas as pd
 from pathlib import Path
 
 from .config import load_config
 from .dataset import load_level_tables
 from .io_utils import ensure_dir
-from .cleaning import apply_missing_sentinels, expected_range_by_group, drop_local_spikes_v12, spread_cumul_spikes_v3
+from .cleaning import apply_missing_sentinels, expected_range_by_group, drop_local_spikes_v12, spread_cumul_spikes_v3, cap_point_outliers_v1
 
 
 def main():
@@ -26,6 +28,15 @@ def main():
     zero_map = {'elecTotalKwh': True, 'totalKwh': True, 'waterM3': True, 'totalWater': True}
     measure_cols = [c for c in ['elecTotalKwh', 'waterM3'] if c in hist.columns]
     pred_cols = [c for c in ['totalKwh', 'totalWater'] if c in pred.columns]
+
+    # --- indoor temperature cleaning (zone-level) ---
+    if args.level == "zone" and "indoorTempDegC" in hist.columns:
+        x = pd.to_numeric(hist["indoorTempDegC"], errors="coerce")
+        # treat 0 / negative as missing
+        x = x.mask(x <= 0, np.nan)
+        # optional: clamp plausible range (adjust if needed)
+        x = x.mask((x < 5) | (x > 40), np.nan)
+        hist["indoorTempDegC"] = x
 
     hist = apply_missing_sentinels(hist, measure_cols, zero_map)
     pred = apply_missing_sentinels(pred, pred_cols, zero_map)
@@ -49,6 +60,19 @@ def main():
         hist, log = spread_cumul_spikes_v3(hist, id_cols, 'date', col, cfg_cumul, exp)
         if len(log):
             CLEAN_LOGS[f'{args.level}_cumul_{col}'] = log
+
+    # --- final cap to remove remaining extreme one-day outliers ---
+    for col in measure_cols:
+        hist, log = cap_point_outliers_v1(
+            hist,
+            id_cols,
+            "date",
+            col,
+            window=30,
+            cap_factor=8.0 if col == "elecTotalKwh" else 6.0
+        )
+        if len(log):
+            CLEAN_LOGS[f"{args.level}_cap_{col}"] = log
 
     hist.to_csv(out_dir / f'{args.level}hist_cleaned.csv', index=False)
     for k, df in CLEAN_LOGS.items():

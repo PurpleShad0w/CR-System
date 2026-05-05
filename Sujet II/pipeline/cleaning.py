@@ -233,3 +233,61 @@ def spread_cumul_spikes_v3(df: pd.DataFrame, group_cols, date_col: str, value_co
     out = pd.concat(out_parts, ignore_index=True)
     out = out[[c for c in df.columns if c in out.columns]]
     return out, pd.DataFrame(logs)
+
+
+def cap_point_outliers_v1(
+    df: pd.DataFrame,
+    group_cols,
+    date_col: str,
+    value_col: str,
+    window: int = 30,
+    cap_factor: float = 8.0,
+    min_baseline: float = 1.0,
+):
+    """
+    Cap (winsorize) large positive outliers using a rolling median baseline per group.
+    x_new = min(x, cap_factor * roll_median(window, shift=1))
+    Returns (df_out, log_df)
+    """
+    import numpy as np
+    import pandas as pd
+
+    df = df.copy()
+    logs = []
+
+    if value_col not in df.columns or date_col not in df.columns:
+        return df, pd.DataFrame(logs)
+
+    df[date_col] = pd.to_datetime(df[date_col], errors="coerce").dt.floor("D")
+    df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
+
+    df = df.sort_values(group_cols + [date_col])
+
+    g = df.groupby(group_cols, dropna=False)
+
+    # rolling median of previous values
+    base = g[value_col].shift(1).rolling(window, min_periods=max(5, window // 3)).median()
+
+    # avoid tiny/zero baseline
+    base = base.where(base >= min_baseline, np.nan)
+    cap_val = cap_factor * base
+
+    # identify outliers
+    m = df[value_col].notna() & cap_val.notna() & (df[value_col] > cap_val)
+
+    if m.any():
+        old = df.loc[m, value_col].to_numpy()
+        new = cap_val.loc[m].to_numpy()
+        df.loc[m, value_col] = new
+
+        # log
+        tmp = df.loc[m, group_cols + [date_col]].copy()
+        tmp["value_col"] = value_col
+        tmp["action"] = "cap"
+        tmp["old"] = old
+        tmp["new"] = new
+        tmp["cap"] = new
+        logs.append(tmp)
+
+    log_df = pd.concat(logs, ignore_index=True) if logs else pd.DataFrame([])
+    return df, log_df

@@ -121,45 +121,79 @@ def ts_train_valid_site(
 ):
     """
     Plot: train truth only (blue) + valid truth (blue) and prediction (orange).
+    Fix diagonals: reindex to a daily date range so missing days become NaN
+    and matplotlib does not draw connecting lines across gaps.
     Assumes train_df has columns [date_col, y_true_col]
             valid_df has columns [date_col, y_true_col, y_pred_col]
     """
     import numpy as np
 
-    # Defensive copy + sort
+    # Defensive copy + normalize dates
     t = train_df.copy()
     v = valid_df.copy()
 
-    t[date_col] = pd.to_datetime(t[date_col], errors="coerce")
-    v[date_col] = pd.to_datetime(v[date_col], errors="coerce")
+    t[date_col] = pd.to_datetime(t[date_col], errors="coerce").dt.floor("D")
+    v[date_col] = pd.to_datetime(v[date_col], errors="coerce").dt.floor("D")
 
     t = t.dropna(subset=[date_col]).sort_values(date_col)
     v = v.dropna(subset=[date_col]).sort_values(date_col)
 
+    # Nothing to plot
+    if len(t) == 0 and len(v) == 0:
+        return
+
+    # Build a global daily index to avoid gaps => NaN => no diagonals
+    min_date = None
+    max_date = None
+    if len(t):
+        min_date = t[date_col].min() if min_date is None else min(min_date, t[date_col].min())
+        max_date = t[date_col].max() if max_date is None else max(max_date, t[date_col].max())
+    if len(v):
+        min_date = v[date_col].min() if min_date is None else min(min_date, v[date_col].min())
+        max_date = v[date_col].max() if max_date is None else max(max_date, v[date_col].max())
+
+    idx = pd.date_range(min_date, max_date, freq="D")
+
+    def _daily_series(df, value_col: str):
+        if len(df) == 0:
+            return pd.Series(index=idx, dtype=float)
+        s = pd.to_numeric(df[value_col], errors="coerce")
+        s = pd.Series(s.to_numpy(dtype=float), index=df[date_col])
+        # If duplicates exist for same day, keep last (or mean if you prefer)
+        s = s[~s.index.duplicated(keep="last")]
+        return s.reindex(idx)
+
+    # Build series (daily, aligned)
+    t_true = _daily_series(t, y_true_col)
+    v_true = _daily_series(v, y_true_col)
+    v_pred = _daily_series(v, y_pred_col)
+
     plt.figure(figsize=(12, 4))
 
-    # Train: truth only (blue)
-    if len(t):
+    # Train truth only (blue)
+    if np.isfinite(t_true.to_numpy(dtype=float)).any():
         plt.plot(
-            t[date_col],
-            pd.to_numeric(t[y_true_col], errors="coerce").to_numpy(dtype=float),
+            t_true.index,
+            t_true.to_numpy(dtype=float),
             color="#1f77b4",
             linewidth=1.6,
             label="vérité (train)",
         )
 
-    # Valid: truth (blue) + pred (orange)
-    if len(v):
+    # Valid truth (blue) + prediction (orange)
+    if np.isfinite(v_true.to_numpy(dtype=float)).any():
         plt.plot(
-            v[date_col],
-            pd.to_numeric(v[y_true_col], errors="coerce").to_numpy(dtype=float),
+            v_true.index,
+            v_true.to_numpy(dtype=float),
             color="#1f77b4",
             linewidth=1.6,
             label="vérité (valid)",
         )
+
+    if np.isfinite(v_pred.to_numpy(dtype=float)).any():
         plt.plot(
-            v[date_col],
-            pd.to_numeric(v[y_pred_col], errors="coerce").to_numpy(dtype=float),
+            v_pred.index,
+            v_pred.to_numpy(dtype=float),
             color="#ff7f0e",
             linewidth=1.3,
             label="prédiction (valid)",

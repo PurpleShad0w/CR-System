@@ -61,6 +61,9 @@ def main():
     # Base frame
     df = hist[id_cols + ["date", args.target]].copy()
     df[args.target] = pd.to_numeric(df[args.target], errors="coerce")
+    if args.target == "indoorTempDegC":
+        df[args.target] = df[args.target].mask(df[args.target] <= 0, np.nan)
+        df[args.target] = df[args.target].mask((df[args.target] < 5) | (df[args.target] > 40), np.nan)
     df = df.dropna(subset=id_cols + ["date", args.target])
 
     # Merge weather
