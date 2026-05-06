@@ -32,8 +32,7 @@ def main():
         measure_cols = [c for c in ['elecTotalKwh', 'waterM3'] if c in hist.columns]
         pred_cols = [c for c in ['totalKwh', 'totalWater'] if c in pred.columns]
 
-        # --- indoor temperature cleaning (zone-level) ---
-        if level == "zone" and "indoorTempDegC" in hist.columns:
+        if "indoorTempDegC" in hist.columns:
             x = pd.to_numeric(hist["indoorTempDegC"], errors="coerce")
             x = x.mask(x <= 0, np.nan)
             x = x.mask((x < 5) | (x > 40), np.nan)

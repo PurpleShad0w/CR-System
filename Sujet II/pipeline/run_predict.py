@@ -35,7 +35,7 @@ def main():
 
     LEVELS = ["site", "zone"]
     TARGETS_BY_LEVEL = {
-        "site": ["elecTotalKwh", "waterM3"],
+        "site": ["elecTotalKwh", "waterM3", "indoorTempDegC"],
         "zone": ["elecTotalKwh", "waterM3", "indoorTempDegC"],
     }
 
