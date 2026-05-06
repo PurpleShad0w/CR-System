@@ -33,140 +33,139 @@ def _make_ohe():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
-    ap.add_argument("--level", default="site", choices=["site", "zone"])
-    ap.add_argument("--target", required=True, choices=["elecTotalKwh", "waterM3", "indoorTempDegC"])
+    ap.add_argument("--level", default="site")         # site | zone | all
+    ap.add_argument("--target", required=True)         # elecTotalKwh | waterM3 | indoorTempDegC | all
     args = ap.parse_args()
+
+    LEVELS = ["site", "zone"]
+    TARGETS_BY_LEVEL = {
+        "site": ["elecTotalKwh", "waterM3"],
+        "zone": ["elecTotalKwh", "waterM3", "indoorTempDegC"],
+    }
 
     cfg = load_config(args.config).raw
     db_dir = Path(cfg["paths"]["db_dir"])
     out_dir = ensure_dir(Path(cfg["paths"]["out_dir"]))
 
-    level_cfg = cfg["level_defaults"][args.level]
-    id_cols = level_cfg["id_cols"]
+    def train_one(cfg, db_dir: Path, out_dir: Path, level: str, target: str):
+        level_cfg = cfg["level_defaults"][level]
+        id_cols = level_cfg["id_cols"]
 
-    # Load cleaned hist if present
-    cleaned_path = out_dir / f"{args.level}hist_cleaned.csv"
-    if cleaned_path.exists():
-        hist = pd.read_csv(cleaned_path)
-        hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
-    else:
-        hist, _, _ = load_level_tables(db_dir, level_cfg)
-        hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
+        cleaned_path = out_dir / f"{level}hist_cleaned.csv"
+        if cleaned_path.exists():
+            hist = pd.read_csv(cleaned_path)
+            hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
+        else:
+            hist, _, _ = load_level_tables(db_dir, level_cfg)
+            hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
 
-    # Weather (historical)
-    _, _, weath = load_level_tables(db_dir, level_cfg)
-    if len(weath) and "date" in weath.columns:
-        weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
+        _, _, weath = load_level_tables(db_dir, level_cfg)
+        if len(weath) and "date" in weath.columns:
+            weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
 
-    # Base frame
-    df = hist[id_cols + ["date", args.target]].copy()
-    df[args.target] = pd.to_numeric(df[args.target], errors="coerce")
-    if args.target == "indoorTempDegC":
-        df[args.target] = df[args.target].mask(df[args.target] <= 0, np.nan)
-        df[args.target] = df[args.target].mask((df[args.target] < 5) | (df[args.target] > 40), np.nan)
-    df = df.dropna(subset=id_cols + ["date", args.target])
+        df = hist[id_cols + ["date", target]].copy()
+        df[target] = pd.to_numeric(df[target], errors="coerce")
 
-    # Merge weather
-    weather_cols = cfg["features"].get("weather_cols", [])
-    if len(weath) and "siteId" in weath.columns and "date" in weath.columns:
-        keep = ["siteId", "date"] + [c for c in weather_cols if c in weath.columns]
-        w = weath[keep].drop_duplicates(subset=["siteId", "date"], keep="last")
-        df = df.merge(w, on=["siteId", "date"], how="left")
+        # sécurité spécifique température (si pas déjà fait au clean)
+        if target == "indoorTempDegC":
+            df[target] = df[target].mask(df[target] <= 0, np.nan)
 
-    # Calendar + lags + rolling
-    if cfg["features"].get("add_calendar", True):
-        df = add_calendar_features(df, "date")
+        df = df.dropna(subset=id_cols + ["date", target])
 
-    df = build_lag_features(df, id_cols, "date", args.target, cfg["features"]["lags"])
-    df = build_rolling_features(df, id_cols, "date", args.target, cfg["features"]["rolling_windows"])
+        weather_cols = cfg["features"].get("weather_cols", [])
+        if len(weath) and "siteId" in weath.columns and "date" in weath.columns:
+            keep = ["siteId", "date"] + [c for c in weather_cols if c in weath.columns]
+            w = weath[keep].drop_duplicates(subset=["siteId", "date"], keep="last")
+            df = df.merge(w, on=["siteId", "date"], how="left")
 
-    feat_cols = select_feature_columns(
-        df, id_cols if cfg["features"].get("add_site_id", True) else [], weather_cols
-    )
+        if cfg["features"].get("add_calendar", True):
+            df = add_calendar_features(df, "date")
 
-    # Drop rows where lags/rollings are missing (stabilise fortement la perf)
-    lag_cols = [f"lag_{k}" for k in cfg["features"]["lags"]]
-    roll_cols = []
-    for w in cfg["features"]["rolling_windows"]:
-        roll_cols += [f"roll_med_{w}", f"roll_mean_{w}"]
-    must_have = [c for c in (lag_cols + roll_cols) if c in df.columns]
-    if must_have:
-        df = df.dropna(subset=must_have)
+        df = build_lag_features(df, id_cols, "date", target, cfg["features"]["lags"])
+        df = build_rolling_features(df, id_cols, "date", target, cfg["features"]["rolling_windows"])
 
-    # Time split
-    valid_days = int(cfg["training"].get("valid_days", 60))
-    cutoff = df["date"].max() - pd.Timedelta(days=valid_days)
-    train = df[df["date"] <= cutoff].copy()
-    valid = df[df["date"] > cutoff].copy()
+        feat_cols = select_feature_columns(df, id_cols if cfg["features"].get("add_site_id", True) else [], weather_cols)
 
-    X_train = train[feat_cols].copy()
-    y_train = train[args.target].to_numpy(dtype=float)
-    X_valid = valid[feat_cols].copy()
-    y_valid = valid[args.target].to_numpy(dtype=float)
+        # filtre lags/rollings
+        lag_cols = [f"lag_{k}" for k in cfg["features"]["lags"]]
+        roll_cols = []
+        for w in cfg["features"]["rolling_windows"]:
+            roll_cols += [f"roll_med_{w}", f"roll_mean_{w}"]
+        must_have = [c for c in (lag_cols + roll_cols) if c in df.columns]
+        if must_have:
+            df = df.dropna(subset=must_have)
 
-    # log1p uniquement pour énergie/eau (pas pour la température)
-    use_log1p = args.target in ["elecTotalKwh", "waterM3"]
-    y_train_t = np.log1p(y_train) if use_log1p else y_train
+        valid_days = int(cfg["training"].get("valid_days", 60))
+        cutoff = df["date"].max() - pd.Timedelta(days=valid_days)
+        train = df[df["date"] <= cutoff].copy()
+        valid = df[df["date"] > cutoff].copy()
 
-    # OneHot siteId (et calendaires discrets)
-    candidate_cat = ["siteId", "dow", "month", "is_weekend"]
-    cat_cols = [c for c in candidate_cat if c in X_train.columns]
-    num_cols = [c for c in X_train.columns if c not in cat_cols]
+        X_train = train[feat_cols].copy()
+        y_train = train[target].to_numpy(dtype=float)
+        X_valid = valid[feat_cols].copy()
+        y_valid = valid[target].to_numpy(dtype=float)
 
-    ohe = _make_ohe()
+        # log1p uniquement pour énergie/eau
+        use_log1p = target in ["elecTotalKwh", "waterM3"]
+        y_train_t = np.log1p(y_train) if use_log1p else y_train
 
-    cat_pipe = Pipeline([
-        ("imp", SimpleImputer(strategy="most_frequent")),
-        ("ohe", ohe),
-    ])
+        # --- preprocessing actuel (imputer + OHE) ---
+        candidate_cat = ["siteId", "dow", "month", "is_weekend"]
+        cat_cols = [c for c in candidate_cat if c in X_train.columns]
+        num_cols = [c for c in X_train.columns if c not in cat_cols]
 
-    num_pipe = Pipeline([
-        ("imp", SimpleImputer(strategy="median")),
-    ])
+        ohe = _make_ohe()
+        cat_pipe = Pipeline([("imp", SimpleImputer(strategy="most_frequent")), ("ohe", ohe)])
+        num_pipe = Pipeline([("imp", SimpleImputer(strategy="median"))])
 
-    pre = ColumnTransformer(
-        transformers=[
-            ("cat", cat_pipe, cat_cols),
-            ("num", num_pipe, num_cols),
-        ],
-        remainder="drop",
-    )
+        pre = ColumnTransformer(
+            transformers=[("cat", cat_pipe, cat_cols), ("num", num_pipe, num_cols)],
+            remainder="drop",
+        )
 
-    model = make_model(cfg)
-    pipe = Pipeline([("pre", pre), ("model", model)])
-    pipe.fit(X_train, y_train_t)
+        model = make_model(cfg)
+        pipe = Pipeline([("pre", pre), ("model", model)])
+        pipe.fit(X_train, y_train_t)
 
-    # Save model + meta
-    model_dir = out_dir / "models"
-    model_path = model_dir / f"{args.level}_{args.target}.joblib"
-    save_model(pipe, model_path)
+        model_dir = out_dir / "models"
+        model_path = model_dir / f"{level}_{target}.joblib"
+        save_model(pipe, model_path)
 
-    meta = {
-        "level": args.level,
-        "target": args.target,
-        "feature_columns": feat_cols,
-        "cat_columns": cat_cols,
-        "log1p_target": use_log1p,
-        "valid_days": valid_days,
-    }
-    (model_dir / f"{args.level}_{args.target}.meta.json").write_text(
-        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+        meta = {
+            "level": level,
+            "target": target,
+            "feature_columns": feat_cols,
+            "cat_columns": cat_cols,
+            "log1p_target": use_log1p,
+            "valid_days": valid_days,
+        }
+        (model_dir / f"{level}_{target}.meta.json").write_text(
+            json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
 
-    # Validation (inverse transform si log1p)
-    pred_t = pipe.predict(X_valid)
-    if use_log1p:
-        yhat = np.expm1(pred_t)
-        yhat = np.maximum(yhat, 0.0)
-    else:
-        yhat = pred_t
+        pred_t = pipe.predict(X_valid)
+        yhat = np.expm1(pred_t) if use_log1p else pred_t
+        if use_log1p:
+            yhat = np.maximum(yhat, 0.0)
 
-    from .modeling import mae, rmse, mape
-    print("valid rows:", len(valid))
-    print("MAE", mae(y_valid, yhat))
-    print("RMSE", rmse(y_valid, yhat))
-    print("MAPE", mape(y_valid, yhat))
-    print("saved", model_path)
+        from .modeling import mae, rmse, mape
+        print(f"[TRAIN] level={level} target={target} valid_rows={len(valid)} "
+          f"MAE={mae(y_valid, yhat):.4f} RMSE={rmse(y_valid, yhat):.4f} MAPE={mape(y_valid, yhat):.4f}")
+        print("saved", model_path)
+
+    # levels to run
+    levels = LEVELS if args.level == "all" else [args.level]
+    for level in levels:
+        if level not in LEVELS:
+            raise ValueError(f"Unknown level: {level}. Use site|zone|all")
+
+        # targets to run
+        targets = TARGETS_BY_LEVEL[level] if args.target == "all" else [args.target]
+        for target in targets:
+            if target not in TARGETS_BY_LEVEL[level]:
+                raise ValueError(f"Target {target} not supported for level {level}. "
+                             f"Use {TARGETS_BY_LEVEL[level]} or all")
+            train_one(cfg, db_dir, out_dir, level, target)
 
 
 if __name__ == "__main__":
