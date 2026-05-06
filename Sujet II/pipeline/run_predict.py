@@ -67,6 +67,9 @@ def main():
         last_hist_date = hist["date"].max()
 
         weather_cols = cfg["features"].get("weather_cols", [])
+        if target == "indoorTempDegC":
+            weather_cols = [c for c in weather_cols if c != "tempAmb"]
+
         max_days = days if days is not None else cfg.get("prediction", {}).get("days", None)
 
         future_rows = []

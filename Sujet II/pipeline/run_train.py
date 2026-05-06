@@ -73,6 +73,9 @@ def main():
         df = df.dropna(subset=id_cols + ["date", target])
 
         weather_cols = cfg["features"].get("weather_cols", [])
+        if target == "indoorTempDegC":
+            weather_cols = [c for c in weather_cols if c != "tempAmb"]
+
         if len(weath) and "siteId" in weath.columns and "date" in weath.columns:
             keep = ["siteId", "date"] + [c for c in weather_cols if c in weath.columns]
             w = weath[keep].drop_duplicates(subset=["siteId", "date"], keep="last")

@@ -56,7 +56,10 @@ def main():
         _, _, weath = load_level_tables(db_dir, level_cfg)
         if len(weath) and "date" in weath.columns:
             weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
+
         weather_cols = cfg["features"].get("weather_cols", [])
+        if target == "indoorTempDegC":
+            weather_cols = [c for c in weather_cols if c != "tempAmb"]
 
         if len(weath) and "siteId" in weath.columns and "date" in weath.columns:
             keep = ["siteId", "date"] + [c for c in weather_cols if c in weath.columns]

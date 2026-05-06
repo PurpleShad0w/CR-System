@@ -212,3 +212,70 @@ def ts_train_valid_site(
 
     _save(out)
     plt.close()
+
+
+def ts_truth_vs_algo_pred(
+    truth_df,
+    pred_df,
+    date_col: str,
+    truth_col: str,
+    pred_col: str,
+    title: str,
+    out: Path,
+):
+    """
+    Plot full-period truth (blue) vs algorithmic prediction (orange), no cleaning.
+    Reindex daily to avoid misleading diagonals across missing days (NaN breaks lines).
+    """
+    # Defensive copy + normalize dates
+    t = truth_df.copy()
+    p = pred_df.copy()
+
+    t[date_col] = pd.to_datetime(t[date_col], errors="coerce").dt.floor("D")
+    p[date_col] = pd.to_datetime(p[date_col], errors="coerce").dt.floor("D")
+
+    t = t.dropna(subset=[date_col]).sort_values(date_col)
+    p = p.dropna(subset=[date_col]).sort_values(date_col)
+
+    if len(t) == 0 and len(p) == 0:
+        return
+
+    min_date = None
+    max_date = None
+    if len(t):
+        min_date = t[date_col].min() if min_date is None else min(min_date, t[date_col].min())
+        max_date = t[date_col].max() if max_date is None else max(max_date, t[date_col].max())
+    if len(p):
+        min_date = p[date_col].min() if min_date is None else min(min_date, p[date_col].min())
+        max_date = p[date_col].max() if max_date is None else max(max_date, p[date_col].max())
+
+    idx = pd.date_range(min_date, max_date, freq="D")
+
+    def _series(df, col):
+        if len(df) == 0:
+            return pd.Series(index=idx, dtype=float)
+        s = pd.to_numeric(df[col], errors="coerce")
+        s = pd.Series(s.to_numpy(dtype=float), index=df[date_col])
+        s = s[~s.index.duplicated(keep="last")]
+        return s.reindex(idx)
+
+    s_truth = _series(t, truth_col)
+    s_pred = _series(p, pred_col)
+
+    plt.figure(figsize=(12, 4))
+
+    if np.isfinite(s_truth.to_numpy(dtype=float)).any():
+        plt.plot(s_truth.index, s_truth.to_numpy(dtype=float),
+                 color="#1f77b4", linewidth=1.6, label="vérité (hist)")
+
+    if np.isfinite(s_pred.to_numpy(dtype=float)).any():
+        plt.plot(s_pred.index, s_pred.to_numpy(dtype=float),
+                 color="#ff7f0e", linewidth=1.3, label="prédiction algo")
+
+    plt.title(title)
+    plt.xlabel("Date")
+    plt.ylabel(truth_col)
+    plt.legend(loc="upper right")
+
+    _save(out)
+    plt.close()
