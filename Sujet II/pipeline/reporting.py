@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from matplotlib.colors import LogNorm
+
 
 def _save(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -14,6 +16,7 @@ def _save(path: Path):
 def parity_linear_99(y_true, y_pred, title: str, out: Path):
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
+
     m = np.isfinite(y_true) & np.isfinite(y_pred)
     y_true = y_true[m]
     y_pred = y_pred[m]
@@ -23,16 +26,25 @@ def parity_linear_99(y_true, y_pred, title: str, out: Path):
     lim = float(np.nanpercentile(np.concatenate([y_true, y_pred]), 99))
     lim = max(lim, 1e-9)
 
+    bins = 80 if len(y_true) > 5000 else 60
+
     plt.figure(figsize=(5.5, 5.5))
-    plt.hexbin(y_true, y_pred, gridsize=60, bins="log", mincnt=1)
+    plt.hist2d(
+        y_true, y_pred,
+        bins=bins,
+        range=[[0, lim], [0, lim]],
+        norm=LogNorm()
+    )
     plt.plot([0, lim], [0, lim], color="r", linewidth=1)
+    ax = plt.gca()
+    ax.set_aspect("equal", adjustable="box")
     plt.xlim(0, lim)
     plt.ylim(0, lim)
     plt.xlabel("Réel")
     plt.ylabel("Prédit")
     plt.title(title)
     cb = plt.colorbar()
-    cb.set_label("log10(count)")
+    cb.set_label("count (log)")
     _save(out)
     plt.close()
 
@@ -40,6 +52,7 @@ def parity_linear_99(y_true, y_pred, title: str, out: Path):
 def parity_linear_95(y_true, y_pred, title: str, out: Path):
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
+
     m = np.isfinite(y_true) & np.isfinite(y_pred)
     y_true = y_true[m]
     y_pred = y_pred[m]
@@ -49,42 +62,83 @@ def parity_linear_95(y_true, y_pred, title: str, out: Path):
     lim = float(np.nanpercentile(np.concatenate([y_true, y_pred]), 95))
     lim = max(lim, 1e-9)
 
+    bins = 80 if len(y_true) > 5000 else 60
+
     plt.figure(figsize=(5.5, 5.5))
-    plt.hexbin(y_true, y_pred, gridsize=60, bins="log", mincnt=1)
+    plt.hist2d(
+        y_true, y_pred,
+        bins=bins,
+        range=[[0, lim], [0, lim]],
+        norm=LogNorm()
+    )
     plt.plot([0, lim], [0, lim], color="r", linewidth=1)
+    ax = plt.gca()
+    ax.set_aspect("equal", adjustable="box")
     plt.xlim(0, lim)
     plt.ylim(0, lim)
     plt.xlabel("Réel")
     plt.ylabel("Prédit")
     plt.title(title)
     cb = plt.colorbar()
-    cb.set_label("log10(count)")
+    cb.set_label("count (log)")
     _save(out)
     plt.close()
 
 
+
 def parity_log(y_true, y_pred, title: str, out: Path):
+    """
+    Parity en log: binning fait en log10(espace), puis affichage propre.
+    Évite l'artefact 'bloc' causé par hexbin en linéaire + axes log après coup.
+    """
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
+
     m = np.isfinite(y_true) & np.isfinite(y_pred) & (y_true > 0) & (y_pred > 0)
     y_true = y_true[m]
     y_pred = y_pred[m]
     if len(y_true) == 0:
         return
 
-    lo = max(float(np.nanpercentile(np.concatenate([y_true, y_pred]), 1)), 1e-6)
-    hi = float(np.nanpercentile(np.concatenate([y_true, y_pred]), 99))
+    lx = np.log10(y_true)
+    ly = np.log10(y_pred)
+
+    # bornes robustes en log (p1–p99)
+    lo = float(np.nanpercentile(np.concatenate([lx, ly]), 1))
+    hi = float(np.nanpercentile(np.concatenate([lx, ly]), 99))
+    if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
+        return
+
+    bins = 80 if len(lx) > 5000 else 60
 
     plt.figure(figsize=(5.5, 5.5))
-    plt.hexbin(y_true, y_pred, gridsize=60, bins="log", mincnt=1)
-    plt.xscale("log")
-    plt.yscale("log")
+    plt.hist2d(
+        lx, ly,
+        bins=bins,
+        range=[[lo, hi], [lo, hi]],
+        norm=LogNorm()
+    )
+
+    # diagonale y=x en espace log (donc droite)
     plt.plot([lo, hi], [lo, hi], color="r", linewidth=1)
+
+    ax = plt.gca()
+    ax.set_aspect("equal", adjustable="box")
+
+    # ticks lisibles en 10^k
+    ticks = np.arange(np.floor(lo), np.ceil(hi) + 1)
+    ax.set_xticks(ticks)
+    ax.set_yticks(ticks)
+    ax.set_xticklabels([rf"$10^{{{int(t)}}}$" for t in ticks])
+    ax.set_yticklabels([rf"$10^{{{int(t)}}}$" for t in ticks])
+
     plt.xlabel("Réel (log)")
     plt.ylabel("Prédit (log)")
     plt.title(title)
+
     cb = plt.colorbar()
-    cb.set_label("log10(count)")
+    cb.set_label("count (log)")
+
     _save(out)
     plt.close()
 

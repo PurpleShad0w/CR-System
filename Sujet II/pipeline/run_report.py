@@ -162,6 +162,107 @@ def main():
                       fig_dir / f"resid_{level}_{target}.png")
 
         # -------------------------------
+        # DIAGNOSTIC: per-group worst parity charts (siteId / (siteId, zoneId))
+        # -------------------------------
+        diag_root = ensure_dir(fig_dir / "diagnostic" / "parity" / f"{level}_{target}")
+
+        # Build a dataframe with ids + y_true/y_pred for the eval window
+        pred_df = valid_eval[id_cols + ["date"]].copy()
+        pred_df["y_true"] = y_eval
+        pred_df["y_pred"] = yhat_eval
+
+        # Per-group metrics
+        rows = []
+        for keys, g in pred_df.groupby(id_cols, dropna=False):
+            if not isinstance(keys, tuple):
+                keys = (keys,)
+            yt = g["y_true"].to_numpy(dtype=float)
+            yp = g["y_pred"].to_numpy(dtype=float)
+            m = np.isfinite(yt) & np.isfinite(yp)
+            yt = yt[m]
+            yp = yp[m]
+            if len(yt) == 0:
+                continue
+
+            mae_g = float(np.mean(np.abs(yp - yt)))
+            rmse_g = float(np.sqrt(np.mean((yp - yt) ** 2)))
+            bias_g = float(np.mean(yp - yt))
+
+            if target in ["elecTotalKwh", "waterM3"]:
+                denom = float(np.sum(np.abs(yt)))
+                wape_g = float(np.sum(np.abs(yp - yt)) / denom) if denom > 0 else np.nan
+            else:
+                wape_g = np.nan
+
+            row = {c: v for c, v in zip(id_cols, keys)}
+            row.update({
+                "n": int(len(yt)),
+                "MAE": mae_g,
+                "RMSE": rmse_g,
+                "WAPE": wape_g,
+                "Bias": bias_g,
+            })
+            rows.append(row)
+
+        if rows:
+            df_g = pd.DataFrame(rows)
+
+            # Save metrics summary (useful to inspect quickly)
+            df_g.sort_values("RMSE", ascending=False).to_csv(
+                diag_root / f"worst_groups_{level}_{target}.csv",
+                index=False
+            )
+
+            # Select worst groups:
+            # - always by RMSE
+            # - for elec/water, also by WAPE (captures proportional error)
+            TOP_K = 20
+            worst_rmse = df_g.sort_values("RMSE", ascending=False).head(TOP_K)
+
+            if target in ["elecTotalKwh", "waterM3"]:
+                worst_wape = df_g.sort_values("WAPE", ascending=False).head(TOP_K)
+                worst = pd.concat([worst_rmse, worst_wape], ignore_index=True).drop_duplicates(subset=id_cols)
+            else:
+                worst = worst_rmse
+
+            # Generate per-group parity charts
+            for _, r in worst.iterrows():
+                # Filter group
+                mask = np.ones(len(pred_df), dtype=bool)
+                for c in id_cols:
+                    mask &= (pred_df[c] == r[c])
+
+                gg = pred_df.loc[mask].copy()
+                yt = gg["y_true"].to_numpy(dtype=float)
+                yp = gg["y_pred"].to_numpy(dtype=float)
+
+                # Naming
+                if level == "zone" and "zoneId" in id_cols:
+                    sid = int(r["siteId"])
+                    zid = int(r["zoneId"])
+                    subdir = ensure_dir(diag_root / f"site{sid}")
+                    stem = f"parity_site{sid}_zone{zid}_{target}"
+                    title_suffix = f"site {sid} zone {zid}"
+                else:
+                    sid = int(r["siteId"])
+                    subdir = diag_root
+                    stem = f"parity_site{sid}_{target}"
+                    title_suffix = f"site {sid}"
+
+                title = (
+                    f"Parity — {level} {target} ({title_suffix}) "
+                    f"n={int(r['n'])} RMSE={r['RMSE']:.2f}"
+                    + (f" WAPE={r['WAPE']:.3f}" if target in ["elecTotalKwh", "waterM3"] and np.isfinite(r["WAPE"]) else "")
+                    + (f" Bias={r['Bias']:.2f}" if np.isfinite(r["Bias"]) else "")
+                )
+
+                # Use p95 for readability (p99 often too stretched)
+                parity_linear_95(yt, yp, title, subdir / f"{stem}_p95.png")
+                # Optional: log parity is very informative for skewed targets
+                if target in ["elecTotalKwh", "waterM3"] and int(r["n"]) >= 200:
+                    parity_log(yt, yp, title + " (log)", subdir / f"{stem}_log.png")
+
+        # -------------------------------
         # TIMESERIES (predict on ALL valid dates, even where truth is missing)
         # -------------------------------
         site_arg = str(site).lower()
