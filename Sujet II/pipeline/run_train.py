@@ -20,6 +20,7 @@ from .features import (
     select_feature_columns,
 )
 from .modeling import make_model, save_model
+from .site_infos import load_site_infos
 
 
 def _make_ohe():
@@ -59,11 +60,20 @@ def main():
             hist, _, _ = load_level_tables(db_dir, level_cfg)
             hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
 
+        # --- site static infos (surface etc.) ---
+        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get("site_infos_file", "Sites_Shyrka_Infos.xlsx")
+        site_infos = load_site_infos(info_path)
+
+        if len(site_infos) and "siteId" in hist.columns:
+            hist = hist.merge(site_infos, on="siteId", how="left")
+
         _, _, weath = load_level_tables(db_dir, level_cfg)
         if len(weath) and "date" in weath.columns:
             weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
 
-        df = hist[id_cols + ["date", target]].copy()
+        static_cols = cfg.get("features", {}).get("static_cols", [])
+        extra_cols = [c for c in static_cols if c in hist.columns]
+        df = hist[id_cols + ["date", target] + extra_cols].copy()
         df[target] = pd.to_numeric(df[target], errors="coerce")
 
         # sécurité spécifique température (si pas déjà fait au clean)
@@ -88,6 +98,9 @@ def main():
         df = build_rolling_features(df, id_cols, "date", target, cfg["features"]["rolling_windows"])
 
         feat_cols = select_feature_columns(df, id_cols if cfg["features"].get("add_site_id", True) else [], weather_cols)
+        for c in extra_cols:
+            if c not in feat_cols:
+                feat_cols.append(c)
 
         # filtre lags/rollings
         lag_cols = [f"lag_{k}" for k in cfg["features"]["lags"]]

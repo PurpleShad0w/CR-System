@@ -11,6 +11,7 @@ from .io_utils import ensure_dir
 from .dataset import load_level_tables
 from .features import add_calendar_features
 from .modeling import load_model
+from .site_infos import load_site_infos
 
 
 def _infer_horizon_days(last_hist_date: pd.Timestamp, weath: pd.DataFrame, max_days: int | None, siteId: int) -> int:
@@ -50,6 +51,11 @@ def main():
         cleaned_path = out_dir / f"{level}hist_cleaned.csv"
         hist = pd.read_csv(cleaned_path)
         hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
+
+        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get("site_infos_file", "Sites_Shyrka_Infos.xlsx")
+        site_infos = load_site_infos(info_path)
+        if len(site_infos) and "siteId" in hist.columns:
+            hist = hist.merge(site_infos, on="siteId", how="left")
 
         _, _, weath = load_level_tables(db_dir, level_cfg)
         if len(weath) == 0:

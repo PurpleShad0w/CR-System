@@ -1,6 +1,7 @@
 paths:
   db_dir: db
   out_dir: output_ai
+  site_infos_file: Sites_Shyrka_Infos.xlsx
 
 level_defaults:
   site:
@@ -22,6 +23,7 @@ features:
   add_calendar: true
   add_site_id: true
   weather_cols: [tempAmb, humidity, djF, djC, tempMin, tempMax, chancePluie, windSpeed]
+  static_cols: [surface_m2]
 
 model:
   type: ridge   # ridge | hist_gbdt

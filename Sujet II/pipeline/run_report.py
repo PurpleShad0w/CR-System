@@ -12,6 +12,7 @@ from .dataset import load_level_tables
 from .features import add_calendar_features, build_lag_features, build_rolling_features
 from .modeling import load_model
 from .reporting import parity_linear_95, parity_linear_99, parity_log, residual_hist, ts_train_valid_site
+from .site_infos import load_site_infos
 
 
 def _expand_daily(df_in: pd.DataFrame, group_cols: list[str], date_col: str) -> pd.DataFrame:
@@ -68,6 +69,11 @@ def main():
         hist = pd.read_csv(cleaned_path)
         hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
 
+        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get("site_infos_file", "Sites_Shyrka_Infos.xlsx")
+        site_infos = load_site_infos(info_path)
+        if len(site_infos) and "siteId" in hist.columns:
+            hist = hist.merge(site_infos, on="siteId", how="left")
+
         level_cfg = cfg["level_defaults"][level]
         id_cols = level_cfg["id_cols"]
 
@@ -87,9 +93,11 @@ def main():
         # Build base DF WITHOUT dropping target:
         # we want to predict even when truth is missing.
         # -------------------------------
-        df0 = hist[id_cols + ["date", target]].copy()
+        static_cols = cfg.get("features", {}).get("static_cols", [])
+        extra_cols = [c for c in static_cols if c in hist.columns]
+        df0 = hist[id_cols + ["date", target] + extra_cols].copy()
         df0[target] = pd.to_numeric(df0[target], errors="coerce")
-        df0 = df0.dropna(subset=id_cols + ["date"])  # keep rows even if target is NaN
+        df0 = df0.dropna(subset=id_cols + ["date"] + extra_cols)  # keep rows even if target is NaN
 
         # Expand to daily grid per group to create missing dates
         df0 = _expand_daily(df0, id_cols, "date")

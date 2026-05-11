@@ -11,6 +11,7 @@ from .io_utils import ensure_dir
 from .dataset import load_level_tables
 from .features import add_calendar_features, build_lag_features, build_rolling_features
 from .modeling import load_model, mae, rmse
+from .site_infos import load_site_infos
 
 
 def main():
@@ -38,6 +39,11 @@ def main():
         hist = pd.read_csv(cleaned_path)
         hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
 
+        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get("site_infos_file", "Sites_Shyrka_Infos.xlsx")
+        site_infos = load_site_infos(info_path)
+        if len(site_infos) and "siteId" in hist.columns:
+            hist = hist.merge(site_infos, on="siteId", how="left")
+
         level_cfg = cfg["level_defaults"][level]
         id_cols = level_cfg["id_cols"]
 
@@ -48,9 +54,11 @@ def main():
         valid_days = int(meta.get("valid_days", cfg["training"].get("valid_days", 60)))
         log1p_target = bool(meta.get("log1p_target", False))
 
-        df = hist[id_cols + ["date", target]].copy()
+        static_cols = cfg.get("features", {}).get("static_cols", [])
+        extra_cols = [c for c in static_cols if c in hist.columns]
+        df = hist[id_cols + ["date", target] + extra_cols].copy()
         df[target] = pd.to_numeric(df[target], errors="coerce")
-        df = df.dropna(subset=id_cols + ["date", target])
+        df = df.dropna(subset=id_cols + ["date", target] + extra_cols)
 
         # Merge weather
         _, _, weath = load_level_tables(db_dir, level_cfg)
@@ -106,6 +114,41 @@ def main():
         pred_df["y_pred"] = yhat
         pred_df.to_csv(out_dir / f"eval_preds_{level}_{target}.csv", index=False)
 
+        # Metrics
+        if target in ["elecTotalKwh", "waterM3"]:
+            denom = float(np.sum(np.abs(y)))
+            wape = float(np.sum(np.abs(y - yhat)) / denom) if denom > 0 else np.nan
+        else:
+            wape = np.nan
+
+        # Extra metrics
+        bias = float(np.mean(yhat - y)) if len(y) else np.nan
+        medae = float(np.median(np.abs(yhat - y))) if len(y) else np.nan
+
+        # R2 (guard)
+        sst = float(np.sum((y - np.mean(y)) ** 2)) if len(y) else 0.0
+        sse = float(np.sum((y - yhat) ** 2)) if len(y) else 0.0
+        r2 = float(1.0 - sse / sst) if sst > 0 else np.nan
+
+        def _smape(y_true, y_pred):
+            denom = np.abs(y_true) + np.abs(y_pred)
+            m = denom > 0
+            return float(200.0 * np.mean(np.abs(y_pred[m] - y_true[m]) / denom[m])) if np.any(m) else np.nan
+
+        smape = _smape(y, yhat) if target in ["elecTotalKwh", "waterM3"] else np.nan
+
+        mae_m2 = rmse_m2 = wape_m2 = np.nan
+        if target in ["elecTotalKwh", "waterM3"] and "surface_m2" in valid.columns:
+            surf = pd.to_numeric(valid["surface_m2"], errors="coerce").to_numpy(dtype=float)
+            m2 = np.isfinite(surf) & (surf > 0) & np.isfinite(y) & np.isfinite(yhat)
+            if np.any(m2):
+                y_m2 = y[m2] / surf[m2]
+                yhat_m2 = yhat[m2] / surf[m2]
+                mae_m2 = float(np.mean(np.abs(yhat_m2 - y_m2)))
+                rmse_m2 = float(np.sqrt(np.mean((yhat_m2 - y_m2) ** 2)))
+                denom_m2 = float(np.sum(np.abs(y_m2)))
+                wape_m2 = float(np.sum(np.abs(yhat_m2 - y_m2)) / denom_m2) if denom_m2 > 0 else np.nan
+
         # Per-group metrics (siteId for site-level, (siteId, zoneId) for zone-level)
         rows = []
         for keys, g in pred_df.groupby(id_cols, dropna=False):
@@ -139,28 +182,6 @@ def main():
         if rows:
             pd.DataFrame(rows).to_csv(out_dir / f"eval_{level}_{target}_by_group.csv", index=False)
 
-        if target in ["elecTotalKwh", "waterM3"]:
-            denom = float(np.sum(np.abs(y)))
-            wape = float(np.sum(np.abs(y - yhat)) / denom) if denom > 0 else np.nan
-        else:
-            wape = np.nan
-
-        # Extra metrics
-        bias = float(np.mean(yhat - y)) if len(y) else np.nan
-        medae = float(np.median(np.abs(yhat - y))) if len(y) else np.nan
-
-        # R2 (guard)
-        sst = float(np.sum((y - np.mean(y)) ** 2)) if len(y) else 0.0
-        sse = float(np.sum((y - yhat) ** 2)) if len(y) else 0.0
-        r2 = float(1.0 - sse / sst) if sst > 0 else np.nan
-
-        def _smape(y_true, y_pred):
-            denom = np.abs(y_true) + np.abs(y_pred)
-            m = denom > 0
-            return float(200.0 * np.mean(np.abs(y_pred[m] - y_true[m]) / denom[m])) if np.any(m) else np.nan
-
-        smape = _smape(y, yhat) if target in ["elecTotalKwh", "waterM3"] else np.nan
-
         rep = pd.DataFrame([{
             "rows": int(len(valid)),
             "MAE": mae(y, yhat),
@@ -170,6 +191,9 @@ def main():
             "MedAE": medae,
             "sMAPE": smape,
             "R2": r2,
+            "MAE_m2": mae_m2,
+            "RMSE_m2": rmse_m2,
+            "WAPE_m2": wape_m2,
         }])
 
         rep.to_csv(out_dir / f"eval_{level}_{target}.csv", index=False)
