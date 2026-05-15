@@ -15,6 +15,11 @@ from .reporting import parity_linear_95, parity_linear_99, parity_log, residual_
 from .site_infos import load_site_infos
 
 
+ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
+ELECTRIC_ALL = ["elecTotalKwh"] + ELECTRIC_USES
+ENERGY_TARGETS = ELECTRIC_ALL + ["waterM3"]  # tout ce qui est “positif / skew”
+
+
 def _expand_daily(df_in: pd.DataFrame, group_cols: list[str], date_col: str) -> pd.DataFrame:
     """
     Ensure there is one row per day per group between min(date) and max(date).
@@ -23,23 +28,18 @@ def _expand_daily(df_in: pd.DataFrame, group_cols: list[str], date_col: str) -> 
     df = df_in.copy()
     df[date_col] = pd.to_datetime(df[date_col], errors="coerce").dt.floor("D")
     parts = []
-
     for keys, g in df.groupby(group_cols, dropna=False):
         if not isinstance(keys, tuple):
             keys = (keys,)
         g = g.dropna(subset=[date_col]).sort_values(date_col)
         if g.empty:
             continue
-
         idx = pd.date_range(g[date_col].min(), g[date_col].max(), freq="D")
         g2 = g.set_index(date_col).reindex(idx)
         g2.index.name = date_col
-
         for c, v in zip(group_cols, keys):
             g2[c] = v
-
         parts.append(g2.reset_index())
-
     if not parts:
         return df.iloc[0:0].copy()
     return pd.concat(parts, ignore_index=True)
@@ -48,21 +48,36 @@ def _expand_daily(df_in: pd.DataFrame, group_cols: list[str], date_col: str) -> 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
-    ap.add_argument("--level", default="site")   # site | zone | all
-    ap.add_argument("--target", required=True)   # elecTotalKwh | waterM3 | indoorTempDegC | all
+    ap.add_argument("--level", default="site")  # site | zone | all
+    ap.add_argument(
+        "--target",
+        required=True,
+        # elecTotalKwh | waterM3 | indoorTempDegC | elecBveKwh | elecCvcKwh | elecForceKwh | elecLightingKwh | elecUses | all
+    )
     ap.add_argument("--site", default="170", help='siteId pour timeseries, ou "all"')
     args = ap.parse_args()
 
     LEVELS = ["site", "zone"]
-    TARGETS_BY_LEVEL = {
+    BASE_TARGETS_BY_LEVEL = {
         "site": ["elecTotalKwh", "waterM3", "indoorTempDegC"],
         "zone": ["elecTotalKwh", "waterM3", "indoorTempDegC"],
+    }
+    TARGETS_BY_LEVEL = {
+        "site": BASE_TARGETS_BY_LEVEL["site"] + ELECTRIC_USES,
+        "zone": BASE_TARGETS_BY_LEVEL["zone"] + ELECTRIC_USES,
     }
 
     cfg = load_config(args.config).raw
     db_dir = Path(cfg["paths"]["db_dir"])
     out_dir = ensure_dir(Path(cfg["paths"]["out_dir"]))
     fig_dir = ensure_dir(out_dir / "figures")
+
+    def expand_targets(level: str, target: str) -> list[str]:
+        if target == "elecUses":
+            return ELECTRIC_USES[:]
+        if target == "all":
+            return BASE_TARGETS_BY_LEVEL[level][:]
+        return [target]
 
     def report_one(level: str, target: str, site: str):
         cleaned_path = out_dir / f"{level}hist_cleaned.csv"
@@ -79,7 +94,6 @@ def main():
 
         if level == "zone" and "zoneId" not in level_cfg["id_cols"]:
             raise RuntimeError("Config error: zone level must include zoneId in id_cols")
-
         if level == "zone" and "zoneId" not in hist.columns:
             raise RuntimeError("zonehist missing zoneId column")
 
@@ -89,17 +103,14 @@ def main():
         valid_days = int(meta.get("valid_days", cfg["training"].get("valid_days", 60)))
         log1p_target = bool(meta.get("log1p_target", False))
 
-        # -------------------------------
-        # Build base DF WITHOUT dropping target:
-        # we want to predict even when truth is missing.
-        # -------------------------------
+        # Base DF without dropping target (predict even where truth missing)
         static_cols = cfg.get("features", {}).get("static_cols", [])
         extra_cols = [c for c in static_cols if c in hist.columns]
+
         df0 = hist[id_cols + ["date", target] + extra_cols].copy()
         df0[target] = pd.to_numeric(df0[target], errors="coerce")
         df0 = df0.dropna(subset=id_cols + ["date"] + extra_cols)  # keep rows even if target is NaN
 
-        # Expand to daily grid per group to create missing dates
         df0 = _expand_daily(df0, id_cols, "date")
 
         # weather
@@ -122,17 +133,13 @@ def main():
         df0 = build_lag_features(df0, id_cols, "date", target, cfg["features"]["lags"])
         df0 = build_rolling_features(df0, id_cols, "date", target, cfg["features"]["rolling_windows"])
 
-        # must_have (lags/rollings) -> used for eval only; NOT used to drop timeseries prediction rows
         lag_cols = [f"lag_{k}" for k in cfg["features"]["lags"]]
         roll_cols = []
         for wdw in cfg["features"]["rolling_windows"]:
             roll_cols += [f"roll_med_{wdw}", f"roll_mean_{wdw}"]
         must_have = [c for c in (lag_cols + roll_cols) if c in df0.columns]
 
-        # df_pred: used for timeseries predictions (keep everything)
         df_pred = df0
-
-        # df_eval: used for parity/residuals (need truth + usable features)
         df_eval = df0.dropna(subset=[target])
         if must_have:
             df_eval = df_eval.dropna(subset=must_have)
@@ -141,14 +148,10 @@ def main():
             print(f"[WARN] No evaluable rows for level={level}, target={target}. Skipping parity/residual.")
             return
 
-        # cutoff based on evaluable truth (stable split)
         cutoff = df_eval["date"].max() - pd.Timedelta(days=valid_days)
-
         model = load_model(model_dir / f"{level}_{target}.joblib")
 
-        # -------------------------------
-        # PARITY / RESIDUALS (evaluation only)
-        # -------------------------------
+        # PARITY / RESIDUALS
         valid_eval = df_eval[df_eval["date"] > cutoff].copy()
         X_eval = valid_eval[feat_cols].copy()
         y_eval = valid_eval[target].to_numpy(dtype=float)
@@ -160,26 +163,33 @@ def main():
         else:
             yhat_eval = pred_eval
 
-        parity_linear_99(y_eval, yhat_eval, f"Parity — {level} {target} (valid)",
-                         fig_dir / f"parity_{level}_{target}_p99.png")
-        parity_linear_95(y_eval, yhat_eval, f"Parity — {level} {target} (valid)",
-                         fig_dir / f"parity_{level}_{target}_p95.png")
-        parity_log(y_eval, yhat_eval, f"Parity log — {level} {target} (valid)",
-                   fig_dir / f"parity_{level}_{target}_log.png")
-        residual_hist(y_eval, yhat_eval, f"Residuals — {level} {target} (valid)",
-                      fig_dir / f"resid_{level}_{target}.png")
+        parity_linear_99(
+            y_eval, yhat_eval,
+            f"Parity — {level} {target} (valid)",
+            fig_dir / f"parity_{level}_{target}_p99.png"
+        )
+        parity_linear_95(
+            y_eval, yhat_eval,
+            f"Parity — {level} {target} (valid)",
+            fig_dir / f"parity_{level}_{target}_p95.png"
+        )
+        parity_log(
+            y_eval, yhat_eval,
+            f"Parity log — {level} {target} (valid)",
+            fig_dir / f"parity_{level}_{target}_log.png"
+        )
+        residual_hist(
+            y_eval, yhat_eval,
+            f"Residuals — {level} {target} (valid)",
+            fig_dir / f"resid_{level}_{target}.png"
+        )
 
-        # -------------------------------
-        # DIAGNOSTIC: per-group worst parity charts (siteId / (siteId, zoneId))
-        # -------------------------------
+        # DIAGNOSTIC: worst groups parity charts
         diag_root = ensure_dir(fig_dir / "diagnostic" / "parity" / f"{level}_{target}")
-
-        # Build a dataframe with ids + y_true/y_pred for the eval window
         pred_df = valid_eval[id_cols + ["date"]].copy()
         pred_df["y_true"] = y_eval
         pred_df["y_pred"] = yhat_eval
 
-        # Per-group metrics
         rows = []
         for keys, g in pred_df.groupby(id_cols, dropna=False):
             if not isinstance(keys, tuple):
@@ -196,55 +206,39 @@ def main():
             rmse_g = float(np.sqrt(np.mean((yp - yt) ** 2)))
             bias_g = float(np.mean(yp - yt))
 
-            if target in ["elecTotalKwh", "waterM3"]:
+            if target in ENERGY_TARGETS:
                 denom = float(np.sum(np.abs(yt)))
                 wape_g = float(np.sum(np.abs(yp - yt)) / denom) if denom > 0 else np.nan
             else:
                 wape_g = np.nan
 
             row = {c: v for c, v in zip(id_cols, keys)}
-            row.update({
-                "n": int(len(yt)),
-                "MAE": mae_g,
-                "RMSE": rmse_g,
-                "WAPE": wape_g,
-                "Bias": bias_g,
-            })
+            row.update({"n": int(len(yt)), "MAE": mae_g, "RMSE": rmse_g, "WAPE": wape_g, "Bias": bias_g})
             rows.append(row)
 
         if rows:
             df_g = pd.DataFrame(rows)
-
-            # Save metrics summary (useful to inspect quickly)
             df_g.sort_values("RMSE", ascending=False).to_csv(
                 diag_root / f"worst_groups_{level}_{target}.csv",
                 index=False
             )
 
-            # Select worst groups:
-            # - always by RMSE
-            # - for elec/water, also by WAPE (captures proportional error)
             TOP_K = 20
             worst_rmse = df_g.sort_values("RMSE", ascending=False).head(TOP_K)
-
-            if target in ["elecTotalKwh", "waterM3"]:
+            if target in ENERGY_TARGETS:
                 worst_wape = df_g.sort_values("WAPE", ascending=False).head(TOP_K)
                 worst = pd.concat([worst_rmse, worst_wape], ignore_index=True).drop_duplicates(subset=id_cols)
             else:
                 worst = worst_rmse
 
-            # Generate per-group parity charts
             for _, r in worst.iterrows():
-                # Filter group
                 mask = np.ones(len(pred_df), dtype=bool)
                 for c in id_cols:
                     mask &= (pred_df[c] == r[c])
-
                 gg = pred_df.loc[mask].copy()
                 yt = gg["y_true"].to_numpy(dtype=float)
                 yp = gg["y_pred"].to_numpy(dtype=float)
 
-                # Naming
                 if level == "zone" and "zoneId" in id_cols:
                     sid = int(r["siteId"])
                     zid = int(r["zoneId"])
@@ -260,40 +254,29 @@ def main():
                 title = (
                     f"Parity — {level} {target} ({title_suffix}) "
                     f"n={int(r['n'])} RMSE={r['RMSE']:.2f}"
-                    + (f" WAPE={r['WAPE']:.3f}" if target in ["elecTotalKwh", "waterM3"] and np.isfinite(r["WAPE"]) else "")
+                    + (f" WAPE={r['WAPE']:.3f}" if target in ENERGY_TARGETS and np.isfinite(r["WAPE"]) else "")
                     + (f" Bias={r['Bias']:.2f}" if np.isfinite(r["Bias"]) else "")
                 )
-
-                # Use p95 for readability (p99 often too stretched)
                 parity_linear_95(yt, yp, title, subdir / f"{stem}_p95.png")
-                # Optional: log parity is very informative for skewed targets
-                if target in ["elecTotalKwh", "waterM3"] and int(r["n"]) >= 200:
+                if target in ENERGY_TARGETS and int(r["n"]) >= 200:
                     parity_log(yt, yp, title + " (log)", subdir / f"{stem}_log.png")
 
-        # -------------------------------
-        # TIMESERIES (predict on ALL valid dates, even where truth is missing)
-        # -------------------------------
+        # TIMESERIES (predict even where truth is missing)
         site_arg = str(site).lower()
         if site_arg == "all":
             site_ids = sorted([int(x) for x in df_pred["siteId"].dropna().unique().tolist()]) if "siteId" in df_pred.columns else []
         else:
             site_ids = [int(site)]
 
-        # Sous-dossier dédié aux graphes zone-level
         zone_fig_dir = ensure_dir(fig_dir / "zones")
 
         for sid in site_ids:
             if level == "zone" and "zoneId" in df_pred.columns:
-                # toutes les zones du site (sid)
                 zone_ids = sorted([int(z) for z in df_pred.loc[df_pred["siteId"] == sid, "zoneId"].dropna().unique().tolist()])
-
                 for zid in zone_ids:
                     dzone = df_pred[(df_pred["siteId"] == sid) & (df_pred["zoneId"] == zid)].copy().sort_values("date")
-
                     train_zone = dzone[dzone["date"] <= cutoff][["date", target]].copy()
                     valid_zone = dzone[dzone["date"] > cutoff].copy()
-
-                    # Prédire sur toutes les dates valid présentes dans dzone (même si target est NaN)
                     valid_zone["yhat"] = np.nan
                     if len(valid_zone):
                         Xs = valid_zone[feat_cols].copy()
@@ -304,7 +287,6 @@ def main():
                         else:
                             yhat_z = ps
                         valid_zone["yhat"] = yhat_z
-
                     ts_train_valid_site(
                         train_df=train_zone,
                         valid_df=valid_zone[["date", target, "yhat"]],
@@ -316,13 +298,10 @@ def main():
                         out=zone_fig_dir / f"ts_site{sid}_zone{zid}_{target}_train_valid.png",
                         site_id=sid,
                     )
-
             else:
-                # site-level (inchangé)
                 dsite = df_pred[df_pred["siteId"] == sid].copy().sort_values("date")
                 train_site = dsite[dsite["date"] <= cutoff][["date", target]].copy()
                 valid_site = dsite[dsite["date"] > cutoff].copy()
-
                 if len(valid_site):
                     Xs = valid_site[feat_cols].copy()
                     ps = model.predict(Xs)
@@ -334,7 +313,6 @@ def main():
                     valid_site["yhat"] = yhat_s
                 else:
                     valid_site["yhat"] = np.nan
-
                 ts_train_valid_site(
                     train_df=train_site,
                     valid_df=valid_site[["date", target, "yhat"]],
@@ -352,11 +330,14 @@ def main():
     levels = LEVELS if args.level == "all" else [args.level]
     for lvl in levels:
         if lvl not in LEVELS:
-            raise ValueError(f"Unknown level: {lvl}. Use site|zone|all")
-        targets = TARGETS_BY_LEVEL[lvl] if args.target == "all" else [args.target]
+            raise ValueError("Unknown level. Use site|zone|all")
+
+        targets = expand_targets(lvl, args.target)
         for tgt in targets:
+            if tgt == "elecAggregatedKwh":
+                raise ValueError("elecAggregatedKwh est exclu (pas un usage).")
             if tgt not in TARGETS_BY_LEVEL[lvl]:
-                raise ValueError(f"Target {tgt} not supported for level {lvl}. Use {TARGETS_BY_LEVEL[lvl]} or all")
+                raise ValueError(f"Target {tgt} not supported for level {lvl}. Use {TARGETS_BY_LEVEL[lvl]} or elecUses or all")
             report_one(lvl, tgt, args.site)
 
 

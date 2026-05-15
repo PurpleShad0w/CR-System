@@ -14,6 +14,11 @@ from .modeling import load_model
 from .site_infos import load_site_infos
 
 
+ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
+BASE_TARGETS = ["elecTotalKwh", "waterM3", "indoorTempDegC"]
+TARGETS_ALL = BASE_TARGETS + ELECTRIC_USES
+
+
 def _infer_horizon_days(last_hist_date: pd.Timestamp, weath: pd.DataFrame, max_days: int | None, siteId: int) -> int:
     w = weath[weath["siteId"] == siteId]
     w = w[w["date"] > last_hist_date]
@@ -29,20 +34,29 @@ def _infer_horizon_days(last_hist_date: pd.Timestamp, weath: pd.DataFrame, max_d
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
-    ap.add_argument("--level", default="site")   # site | zone | all
-    ap.add_argument("--target", required=True)   # elecTotalKwh | waterM3 | indoorTempDegC | all
+    ap.add_argument("--level", default="site")  # site | zone | all
+    ap.add_argument(
+        "--target",
+        required=True,
+        # elecTotalKwh | waterM3 | indoorTempDegC | elecBveKwh | elecCvcKwh | elecForceKwh | elecLightingKwh | elecUses | all
+    )
     ap.add_argument("--days", type=int, default=None)
     args = ap.parse_args()
 
     LEVELS = ["site", "zone"]
-    TARGETS_BY_LEVEL = {
-        "site": ["elecTotalKwh", "waterM3", "indoorTempDegC"],
-        "zone": ["elecTotalKwh", "waterM3", "indoorTempDegC"],
-    }
+    BASE_TARGETS_BY_LEVEL = {"site": BASE_TARGETS, "zone": BASE_TARGETS}
+    TARGETS_BY_LEVEL = {"site": TARGETS_ALL, "zone": TARGETS_ALL}
 
     cfg = load_config(args.config).raw
     db_dir = Path(cfg["paths"]["db_dir"])
     out_dir = ensure_dir(Path(cfg["paths"]["out_dir"]))
+
+    def expand_targets(level: str, target: str) -> list[str]:
+        if target == "elecUses":
+            return ELECTRIC_USES[:]
+        if target == "all":
+            return BASE_TARGETS_BY_LEVEL[level][:]
+        return [target]
 
     def predict_one(level: str, target: str, days: int | None):
         level_cfg = cfg["level_defaults"][level]
@@ -66,7 +80,6 @@ def main():
         meta = json.loads((model_dir / f"{level}_{target}.meta.json").read_text(encoding="utf-8"))
         feat_cols = meta["feature_columns"]
         log1p_target = bool(meta.get("log1p_target", False))
-
         model = load_model(model_dir / f"{level}_{target}.joblib")
 
         hist = hist.dropna(subset=id_cols + ["date"]).sort_values(id_cols + ["date"])
@@ -79,11 +92,9 @@ def main():
         max_days = days if days is not None else cfg.get("prediction", {}).get("days", None)
 
         future_rows = []
-
         for keys, g in hist.groupby(id_cols):
             if not isinstance(keys, tuple):
                 keys = (keys,)
-
             base_feat = {c: int(v) for c, v in zip(id_cols, keys)}
             site_id = base_feat.get("siteId", None)
             if site_id is None:
@@ -99,9 +110,7 @@ def main():
             if state.empty:
                 continue
 
-            dates = pd.date_range(last_hist_date + pd.Timedelta(days=1),
-                                  last_hist_date + pd.Timedelta(days=horizon), freq="D")
-
+            dates = pd.date_range(last_hist_date + pd.Timedelta(days=1), last_hist_date + pd.Timedelta(days=horizon), freq="D")
             wsite = weath[weath["siteId"] == site_id].drop_duplicates(subset=["siteId", "date"], keep="last").set_index("date")
 
             for d in dates:
@@ -122,14 +131,13 @@ def main():
                 for k in cfg["features"]["lags"]:
                     row[f"lag_{k}"] = float(s.get(d - pd.Timedelta(days=k), np.nan))
 
-                for w in cfg["features"]["rolling_windows"]:
-                    window = pd.date_range(d - pd.Timedelta(days=w), d - pd.Timedelta(days=1), freq="D")
+                for wdw in cfg["features"]["rolling_windows"]:
+                    window = pd.date_range(d - pd.Timedelta(days=wdw), d - pd.Timedelta(days=1), freq="D")
                     vals = s.reindex(window).to_numpy(dtype=float)
-                    row[f"roll_med_{w}"] = float(np.nanmedian(vals)) if np.isfinite(vals).any() else np.nan
-                    row[f"roll_mean_{w}"] = float(np.nanmean(vals)) if np.isfinite(vals).any() else np.nan
+                    row[f"roll_med_{wdw}"] = float(np.nanmedian(vals)) if np.isfinite(vals).any() else np.nan
+                    row[f"roll_mean_{wdw}"] = float(np.nanmean(vals)) if np.isfinite(vals).any() else np.nan
 
                 X = pd.DataFrame([row])
-                # s'assurer que toutes les colonnes existent
                 for c in feat_cols:
                     if c not in X.columns:
                         X[c] = np.nan
@@ -146,18 +154,23 @@ def main():
                 state = pd.concat([state, pd.DataFrame([{"date": d, target: yhat}])], ignore_index=True)
 
         out = pd.DataFrame(future_rows)
-        out.to_csv(out_dir / f"pred_{level}_{target}.csv", index=False)
-        print("wrote", out_dir / f"pred_{level}_{target}.csv")
+        out_path = out_dir / f"pred_{level}_{target}.csv"
+        out.to_csv(out_path, index=False)
+        print("wrote", out_path)
 
     levels = LEVELS if args.level == "all" else [args.level]
     for lvl in levels:
         if lvl not in LEVELS:
-            raise ValueError(f"Unknown level: {lvl}. Use site|zone|all")
-        targets = TARGETS_BY_LEVEL[lvl] if args.target == "all" else [args.target]
+            raise ValueError("Unknown level. Use site|zone|all")
+
+        targets = expand_targets(lvl, args.target)
         for tgt in targets:
+            if tgt == "elecAggregatedKwh":
+                raise ValueError("elecAggregatedKwh est exclu (pas un usage).")
             if tgt not in TARGETS_BY_LEVEL[lvl]:
-                raise ValueError(f"Target {tgt} not supported for level {lvl}. Use {TARGETS_BY_LEVEL[lvl]} or all")
+                raise ValueError(f"Target {tgt} not supported for level {lvl}. Use {TARGETS_BY_LEVEL[lvl]} or elecUses or all")
             predict_one(lvl, tgt, args.days)
+
 
 if __name__ == "__main__":
     main()

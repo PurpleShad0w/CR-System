@@ -23,8 +23,11 @@ from .modeling import make_model, save_model
 from .site_infos import load_site_infos
 
 
+ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
+ELECTRIC_ALL = ["elecTotalKwh"] + ELECTRIC_USES
+
+
 def _make_ohe():
-    # compat sklearn (sparse_output récent, sparse ancien)
     try:
         return OneHotEncoder(handle_unknown="ignore", sparse_output=False)
     except TypeError:
@@ -34,21 +37,36 @@ def _make_ohe():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
-    ap.add_argument("--level", default="site")         # site | zone | all
-    ap.add_argument("--target", required=True)         # elecTotalKwh | waterM3 | indoorTempDegC | all
+    ap.add_argument("--level", default="site")  # site | zone | all
+    ap.add_argument(
+        "--target",
+        required=True,
+        # elecTotalKwh | waterM3 | indoorTempDegC | elecBveKwh | elecCvcKwh | elecForceKwh | elecLightingKwh | elecUses | all
+    )
     args = ap.parse_args()
 
     LEVELS = ["site", "zone"]
-    TARGETS_BY_LEVEL = {
+    BASE_TARGETS_BY_LEVEL = {
         "site": ["elecTotalKwh", "waterM3", "indoorTempDegC"],
         "zone": ["elecTotalKwh", "waterM3", "indoorTempDegC"],
+    }
+    TARGETS_BY_LEVEL = {
+        "site": BASE_TARGETS_BY_LEVEL["site"] + ELECTRIC_USES,
+        "zone": BASE_TARGETS_BY_LEVEL["zone"] + ELECTRIC_USES,
     }
 
     cfg = load_config(args.config).raw
     db_dir = Path(cfg["paths"]["db_dir"])
     out_dir = ensure_dir(Path(cfg["paths"]["out_dir"]))
 
-    def train_one(cfg, db_dir: Path, out_dir: Path, level: str, target: str):
+    def expand_targets(level: str, target: str) -> list[str]:
+        if target == "elecUses":
+            return ELECTRIC_USES[:]
+        if target == "all":
+            return BASE_TARGETS_BY_LEVEL[level][:]  # sens historique
+        return [target]
+
+    def train_one(level: str, target: str):
         level_cfg = cfg["level_defaults"][level]
         id_cols = level_cfg["id_cols"]
 
@@ -61,9 +79,10 @@ def main():
             hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
 
         # --- site static infos (surface etc.) ---
-        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get("site_infos_file", "Sites_Shyrka_Infos.xlsx")
+        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get(
+            "site_infos_file", "Sites_Shyrka_Infos.xlsx"
+        )
         site_infos = load_site_infos(info_path)
-
         if len(site_infos) and "siteId" in hist.columns:
             hist = hist.merge(site_infos, on="siteId", how="left")
 
@@ -73,10 +92,17 @@ def main():
 
         static_cols = cfg.get("features", {}).get("static_cols", [])
         extra_cols = [c for c in static_cols if c in hist.columns]
+
+        if target == "elecAggregatedKwh":
+            raise ValueError("elecAggregatedKwh est exclu (pas un usage).")
+
+        if target not in hist.columns:
+            raise ValueError(f"Target '{target}' absent de {level}hist.")
+
         df = hist[id_cols + ["date", target] + extra_cols].copy()
         df[target] = pd.to_numeric(df[target], errors="coerce")
 
-        # sécurité spécifique température (si pas déjà fait au clean)
+        # sécurité spécifique température
         if target == "indoorTempDegC":
             df[target] = df[target].mask(df[target] <= 0, np.nan)
 
@@ -97,7 +123,11 @@ def main():
         df = build_lag_features(df, id_cols, "date", target, cfg["features"]["lags"])
         df = build_rolling_features(df, id_cols, "date", target, cfg["features"]["rolling_windows"])
 
-        feat_cols = select_feature_columns(df, id_cols if cfg["features"].get("add_site_id", True) else [], weather_cols)
+        feat_cols = select_feature_columns(
+            df,
+            id_cols if cfg["features"].get("add_site_id", True) else [],
+            weather_cols,
+        )
         for c in extra_cols:
             if c not in feat_cols:
                 feat_cols.append(c)
@@ -105,8 +135,8 @@ def main():
         # filtre lags/rollings
         lag_cols = [f"lag_{k}" for k in cfg["features"]["lags"]]
         roll_cols = []
-        for w in cfg["features"]["rolling_windows"]:
-            roll_cols += [f"roll_med_{w}", f"roll_mean_{w}"]
+        for wdw in cfg["features"]["rolling_windows"]:
+            roll_cols += [f"roll_med_{wdw}", f"roll_mean_{wdw}"]
         must_have = [c for c in (lag_cols + roll_cols) if c in df.columns]
         if must_have:
             df = df.dropna(subset=must_have)
@@ -121,11 +151,10 @@ def main():
         X_valid = valid[feat_cols].copy()
         y_valid = valid[target].to_numpy(dtype=float)
 
-        # log1p uniquement pour énergie/eau
-        use_log1p = target in ["elecTotalKwh", "waterM3"]
+        # log1p pour énergie (total + usages) + eau
+        use_log1p = target in (ELECTRIC_ALL + ["waterM3"])
         y_train_t = np.log1p(y_train) if use_log1p else y_train
 
-        # --- preprocessing actuel (imputer + OHE) ---
         candidate_cat = ["siteId", "dow", "month", "is_weekend"]
         cat_cols = [c for c in candidate_cat if c in X_train.columns]
         num_cols = [c for c in X_train.columns if c not in cat_cols]
@@ -133,7 +162,6 @@ def main():
         ohe = _make_ohe()
         cat_pipe = Pipeline([("imp", SimpleImputer(strategy="most_frequent")), ("ohe", ohe)])
         num_pipe = Pipeline([("imp", SimpleImputer(strategy="median"))])
-
         pre = ColumnTransformer(
             transformers=[("cat", cat_pipe, cat_cols), ("num", num_pipe, num_cols)],
             remainder="drop",
@@ -165,23 +193,22 @@ def main():
             yhat = np.maximum(yhat, 0.0)
 
         from .modeling import mae, rmse, mape
-        print(f"[TRAIN] level={level} target={target} valid_rows={len(valid)} "
-          f"MAE={mae(y_valid, yhat):.4f} RMSE={rmse(y_valid, yhat):.4f} MAPE={mape(y_valid, yhat):.4f}")
+        print(
+            f"[TRAIN] level={level} target={target} valid_rows={len(valid)} "
+            f"MAE={mae(y_valid, yhat):.4f} RMSE={rmse(y_valid, yhat):.4f} MAPE={mape(y_valid, yhat):.4f}"
+        )
         print("saved", model_path)
 
-    # levels to run
     levels = LEVELS if args.level == "all" else [args.level]
     for level in levels:
         if level not in LEVELS:
-            raise ValueError(f"Unknown level: {level}. Use site|zone|all")
+            raise ValueError("Unknown level. Use site|zone|all")
 
-        # targets to run
-        targets = TARGETS_BY_LEVEL[level] if args.target == "all" else [args.target]
+        targets = expand_targets(level, args.target)
         for target in targets:
             if target not in TARGETS_BY_LEVEL[level]:
-                raise ValueError(f"Target {target} not supported for level {level}. "
-                             f"Use {TARGETS_BY_LEVEL[level]} or all")
-            train_one(cfg, db_dir, out_dir, level, target)
+                raise ValueError(f"Target {target} not supported for level {level}. Use {TARGETS_BY_LEVEL[level]} or elecUses or all")
+            train_one(level, target)
 
 
 if __name__ == "__main__":

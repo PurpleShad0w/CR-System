@@ -3,7 +3,6 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from matplotlib.colors import LogNorm
 
 
@@ -11,6 +10,17 @@ def _save(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     plt.tight_layout()
     plt.savefig(path, dpi=160)
+
+
+def _hist2d_log_safe(x, y, bins, range_xy):
+    """
+    Return (H, xedges, yedges) with H shape = (len(yedges)-1, len(xedges)-1)
+    using numpy.histogram2d, and safe log scaling parameters.
+    """
+    H, xedges, yedges = np.histogram2d(x, y, bins=bins, range=range_xy)
+    # histogram2d returns H with shape (xbins, ybins); pcolormesh expects (ybins, xbins)
+    H = H.T
+    return H, xedges, yedges
 
 
 def parity_linear_99(y_true, y_pred, title: str, out: Path):
@@ -25,17 +35,23 @@ def parity_linear_99(y_true, y_pred, title: str, out: Path):
 
     lim = float(np.nanpercentile(np.concatenate([y_true, y_pred]), 99))
     lim = max(lim, 1e-9)
-
     bins = 80 if len(y_true) > 5000 else 60
 
+    H, xedges, yedges = _hist2d_log_safe(y_true, y_pred, bins=bins, range_xy=[[0, lim], [0, lim]])
+    vmax = float(np.nanmax(H)) if H.size else 0.0
+    if not np.isfinite(vmax) or vmax <= 0:
+        return
+
     plt.figure(figsize=(5.5, 5.5))
-    plt.hist2d(
-        y_true, y_pred,
-        bins=bins,
-        range=[[0, lim], [0, lim]],
-        norm=LogNorm()
+    mesh = plt.pcolormesh(
+        xedges,
+        yedges,
+        H,
+        norm=LogNorm(vmin=1, vmax=vmax),
+        shading="auto",
     )
     plt.plot([0, lim], [0, lim], color="r", linewidth=1)
+
     ax = plt.gca()
     ax.set_aspect("equal", adjustable="box")
     plt.xlim(0, lim)
@@ -43,8 +59,10 @@ def parity_linear_99(y_true, y_pred, title: str, out: Path):
     plt.xlabel("Réel")
     plt.ylabel("Prédit")
     plt.title(title)
-    cb = plt.colorbar()
+
+    cb = plt.colorbar(mesh)
     cb.set_label("count (log)")
+
     _save(out)
     plt.close()
 
@@ -61,17 +79,23 @@ def parity_linear_95(y_true, y_pred, title: str, out: Path):
 
     lim = float(np.nanpercentile(np.concatenate([y_true, y_pred]), 95))
     lim = max(lim, 1e-9)
-
     bins = 80 if len(y_true) > 5000 else 60
 
+    H, xedges, yedges = _hist2d_log_safe(y_true, y_pred, bins=bins, range_xy=[[0, lim], [0, lim]])
+    vmax = float(np.nanmax(H)) if H.size else 0.0
+    if not np.isfinite(vmax) or vmax <= 0:
+        return
+
     plt.figure(figsize=(5.5, 5.5))
-    plt.hist2d(
-        y_true, y_pred,
-        bins=bins,
-        range=[[0, lim], [0, lim]],
-        norm=LogNorm()
+    mesh = plt.pcolormesh(
+        xedges,
+        yedges,
+        H,
+        norm=LogNorm(vmin=1, vmax=vmax),
+        shading="auto",
     )
     plt.plot([0, lim], [0, lim], color="r", linewidth=1)
+
     ax = plt.gca()
     ax.set_aspect("equal", adjustable="box")
     plt.xlim(0, lim)
@@ -79,11 +103,12 @@ def parity_linear_95(y_true, y_pred, title: str, out: Path):
     plt.xlabel("Réel")
     plt.ylabel("Prédit")
     plt.title(title)
-    cb = plt.colorbar()
+
+    cb = plt.colorbar(mesh)
     cb.set_label("count (log)")
+
     _save(out)
     plt.close()
-
 
 
 def parity_log(y_true, y_pred, title: str, out: Path):
@@ -103,7 +128,6 @@ def parity_log(y_true, y_pred, title: str, out: Path):
     lx = np.log10(y_true)
     ly = np.log10(y_pred)
 
-    # bornes robustes en log (p1–p99)
     lo = float(np.nanpercentile(np.concatenate([lx, ly]), 1))
     hi = float(np.nanpercentile(np.concatenate([lx, ly]), 99))
     if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
@@ -111,21 +135,25 @@ def parity_log(y_true, y_pred, title: str, out: Path):
 
     bins = 80 if len(lx) > 5000 else 60
 
+    H, xedges, yedges = _hist2d_log_safe(lx, ly, bins=bins, range_xy=[[lo, hi], [lo, hi]])
+    vmax = float(np.nanmax(H)) if H.size else 0.0
+    if not np.isfinite(vmax) or vmax <= 0:
+        return
+
     plt.figure(figsize=(5.5, 5.5))
-    plt.hist2d(
-        lx, ly,
-        bins=bins,
-        range=[[lo, hi], [lo, hi]],
-        norm=LogNorm()
+    mesh = plt.pcolormesh(
+        xedges,
+        yedges,
+        H,
+        norm=LogNorm(vmin=1, vmax=vmax),
+        shading="auto",
     )
 
-    # diagonale y=x en espace log (donc droite)
     plt.plot([lo, hi], [lo, hi], color="r", linewidth=1)
 
     ax = plt.gca()
     ax.set_aspect("equal", adjustable="box")
 
-    # ticks lisibles en 10^k
     ticks = np.arange(np.floor(lo), np.ceil(hi) + 1)
     ax.set_xticks(ticks)
     ax.set_yticks(ticks)
@@ -136,7 +164,7 @@ def parity_log(y_true, y_pred, title: str, out: Path):
     plt.ylabel("Prédit (log)")
     plt.title(title)
 
-    cb = plt.colorbar()
+    cb = plt.colorbar(mesh)
     cb.set_label("count (log)")
 
     _save(out)
@@ -150,7 +178,6 @@ def residual_hist(y_true, y_pred, title: str, out: Path):
     res = y_pred[m] - y_true[m]
     if len(res) == 0:
         return
-
     p1, p99 = np.nanpercentile(res, [1, 99])
     plt.figure(figsize=(10, 4))
     plt.hist(res, bins=80, range=(p1, p99))
@@ -178,25 +205,20 @@ def ts_train_valid_site(
     Fix diagonals: reindex to a daily date range so missing days become NaN
     and matplotlib does not draw connecting lines across gaps.
     Assumes train_df has columns [date_col, y_true_col]
-            valid_df has columns [date_col, y_true_col, y_pred_col]
+    valid_df has columns [date_col, y_true_col, y_pred_col]
     """
     import numpy as np
 
-    # Defensive copy + normalize dates
     t = train_df.copy()
     v = valid_df.copy()
-
     t[date_col] = pd.to_datetime(t[date_col], errors="coerce").dt.floor("D")
     v[date_col] = pd.to_datetime(v[date_col], errors="coerce").dt.floor("D")
-
     t = t.dropna(subset=[date_col]).sort_values(date_col)
     v = v.dropna(subset=[date_col]).sort_values(date_col)
 
-    # Nothing to plot
     if len(t) == 0 and len(v) == 0:
         return
 
-    # Build a global daily index to avoid gaps => NaN => no diagonals
     min_date = None
     max_date = None
     if len(t):
@@ -213,57 +235,32 @@ def ts_train_valid_site(
             return pd.Series(index=idx, dtype=float)
         s = pd.to_numeric(df[value_col], errors="coerce")
         s = pd.Series(s.to_numpy(dtype=float), index=df[date_col])
-        # If duplicates exist for same day, keep last (or mean if you prefer)
         s = s[~s.index.duplicated(keep="last")]
         return s.reindex(idx)
 
-    # Build series (daily, aligned)
     t_true = _daily_series(t, y_true_col)
     v_true = _daily_series(v, y_true_col)
     v_pred = _daily_series(v, y_pred_col)
 
     plt.figure(figsize=(12, 4))
 
-    # Train truth only (blue)
     if np.isfinite(t_true.to_numpy(dtype=float)).any():
-        plt.plot(
-            t_true.index,
-            t_true.to_numpy(dtype=float),
-            color="#1f77b4",
-            linewidth=1.6,
-            label="vérité (train)",
-        )
+        plt.plot(t_true.index, t_true.to_numpy(dtype=float), color="#1f77b4", linewidth=1.6, label="vérité (train)")
 
-    # Valid truth (blue) + prediction (orange)
     if np.isfinite(v_true.to_numpy(dtype=float)).any():
-        plt.plot(
-            v_true.index,
-            v_true.to_numpy(dtype=float),
-            color="#1f77b4",
-            linewidth=1.6,
-            label="vérité (valid)",
-        )
+        plt.plot(v_true.index, v_true.to_numpy(dtype=float), color="#1f77b4", linewidth=1.6, label="vérité (valid)")
 
     if np.isfinite(v_pred.to_numpy(dtype=float)).any():
-        plt.plot(
-            v_pred.index,
-            v_pred.to_numpy(dtype=float),
-            color="#ff7f0e",
-            linewidth=1.3,
-            label="prédiction (valid)",
-        )
+        plt.plot(v_pred.index, v_pred.to_numpy(dtype=float), color="#ff7f0e", linewidth=1.3, label="prédiction (valid)")
 
     plt.axvline(pd.to_datetime(cutoff), color="k", linewidth=1, alpha=0.35)
-
     if site_id is not None:
         plt.title(f"{title} — site {site_id}")
     else:
         plt.title(title)
-
     plt.xlabel("Date")
     plt.ylabel(y_true_col)
     plt.legend(loc="upper right")
-
     _save(out)
     plt.close()
 
@@ -281,16 +278,12 @@ def ts_truth_vs_algo_pred(
     Plot full-period truth (blue) vs algorithmic prediction (orange), no cleaning.
     Reindex daily to avoid misleading diagonals across missing days (NaN breaks lines).
     """
-    # Defensive copy + normalize dates
     t = truth_df.copy()
     p = pred_df.copy()
-
     t[date_col] = pd.to_datetime(t[date_col], errors="coerce").dt.floor("D")
     p[date_col] = pd.to_datetime(p[date_col], errors="coerce").dt.floor("D")
-
     t = t.dropna(subset=[date_col]).sort_values(date_col)
     p = p.dropna(subset=[date_col]).sort_values(date_col)
-
     if len(t) == 0 and len(p) == 0:
         return
 
@@ -317,19 +310,14 @@ def ts_truth_vs_algo_pred(
     s_pred = _series(p, pred_col)
 
     plt.figure(figsize=(12, 4))
-
     if np.isfinite(s_truth.to_numpy(dtype=float)).any():
-        plt.plot(s_truth.index, s_truth.to_numpy(dtype=float),
-                 color="#1f77b4", linewidth=1.6, label="vérité (hist)")
-
+        plt.plot(s_truth.index, s_truth.to_numpy(dtype=float), color="#1f77b4", linewidth=1.6, label="vérité (hist)")
     if np.isfinite(s_pred.to_numpy(dtype=float)).any():
-        plt.plot(s_pred.index, s_pred.to_numpy(dtype=float),
-                 color="#ff7f0e", linewidth=1.3, label="prédiction algo")
+        plt.plot(s_pred.index, s_pred.to_numpy(dtype=float), color="#ff7f0e", linewidth=1.3, label="prédiction algo")
 
     plt.title(title)
     plt.xlabel("Date")
     plt.ylabel(truth_col)
     plt.legend(loc="upper right")
-
     _save(out)
     plt.close()
