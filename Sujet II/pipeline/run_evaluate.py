@@ -15,9 +15,26 @@ from .site_infos import load_site_infos
 
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
-ELECTRIC_ALL = ["elecTotalKwh"] + ELECTRIC_USES
-BASE_TARGETS = ["elecTotalKwh", "waterM3", "indoorTempDegC"]
-TARGETS_ALL = BASE_TARGETS + ELECTRIC_USES
+ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
+ELECTRIC_ALL = ["elecTotalKwh"] + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
+BASE_TARGETS = ["elecTotalKwh", "elecTotalNoBveKwh", "waterM3", "indoorTempDegC"]
+TARGETS_ALL = BASE_TARGETS + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
+
+def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add derived target: elecTotalNoBveKwh = elecTotalKwh - elecBveKwh (fillna 0), clamp >= 0.
+    If elecTotalKwh is NaN => output is NaN.
+    """
+    if ELEC_TOTAL_NOBVE in df.columns:
+        return df
+    if "elecTotalKwh" not in df.columns or "elecBveKwh" not in df.columns:
+        return df
+
+    out = df.copy()
+    total = pd.to_numeric(out["elecTotalKwh"], errors="coerce")
+    bve = pd.to_numeric(out["elecBveKwh"], errors="coerce").fillna(0.0)
+    out[ELEC_TOTAL_NOBVE] = np.maximum(total - bve, 0.0)
+    return out
 
 
 def main():
@@ -58,6 +75,8 @@ def main():
         site_infos = load_site_infos(info_path)
         if len(site_infos) and "siteId" in hist.columns:
             hist = hist.merge(site_infos, on="siteId", how="left")
+
+        hist = add_elec_total_no_bve(hist)
 
         level_cfg = cfg["level_defaults"][level]
         id_cols = level_cfg["id_cols"]

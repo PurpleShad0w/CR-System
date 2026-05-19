@@ -16,6 +16,23 @@ from .cleaning import (
 )
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
+ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
+
+def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add derived target: elecTotalNoBveKwh = elecTotalKwh - elecBveKwh (fillna 0), clamp >= 0.
+    If elecTotalKwh is NaN => output is NaN.
+    """
+    if ELEC_TOTAL_NOBVE in df.columns:
+        return df
+    if "elecTotalKwh" not in df.columns or "elecBveKwh" not in df.columns:
+        return df
+
+    out = df.copy()
+    total = pd.to_numeric(out["elecTotalKwh"], errors="coerce")
+    bve = pd.to_numeric(out["elecBveKwh"], errors="coerce").fillna(0.0)
+    out[ELEC_TOTAL_NOBVE] = np.maximum(total - bve, 0.0)
+    return out
 
 
 def main():
@@ -91,6 +108,10 @@ def main():
             hist, log = spread_cumul_spikes_v3(hist, id_cols, "date", col, cfg_cumul, exp)
             if len(log):
                 CLEAN_LOGS[f"{level}_cumul_{col}"] = log
+
+        hist = add_elec_total_no_bve(hist)
+        if ELEC_TOTAL_NOBVE in hist.columns and ELEC_TOTAL_NOBVE not in measure_cols:
+            measure_cols.append(ELEC_TOTAL_NOBVE)
 
         # cap final : total + usages + eau
         for col in measure_cols:

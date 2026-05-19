@@ -15,8 +15,25 @@ from .site_infos import load_site_infos
 
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
-BASE_TARGETS = ["elecTotalKwh", "waterM3", "indoorTempDegC"]
-TARGETS_ALL = BASE_TARGETS + ELECTRIC_USES
+BASE_TARGETS = ["elecTotalKwh", "elecTotalNoBveKwh", "waterM3", "indoorTempDegC"]
+ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
+TARGETS_ALL = BASE_TARGETS + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
+
+def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add derived target: elecTotalNoBveKwh = elecTotalKwh - elecBveKwh (fillna 0), clamp >= 0.
+    If elecTotalKwh is NaN => output is NaN.
+    """
+    if ELEC_TOTAL_NOBVE in df.columns:
+        return df
+    if "elecTotalKwh" not in df.columns or "elecBveKwh" not in df.columns:
+        return df
+
+    out = df.copy()
+    total = pd.to_numeric(out["elecTotalKwh"], errors="coerce")
+    bve = pd.to_numeric(out["elecBveKwh"], errors="coerce").fillna(0.0)
+    out[ELEC_TOTAL_NOBVE] = np.maximum(total - bve, 0.0)
+    return out
 
 
 def _infer_horizon_days(last_hist_date: pd.Timestamp, weath: pd.DataFrame, max_days: int | None, siteId: int) -> int:

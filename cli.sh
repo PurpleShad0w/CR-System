@@ -1,3 +1,8 @@
+# Sujet I
+
+python process_onenote.py name --transcribe
+
+
 # Sujet II
 
 python -m pipeline.run_clean --config config.yaml --level all
