@@ -36,49 +36,53 @@ def _push(out: List[Dict[str, str]], p: str, c: str = '') -> None:
 
 
 def collect_images(page: Dict[str, Any]) -> List[Dict[str, str]]:
-    out: List[Dict[str, str]] = []
+    """Collect image references from a OneNote page JSON.
 
-    for key in ('images', 'pics', 'pictures', 'media', 'attachments'):
-        raw = page.get(key)
-        if isinstance(raw, list):
-            for it in raw:
-                d = _as_image_dict(it)
-                if d.get('path'):
-                    _push(out, d['path'], d.get('caption', ''))
+    Sources supported:
+    - page['assets']['images'] (process_onenote output)
+    - blocks with type 'image' and key 'path'
+    - legacy keys: page['images']
+
+    This function intentionally does NOT guess captions from body text.
+    Captions are resolved in image_selection.caption_from_blocks, based on explicit
+    caption markers or OCR.
+    """
+    out: List[Dict[str, str]] = []
+    if not isinstance(page, dict):
+        return out
 
     assets = page.get('assets')
-    if isinstance(assets, dict):
-        imgs = assets.get('images')
-        if isinstance(imgs, list):
-            for it in imgs:
-                d = _as_image_dict(it)
-                if d.get('path'):
-                    _push(out, d['path'], d.get('caption', ''))
+    if isinstance(assets, dict) and isinstance(assets.get('images'), list):
+        for it in assets['images']:
+            d = _as_image_dict(it)
+            if d.get('path'):
+                _push(out, d['path'], d.get('caption', ''))
+
+    imgs = page.get('images')
+    if isinstance(imgs, list):
+        for it in imgs:
+            d = _as_image_dict(it)
+            if d.get('path'):
+                _push(out, d['path'], d.get('caption', ''))
 
     blocks = page.get('blocks')
     if isinstance(blocks, list):
         for b in blocks:
             if not isinstance(b, dict):
                 continue
-            btype = (b.get('type') or '').lower()
-            p = b.get('path') or ''
-            if btype == 'image' and p:
-                _push(out, p, '')
-            elif p and _is_image_path(p):
-                _push(out, p, '')
+            if (b.get('type') or '').lower() != 'image':
+                continue
+            p = (b.get('path') or '').strip()
+            if p:
+                _push(out, p, (b.get('caption') or ''))
 
-    seen = set(); uniq = []
-    for d in out:
-        p = d.get('path')
+    # de-dup by path preserving order
+    seen = set()
+    dedup: List[Dict[str, str]] = []
+    for im in out:
+        p = (im.get('path') or '').strip()
         if not p or p in seen:
             continue
         seen.add(p)
-        uniq.append(d)
-    return uniq
-
-
-def pick_best(images: List[Dict[str, str]], *, max_images: int = 3) -> List[Dict[str, str]]:
-    if not images:
-        return []
-    imgs = sorted(images, key=lambda d: (0 if (d.get('caption') or '').strip() else 1, len(d.get('path') or '')))
-    return imgs[:max_images]
+        dedup.append(im)
+    return dedup

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from .config import load_config
 from .io_utils import ensure_dir
@@ -17,8 +18,9 @@ from .site_infos import load_site_infos
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
 ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
-ELECTRIC_ALL = ["elecTotalKwh"] + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
+ELECTRIC_ALL = ["elecTotalKwh", ELEC_TOTAL_NOBVE] + ELECTRIC_USES
 ENERGY_TARGETS = ELECTRIC_ALL + ["waterM3"]  # tout ce qui est “positif / skew”
+
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -62,6 +64,61 @@ def _expand_daily(df_in: pd.DataFrame, group_cols: list[str], date_col: str) -> 
     return pd.concat(parts, ignore_index=True)
 
 
+# ----------------------------
+# metric helpers for compare
+# ----------------------------
+def _rmse(a, b):
+    a = np.asarray(a, dtype=float)
+    b = np.asarray(b, dtype=float)
+    m = np.isfinite(a) & np.isfinite(b)
+    if not np.any(m):
+        return np.nan
+    return float(np.sqrt(np.mean((a[m] - b[m]) ** 2)))
+
+
+def _mae(a, b):
+    a = np.asarray(a, dtype=float)
+    b = np.asarray(b, dtype=float)
+    m = np.isfinite(a) & np.isfinite(b)
+    if not np.any(m):
+        return np.nan
+    return float(np.mean(np.abs(a[m] - b[m])))
+
+
+def _wape(a, b):
+    a = np.asarray(a, dtype=float)
+    b = np.asarray(b, dtype=float)
+    m = np.isfinite(a) & np.isfinite(b)
+    if not np.any(m):
+        return np.nan
+    denom = float(np.sum(np.abs(a[m])))
+    return float(np.sum(np.abs(a[m] - b[m])) / denom) if denom > 0 else np.nan
+
+
+def _smape(a, b):
+    a = np.asarray(a, dtype=float)
+    b = np.asarray(b, dtype=float)
+    m = np.isfinite(a) & np.isfinite(b)
+    if not np.any(m):
+        return np.nan
+    denom = np.abs(a[m]) + np.abs(b[m])
+    mm = denom > 0
+    return float(200.0 * np.mean(np.abs(a[m][mm] - b[m][mm]) / denom[mm])) if np.any(mm) else np.nan
+
+
+def _imp_pct(base, new):
+    if not (np.isfinite(base) and np.isfinite(new)) or base == 0:
+        return np.nan
+    return float((base - new) / base * 100.0)
+
+
+def _save_fig(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
+    plt.savefig(path, dpi=170)
+    plt.close()
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
@@ -69,15 +126,17 @@ def main():
     ap.add_argument(
         "--target",
         required=True,
-        # elecTotalKwh | waterM3 | indoorTempDegC | elecBveKwh | elecCvcKwh | elecForceKwh | elecLightingKwh | elecUses | all
+        # elecTotalKwh | elecTotalNoBveKwh | waterM3 | indoorTempDegC | elecBveKwh | elecCvcKwh | elecForceKwh | elecLightingKwh | elecUses | all
     )
     ap.add_argument("--site", default="170", help='siteId pour timeseries, ou "all"')
     args = ap.parse_args()
 
     LEVELS = ["site", "zone"]
+
+    # ✅ all inclut elecTotalNoBveKwh
     BASE_TARGETS_BY_LEVEL = {
-        "site": ["elecTotalKwh", "elecTotalNoBveKwh", "waterM3", "indoorTempDegC"],
-        "zone": ["elecTotalKwh", "elecTotalNoBveKwh", "waterM3", "indoorTempDegC"],
+        "site": ["elecTotalKwh", ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
+        "zone": ["elecTotalKwh", ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
     }
     TARGETS_BY_LEVEL = {
         "site": BASE_TARGETS_BY_LEVEL["site"] + ELECTRIC_USES,
@@ -101,12 +160,14 @@ def main():
         hist = pd.read_csv(cleaned_path)
         hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
 
-        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get("site_infos_file", "Sites_Shyrka_Infos.xlsx")
+        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get(
+            "site_infos_file", "Sites_Shyrka_Infos.xlsx"
+        )
         site_infos = load_site_infos(info_path)
         if len(site_infos) and "siteId" in hist.columns:
             hist = hist.merge(site_infos, on="siteId", how="left")
 
-        # ensure derived target exists (backward compatible even if clean wasn't rerun)
+        # ✅ ensure derived exists even if clean wasn't rerun
         hist = add_elec_total_no_bve(hist)
 
         level_cfg = cfg["level_defaults"][level]
@@ -118,7 +179,11 @@ def main():
             raise RuntimeError("zonehist missing zoneId column")
 
         model_dir = out_dir / "models"
-        meta = json.loads((model_dir / f"{level}_{target}.meta.json").read_text(encoding="utf-8"))
+        meta_path = model_dir / f"{level}_{target}.meta.json"
+        if not meta_path.exists():
+            print(f"[WARN] Missing meta for {level}_{target} (train not run?). Skipping.")
+            return None
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
         feat_cols = meta["feature_columns"]
         valid_days = int(meta.get("valid_days", cfg["training"].get("valid_days", 60)))
         log1p_target = bool(meta.get("log1p_target", False))
@@ -127,10 +192,13 @@ def main():
         static_cols = cfg.get("features", {}).get("static_cols", [])
         extra_cols = [c for c in static_cols if c in hist.columns]
 
+        if target not in hist.columns:
+            print(f"[WARN] Target {target} not in {level}hist_cleaned.csv. Skipping.")
+            return None
+
         df0 = hist[id_cols + ["date", target] + extra_cols].copy()
         df0[target] = pd.to_numeric(df0[target], errors="coerce")
         df0 = df0.dropna(subset=id_cols + ["date"] + extra_cols)  # keep rows even if target is NaN
-
         df0 = _expand_daily(df0, id_cols, "date")
 
         # weather
@@ -166,12 +234,16 @@ def main():
 
         if len(df_eval) == 0:
             print(f"[WARN] No evaluable rows for level={level}, target={target}. Skipping parity/residual.")
-            return
+            return None
 
         cutoff = df_eval["date"].max() - pd.Timedelta(days=valid_days)
-        model = load_model(model_dir / f"{level}_{target}.joblib")
+        model_path = model_dir / f"{level}_{target}.joblib"
+        if not model_path.exists():
+            print(f"[WARN] Missing model for {level}_{target} (train not run?). Skipping.")
+            return None
+        model = load_model(model_path)
 
-        # PARITY / RESIDUALS
+        # PARITY / RESIDUALS (eval only)
         valid_eval = df_eval[df_eval["date"] > cutoff].copy()
         X_eval = valid_eval[feat_cols].copy()
         y_eval = valid_eval[target].to_numpy(dtype=float)
@@ -204,11 +276,13 @@ def main():
             fig_dir / f"resid_{level}_{target}.png"
         )
 
-        # DIAGNOSTIC: worst groups parity charts
-        diag_root = ensure_dir(fig_dir / "diagnostic" / "parity" / f"{level}_{target}")
+        # diagnostic payload
         pred_df = valid_eval[id_cols + ["date"]].copy()
         pred_df["y_true"] = y_eval
         pred_df["y_pred"] = yhat_eval
+
+        # DIAGNOSTIC: worst groups parity charts
+        diag_root = ensure_dir(fig_dir / "diagnostic" / "parity" / f"{level}_{target}")
 
         rows = []
         for keys, g in pred_df.groupby(id_cols, dropna=False):
@@ -347,6 +421,12 @@ def main():
 
         print("wrote figures to", fig_dir)
 
+        return {"level": level, "target": target, "id_cols": id_cols, "pred_df": pred_df}
+
+    # -------------------------------
+    # run all requested targets
+    # -------------------------------
+    reports = []
     levels = LEVELS if args.level == "all" else [args.level]
     for lvl in levels:
         if lvl not in LEVELS:
@@ -358,7 +438,128 @@ def main():
                 raise ValueError("elecAggregatedKwh est exclu (pas un usage).")
             if tgt not in TARGETS_BY_LEVEL[lvl]:
                 raise ValueError(f"Target {tgt} not supported for level {lvl}. Use {TARGETS_BY_LEVEL[lvl]} or elecUses or all")
-            report_one(lvl, tgt, args.site)
+
+            r = report_one(lvl, tgt, args.site)
+            if r is not None:
+                reports.append(r)
+
+    # ------------------------------------------------------------
+    # COMPARISON + VISUALS: elecTotalKwh vs elecTotalNoBveKwh
+    # ------------------------------------------------------------
+    cmp_dir = ensure_dir(fig_dir / "compare")
+    TOTAL = "elecTotalKwh"
+    NOBVE = ELEC_TOTAL_NOBVE
+
+    by_lt = {(r["level"], r["target"]): r for r in reports}
+
+    for lvl in ["site", "zone"]:
+        if (lvl, TOTAL) not in by_lt or (lvl, NOBVE) not in by_lt:
+            continue
+
+        r_tot = by_lt[(lvl, TOTAL)]
+        r_nb = by_lt[(lvl, NOBVE)]
+        id_cols = r_tot["id_cols"]
+
+        a = r_tot["pred_df"].copy()
+        b = r_nb["pred_df"].copy()
+
+        m = a.merge(b, on=id_cols + ["date"], how="inner", suffixes=("_total", "_nobve"))
+        if len(m) == 0:
+            continue
+
+        yt_tot = m["y_true_total"].to_numpy(dtype=float)
+        yp_tot = m["y_pred_total"].to_numpy(dtype=float)
+        yt_nb = m["y_true_nobve"].to_numpy(dtype=float)
+        yp_nb = m["y_pred_nobve"].to_numpy(dtype=float)
+
+        glob = {
+            "level": lvl,
+            "rows_common": int(len(m)),
+            "MAE_total": _mae(yt_tot, yp_tot),
+            "RMSE_total": _rmse(yt_tot, yp_tot),
+            "WAPE_total": _wape(yt_tot, yp_tot),
+            "sMAPE_total": _smape(yt_tot, yp_tot),
+            "MAE_nobve": _mae(yt_nb, yp_nb),
+            "RMSE_nobve": _rmse(yt_nb, yp_nb),
+            "WAPE_nobve": _wape(yt_nb, yp_nb),
+            "sMAPE_nobve": _smape(yt_nb, yp_nb),
+        }
+        glob["MAE_improvement_%"] = _imp_pct(glob["MAE_total"], glob["MAE_nobve"])
+        glob["RMSE_improvement_%"] = _imp_pct(glob["RMSE_total"], glob["RMSE_nobve"])
+        glob["WAPE_improvement_%"] = _imp_pct(glob["WAPE_total"], glob["WAPE_nobve"])
+
+        pd.DataFrame([glob]).to_csv(cmp_dir / f"compare_elec_total_vs_nobve_{lvl}_global.csv", index=False)
+
+        rows = []
+        for keys, g in m.groupby(id_cols, dropna=False):
+            if not isinstance(keys, tuple):
+                keys = (keys,)
+            yt1 = g["y_true_total"].to_numpy(dtype=float)
+            yp1 = g["y_pred_total"].to_numpy(dtype=float)
+            yt2 = g["y_true_nobve"].to_numpy(dtype=float)
+            yp2 = g["y_pred_nobve"].to_numpy(dtype=float)
+
+            row = {c: v for c, v in zip(id_cols, keys)}
+            row.update({
+                "n": int(len(g)),
+                "MAE_total": _mae(yt1, yp1),
+                "RMSE_total": _rmse(yt1, yp1),
+                "WAPE_total": _wape(yt1, yp1),
+                "MAE_nobve": _mae(yt2, yp2),
+                "RMSE_nobve": _rmse(yt2, yp2),
+                "WAPE_nobve": _wape(yt2, yp2),
+            })
+            row["MAE_improvement_%"] = _imp_pct(row["MAE_total"], row["MAE_nobve"])
+            row["RMSE_improvement_%"] = _imp_pct(row["RMSE_total"], row["RMSE_nobve"])
+            row["WAPE_improvement_%"] = _imp_pct(row["WAPE_total"], row["WAPE_nobve"])
+            rows.append(row)
+
+        df_rows = pd.DataFrame(rows)
+        df_rows.to_csv(cmp_dir / f"compare_elec_total_vs_nobve_{lvl}_by_group.csv", index=False)
+
+        # ----------------
+        # VISUAL 1: bar chart global
+        # ----------------
+        labels = ["MAE", "RMSE", "WAPE"]
+        total_vals = [glob["MAE_total"], glob["RMSE_total"], glob["WAPE_total"]]
+        nobve_vals = [glob["MAE_nobve"], glob["RMSE_nobve"], glob["WAPE_nobve"]]
+
+        x = np.arange(len(labels))
+        w = 0.38
+
+        plt.figure(figsize=(9, 4.5))
+        plt.bar(x - w/2, total_vals, width=w, label="elecTotalKwh", color="#1f77b4")
+        plt.bar(x + w/2, nobve_vals, width=w, label="elecTotalNoBveKwh", color="#2ca02c")
+
+        plt.xticks(x, labels)
+        plt.ylabel("Erreur (plus bas = mieux)")
+        plt.title(
+            f"Comparaison global — {lvl} — total vs noBVE\n"
+            f"ΔRMSE={glob['RMSE_improvement_%']:.1f}%  ΔWAPE={glob['WAPE_improvement_%']:.1f}%  ΔMAE={glob['MAE_improvement_%']:.1f}%"
+        )
+        plt.legend(loc="upper right")
+        _save_fig(cmp_dir / f"compare_elec_total_vs_nobve_{lvl}_bars.png")
+
+        # ----------------
+        # VISUAL 2: histogram improvements per group
+        # ----------------
+        plt.figure(figsize=(9, 4.5))
+        imp_rmse = pd.to_numeric(df_rows["RMSE_improvement_%"], errors="coerce").dropna().to_numpy(dtype=float)
+        imp_wape = pd.to_numeric(df_rows["WAPE_improvement_%"], errors="coerce").dropna().to_numpy(dtype=float)
+
+        bins = 30
+        if len(imp_rmse):
+            plt.hist(imp_rmse, bins=bins, alpha=0.6, label="RMSE improvement %", color="#ff7f0e")
+        if len(imp_wape):
+            plt.hist(imp_wape, bins=bins, alpha=0.6, label="WAPE improvement %", color="#9467bd")
+        plt.axvline(0, color="k", linewidth=1)
+        plt.xlabel("Amélioration (%)  (positif = noBVE meilleur)")
+        plt.ylabel("Nombre de groupes")
+        plt.title(f"Distribution des gains — {lvl} (par groupe)")
+        plt.legend(loc="upper right")
+        _save_fig(cmp_dir / f"compare_elec_total_vs_nobve_{lvl}_improvements_hist.png")
+
+        print(f"[COMPARE] wrote comparison CSV+PNG for {lvl} under {cmp_dir}")
 
 
 if __name__ == "__main__":

@@ -6,6 +6,18 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List
 
+CAPTION_PREFIXES = (
+    'légende:', 'legende:', 'legend:',
+    'caption:',
+    '#legende', '#légende', '#legend',
+    '[legende]', '[légende]', '[legend]',
+)
+
+
+def _is_caption_line(s: str) -> bool:
+    low = (s or '').strip().lower()
+    return any(low.startswith(p) for p in CAPTION_PREFIXES)
+
 
 def normalize_whitespace(text: str) -> str:
     t = (text or '').replace('\r\n', '\n').replace('\r', '\n')
@@ -35,69 +47,75 @@ def sanitize_client_body(text: str) -> str:
             out.append('')
             continue
         low = s.lower()
+        # Remove proof traces from generated text
         if 'page_id=' in low:
             continue
         if low.startswith('preuve:') or 'preuve:' in low:
+            continue
+        # Remove explicit caption lines from body text to prevent leakage into slide bullets
+        if _is_caption_line(s):
             continue
         out.append(ln)
     return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip()
 
 
 def _collect_from_blocks(blocks: Any) -> List[str]:
+    """Collect human-readable text from OneNote page JSON blocks.
+
+    - Includes audio transcripts (key: 'transcript') so --transcribe matters downstream.
+    - Excludes caption-tagged lines (Légende:/Caption:) so legends don't leak into bullets.
+    """
     parts: List[str] = []
     if not isinstance(blocks, list):
         return parts
+
     for b in blocks:
         if not isinstance(b, dict):
             continue
         btype = (b.get('type') or '').lower()
+
+        # Standard textual content
         text = b.get('text')
         if isinstance(text, str) and text.strip():
-            # Keep paragraphs and useful headings; skip pure image blocks
+            # If it's an explicit caption line, do not treat as body text
+            if _is_caption_line(text):
+                continue
             if btype in ('paragraph', 'text', 'heading', 'list', 'bullet'):
                 parts.append(text)
-            elif btype == 'heading':
-                parts.append(text)
-            elif btype == 'image':
                 continue
-            else:
-                # fallback: include textual blocks
-                parts.append(text)
+            parts.append(text)
+            continue
+
+        # Audio transcript
+        if btype == 'audio':
+            tr = b.get('transcript')
+            if isinstance(tr, str) and tr.strip():
+                parts.append(f"Note vocale : {tr.strip()}")
+                continue
+            meta = b.get('transcript_meta')
+            if isinstance(meta, dict):
+                status = (meta.get('status') or '').strip().lower()
+                err = (meta.get('error') or '').strip()
+                if status and status != 'ok':
+                    msg = f"Note vocale : transcription {status}"
+                    if err:
+                        msg += f" ({err})"
+                    parts.append(msg)
+                    continue
+
+        # Ignore images (handled elsewhere)
+        if btype == 'image':
+            continue
+
     return parts
 
 
 def collect_text(page: Dict[str, Any]) -> str:
-    """Schema-flexible text extraction from a OneNote page JSON.
-
-    Supports:
-    - top-level strings (text/body/content/ocr/transcript)
-    - lists of paragraphs/blocks
-    - your exporter structure with `blocks[{type,text}]`
-    """
-    parts: List[str] = []
-
-    # 1) structured blocks
-    parts.extend(_collect_from_blocks(page.get('blocks')))
-
-    # 2) common top-level fields
-    for k in ('text', 'body', 'content', 'markdown', 'md', 'ocr', 'transcript', 'dictation', 'audio_transcript'):
-        v = page.get(k)
-        if isinstance(v, str) and v.strip():
-            parts.append(v)
-
-    # 3) other list fields
-    for k in ('paragraphs', 'elements'):
-        v = page.get(k)
-        if isinstance(v, list):
-            for it in v:
-                if isinstance(it, str) and it.strip():
-                    parts.append(it)
-                elif isinstance(it, dict):
-                    txt = it.get('text') or it.get('content') or it.get('markdown') or ''
-                    if isinstance(txt, str) and txt.strip():
-                        parts.append(txt)
-
-    return normalize_whitespace("\n\n".join(parts))
+    if not isinstance(page, dict):
+        return ''
+    blocks = page.get('blocks')
+    parts = _collect_from_blocks(blocks)
+    return normalize_whitespace('\n'.join([p for p in parts if isinstance(p, str) and p.strip()]))
 
 
 def to_bullets(text: str, *, max_lines: int = 10) -> str:
@@ -111,8 +129,9 @@ def to_bullets(text: str, *, max_lines: int = 10) -> str:
         if len(s) > 190:
             s = s[:187].rstrip() + '…'
         out.append(s)
-    if len(out) > max_lines:
-        out = out[:max_lines-1] + ['…']
+        if len(out) > max_lines:
+            out = out[:max_lines-1] + ['…']
+            break
     if not out:
         return ''
     return "\n".join([f"- {x}" for x in out])
