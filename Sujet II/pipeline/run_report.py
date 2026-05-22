@@ -188,7 +188,6 @@ def main():
         valid_days = int(meta.get("valid_days", cfg["training"].get("valid_days", 60)))
         log1p_target = bool(meta.get("log1p_target", False))
 
-        # Base DF without dropping target (predict even where truth missing)
         static_cols = cfg.get("features", {}).get("static_cols", [])
         extra_cols = [c for c in static_cols if c in hist.columns]
 
@@ -281,80 +280,6 @@ def main():
         pred_df["y_true"] = y_eval
         pred_df["y_pred"] = yhat_eval
 
-        # DIAGNOSTIC: worst groups parity charts
-        diag_root = ensure_dir(fig_dir / "diagnostic" / "parity" / f"{level}_{target}")
-
-        rows = []
-        for keys, g in pred_df.groupby(id_cols, dropna=False):
-            if not isinstance(keys, tuple):
-                keys = (keys,)
-            yt = g["y_true"].to_numpy(dtype=float)
-            yp = g["y_pred"].to_numpy(dtype=float)
-            m = np.isfinite(yt) & np.isfinite(yp)
-            yt = yt[m]
-            yp = yp[m]
-            if len(yt) == 0:
-                continue
-
-            mae_g = float(np.mean(np.abs(yp - yt)))
-            rmse_g = float(np.sqrt(np.mean((yp - yt) ** 2)))
-            bias_g = float(np.mean(yp - yt))
-
-            if target in ENERGY_TARGETS:
-                denom = float(np.sum(np.abs(yt)))
-                wape_g = float(np.sum(np.abs(yp - yt)) / denom) if denom > 0 else np.nan
-            else:
-                wape_g = np.nan
-
-            row = {c: v for c, v in zip(id_cols, keys)}
-            row.update({"n": int(len(yt)), "MAE": mae_g, "RMSE": rmse_g, "WAPE": wape_g, "Bias": bias_g})
-            rows.append(row)
-
-        if rows:
-            df_g = pd.DataFrame(rows)
-            df_g.sort_values("RMSE", ascending=False).to_csv(
-                diag_root / f"worst_groups_{level}_{target}.csv",
-                index=False
-            )
-
-            TOP_K = 20
-            worst_rmse = df_g.sort_values("RMSE", ascending=False).head(TOP_K)
-            if target in ENERGY_TARGETS:
-                worst_wape = df_g.sort_values("WAPE", ascending=False).head(TOP_K)
-                worst = pd.concat([worst_rmse, worst_wape], ignore_index=True).drop_duplicates(subset=id_cols)
-            else:
-                worst = worst_rmse
-
-            for _, r in worst.iterrows():
-                mask = np.ones(len(pred_df), dtype=bool)
-                for c in id_cols:
-                    mask &= (pred_df[c] == r[c])
-                gg = pred_df.loc[mask].copy()
-                yt = gg["y_true"].to_numpy(dtype=float)
-                yp = gg["y_pred"].to_numpy(dtype=float)
-
-                if level == "zone" and "zoneId" in id_cols:
-                    sid = int(r["siteId"])
-                    zid = int(r["zoneId"])
-                    subdir = ensure_dir(diag_root / f"site{sid}")
-                    stem = f"parity_site{sid}_zone{zid}_{target}"
-                    title_suffix = f"site {sid} zone {zid}"
-                else:
-                    sid = int(r["siteId"])
-                    subdir = diag_root
-                    stem = f"parity_site{sid}_{target}"
-                    title_suffix = f"site {sid}"
-
-                title = (
-                    f"Parity — {level} {target} ({title_suffix}) "
-                    f"n={int(r['n'])} RMSE={r['RMSE']:.2f}"
-                    + (f" WAPE={r['WAPE']:.3f}" if target in ENERGY_TARGETS and np.isfinite(r["WAPE"]) else "")
-                    + (f" Bias={r['Bias']:.2f}" if np.isfinite(r["Bias"]) else "")
-                )
-                parity_linear_95(yt, yp, title, subdir / f"{stem}_p95.png")
-                if target in ENERGY_TARGETS and int(r["n"]) >= 200:
-                    parity_log(yt, yp, title + " (log)", subdir / f"{stem}_log.png")
-
         # TIMESERIES (predict even where truth is missing)
         site_arg = str(site).lower()
         if site_arg == "all":
@@ -420,7 +345,6 @@ def main():
                 )
 
         print("wrote figures to", fig_dir)
-
         return {"level": level, "target": target, "id_cols": id_cols, "pred_df": pred_df}
 
     # -------------------------------
@@ -530,7 +454,6 @@ def main():
         plt.figure(figsize=(9, 4.5))
         plt.bar(x - w/2, total_vals, width=w, label="elecTotalKwh", color="#1f77b4")
         plt.bar(x + w/2, nobve_vals, width=w, label="elecTotalNoBveKwh", color="#2ca02c")
-
         plt.xticks(x, labels)
         plt.ylabel("Erreur (plus bas = mieux)")
         plt.title(
@@ -558,6 +481,50 @@ def main():
         plt.title(f"Distribution des gains — {lvl} (par groupe)")
         plt.legend(loc="upper right")
         _save_fig(cmp_dir / f"compare_elec_total_vs_nobve_{lvl}_improvements_hist.png")
+
+        # ----------------
+        # VISUAL 3: scatter WAPE_total vs WAPE_noBVE (per group)
+        # ----------------
+        df_sc = df_rows.copy()
+        df_sc["WAPE_total"] = pd.to_numeric(df_sc["WAPE_total"], errors="coerce")
+        df_sc["WAPE_nobve"] = pd.to_numeric(df_sc["WAPE_nobve"], errors="coerce")
+        df_sc["WAPE_improvement_%"] = pd.to_numeric(df_sc["WAPE_improvement_%"], errors="coerce")
+        df_sc = df_sc.dropna(subset=["WAPE_total", "WAPE_nobve"])
+
+        if len(df_sc):
+            xw = df_sc["WAPE_total"].to_numpy(dtype=float)
+            yw = df_sc["WAPE_nobve"].to_numpy(dtype=float)
+            imp = df_sc["WAPE_improvement_%"].to_numpy(dtype=float)
+
+            # axes limits robustes (p99) pour éviter qu’un outlier écrase tout
+            lim = float(np.nanpercentile(np.concatenate([xw, yw]), 99))
+            lim = max(lim, 1e-6)
+
+            # color scale robust (p95 abs)
+            v = imp[np.isfinite(imp)]
+            vlim = float(np.nanpercentile(np.abs(v), 95)) if len(v) else 10.0
+            vlim = max(vlim, 1e-6)
+
+            improved = float(np.mean(yw < xw) * 100.0) if len(xw) else 0.0
+
+            plt.figure(figsize=(7.2, 6.2))
+            sc = plt.scatter(
+                xw, yw,
+                c=np.clip(imp, -vlim, vlim),
+                cmap="coolwarm",
+                s=28,
+                alpha=0.75,
+                edgecolors="none",
+            )
+            plt.plot([0, lim], [0, lim], color="k", linewidth=1, alpha=0.7)
+            plt.xlim(0, lim)
+            plt.ylim(0, lim)
+            plt.xlabel("WAPE total (elecTotalKwh)")
+            plt.ylabel("WAPE noBVE (elecTotalNoBveKwh)")
+            plt.title(f"WAPE par groupe — {lvl}\n{improved:.1f}% des groupes améliorés (noBVE < total)")
+            cb = plt.colorbar(sc)
+            cb.set_label("Gain WAPE (%)  (positif = noBVE meilleur)")
+            _save_fig(cmp_dir / f"compare_elec_total_vs_nobve_{lvl}_scatter_wape.png")
 
         print(f"[COMPARE] wrote comparison CSV+PNG for {lvl} under {cmp_dir}")
 
