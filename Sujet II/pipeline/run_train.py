@@ -80,7 +80,7 @@ def main():
         if target == "elecUses":
             return ELECTRIC_USES[:]
         if target == "all":
-            return BASE_TARGETS_BY_LEVEL[level][:]  # sens historique
+            return BASE_TARGETS_BY_LEVEL[level][:] + ELECTRIC_USES
         return [target]
 
     def train_one(level: str, target: str):
