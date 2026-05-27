@@ -12,26 +12,27 @@ from .dataset import load_level_tables
 from .features import add_calendar_features, build_lag_features, build_rolling_features
 from .modeling import load_model, mae, rmse
 from .site_infos import load_site_infos
+from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_signal, add_elec_total_accurate
 
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
 ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
 ELECTRIC_ALL = ["elecTotalKwh"] + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
-BASE_TARGETS = ["elecTotalKwh", "elecTotalNoBveKwh", "waterM3", "indoorTempDegC"]
+BASE_TARGETS = ["elecTotalKwh", "elecTotalAccurateKwh", "elecTotalNoBveKwh", "waterM3", "indoorTempDegC"]
 TARGETS_ALL = BASE_TARGETS + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Add derived target: elecTotalNoBveKwh = elecTotalKwh - elecBveKwh (fillna 0), clamp >= 0.
-    If elecTotalKwh is NaN => output is NaN.
+    Add derived target: elecTotalNoBveKwh = elecTotalAccurateKwh - elecBveKwh (fillna 0), clamp >= 0.
+    If elecTotalAccurateKwh is NaN => output is NaN.
     """
     if ELEC_TOTAL_NOBVE in df.columns:
         return df
-    if "elecTotalKwh" not in df.columns or "elecBveKwh" not in df.columns:
+    if "elecTotalAccurateKwh" not in df.columns or "elecBveKwh" not in df.columns:
         return df
 
     out = df.copy()
-    total = pd.to_numeric(out["elecTotalKwh"], errors="coerce")
+    total = pd.to_numeric(out["elecTotalAccurateKwh"], errors="coerce")
     bve = pd.to_numeric(out["elecBveKwh"], errors="coerce").fillna(0.0)
     out[ELEC_TOTAL_NOBVE] = np.maximum(total - bve, 0.0)
     return out
@@ -60,7 +61,11 @@ def main():
         if target == "elecUses":
             return ELECTRIC_USES[:]
         if target == "all":
-            return BASE_TARGETS_BY_LEVEL[level][:] + ELECTRIC_USES
+            # base + tous les usages élec présents
+            hist = pd.read_csv(out_dir / f"{level}hist_cleaned.csv")  # ou load_level_tables
+            hist = add_elec_total_accurate(hist)
+            elec_usages = discover_elec_usage_targets(hist)
+            return ["elecTotalKwh", "elecTotalNoBveKwh", "elecTotalAccurateKwh", "waterM3", "indoorTempDegC"] + elec_usages
         return [target]
 
     def evaluate_one(level: str, target: str):

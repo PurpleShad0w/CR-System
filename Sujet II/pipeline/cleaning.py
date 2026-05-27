@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 
 
 def _num(s):
-    return pd.to_numeric(s, errors='coerce')
+    return pd.to_numeric(s, errors="coerce")
 
 
 def apply_missing_sentinels(df: pd.DataFrame, cols, zero_or_neg_is_missing: dict) -> pd.DataFrame:
@@ -20,26 +21,58 @@ def apply_missing_sentinels(df: pd.DataFrame, cols, zero_or_neg_is_missing: dict
 
 
 def expected_range_by_group(hist_df: pd.DataFrame, pred_df: pd.DataFrame, group_cols, date_col: str):
+    """
+    Returns a dict:
+      key = tuple(group ids)
+      val = (min_date, max_date) as Timestamps floored to day
+
+    Fix: ensure date_col is datetime in BOTH hist and pred before min/max.
+    """
     cols = list(group_cols) + [date_col]
-    h = hist_df[cols].dropna(subset=cols).drop_duplicates()
-    p = pred_df[cols].dropna(subset=cols).drop_duplicates()
+
+    # take only needed cols and coerce date
+    h = hist_df[cols].dropna(subset=cols).drop_duplicates().copy()
+    p = pred_df[cols].dropna(subset=cols).drop_duplicates().copy()
+
     if len(h) == 0 and len(p) == 0:
         return {}
 
-    out = {}
-    hmin = h.groupby(group_cols)[date_col].min() if len(h) else pd.Series(dtype='datetime64[ns]')
-    hmax = h.groupby(group_cols)[date_col].max() if len(h) else pd.Series(dtype='datetime64[ns]')
-    pmin = p.groupby(group_cols)[date_col].min() if len(p) else pd.Series(dtype='datetime64[ns]')
-    pmax = p.groupby(group_cols)[date_col].max() if len(p) else pd.Series(dtype='datetime64[ns]')
+    if len(h):
+        h[date_col] = pd.to_datetime(h[date_col], errors="coerce").dt.floor("D")
+        h = h.dropna(subset=[date_col])
+    if len(p):
+        p[date_col] = pd.to_datetime(p[date_col], errors="coerce").dt.floor("D")
+        p = p.dropna(subset=[date_col])
 
-    keys = set(hmin.index.tolist()) | set(pmin.index.tolist())
+    out = {}
+
+    hmin = h.groupby(group_cols)[date_col].min() if len(h) else pd.Series(dtype="datetime64[ns]")
+    hmax = h.groupby(group_cols)[date_col].max() if len(h) else pd.Series(dtype="datetime64[ns]")
+    pmin = p.groupby(group_cols)[date_col].min() if len(p) else pd.Series(dtype="datetime64[ns]")
+    pmax = p.groupby(group_cols)[date_col].max() if len(p) else pd.Series(dtype="datetime64[ns]")
+
+    keys = set(hmin.index.tolist()).union(set(pmin.index.tolist()))
+
     for k in keys:
         a, b = [], []
         if k in hmin.index:
-            a.append(hmin.loc[k]); b.append(hmax.loc[k])
+            a.append(hmin.loc[k])
+            b.append(hmax.loc[k])
         if k in pmin.index:
-            a.append(pmin.loc[k]); b.append(pmax.loc[k])
-        out[k if isinstance(k, tuple) else (k,)] = (pd.to_datetime(min(a)).floor('D'), pd.to_datetime(max(b)).floor('D'))
+            a.append(pmin.loc[k])
+            b.append(pmax.loc[k])
+
+        # remove NaT if any
+        a = [x for x in a if pd.notna(x)]
+        b = [x for x in b if pd.notna(x)]
+        if not a or not b:
+            continue
+
+        out[k if isinstance(k, tuple) else (k,)] = (
+            pd.to_datetime(min(a)).floor("D"),
+            pd.to_datetime(max(b)).floor("D"),
+        )
+
     return out
 
 
@@ -55,15 +88,14 @@ def drop_local_spikes_v12(
     factor=8.0,
     post_gap_days=30,
     post_gap_factor=0.6,
-    pred_hard_factor=10.0
+    pred_hard_factor=10.0,
 ):
     hist_df = hist_df.copy()
     logs = []
-
-    hist_df[date_col] = pd.to_datetime(hist_df[date_col], errors='coerce').dt.floor('D')
+    hist_df[date_col] = pd.to_datetime(hist_df[date_col], errors="coerce").dt.floor("D")
     if pred_df is not None and date_col in pred_df.columns:
         pred_df = pred_df.copy()
-        pred_df[date_col] = pd.to_datetime(pred_df[date_col], errors='coerce').dt.floor('D')
+        pred_df[date_col] = pd.to_datetime(pred_df[date_col], errors="coerce").dt.floor("D")
 
     for keys, g in hist_df.groupby(group_cols, dropna=False):
         if not isinstance(keys, tuple):
@@ -79,9 +111,9 @@ def drop_local_spikes_v12(
         if pd.isna(start) or pd.isna(end):
             continue
 
-        idx = pd.date_range(pd.to_datetime(start).floor('D'), pd.to_datetime(end).floor('D'), freq='D')
+        idx = pd.date_range(pd.to_datetime(start).floor("D"), pd.to_datetime(end).floor("D"), freq="D")
         s = g.set_index(date_col)[value_col].reindex(idx)
-        s = pd.to_numeric(s, errors='coerce')
+        s = pd.to_numeric(s, errors="coerce")
 
         if pred_df is not None and pred_col is not None and pred_col in pred_df.columns:
             p = pred_df
@@ -89,46 +121,44 @@ def drop_local_spikes_v12(
                 p = p[p[c] == v]
             p = p.dropna(subset=[date_col]).drop_duplicates(subset=[date_col])
             p = p.set_index(date_col)[pred_col].reindex(idx)
-            p = pd.to_numeric(p, errors='coerce')
+            p = pd.to_numeric(p, errors="coerce")
         else:
             p = pd.Series(index=idx, dtype=float)
 
         missing = s.isna() | (s <= 0)
-        gap_len = missing.groupby((~missing).cumsum()).transform('sum')
+        gap_len = missing.groupby((~missing).cumsum()).transform("sum")
         post_gap = gap_len.shift(1).fillna(0) >= post_gap_days
 
         for i, d in enumerate(idx):
             v = s.iloc[i]
             if not np.isfinite(v) or v <= 0:
                 continue
-
             lo = max(0, i - window_days)
             hi = min(len(s), i + window_days + 1)
-            neigh = s.iloc[lo:hi].drop(index=d, errors='ignore')
+            neigh = s.iloc[lo:hi].drop(index=d, errors="ignore")
             neigh = neigh[(neigh > 0) & np.isfinite(neigh)]
             if len(neigh) < 2:
                 continue
-
             med = float(np.nanmedian(neigh))
             if not np.isfinite(med) or med <= 0:
                 continue
-
             f = factor * (post_gap_factor if post_gap.iloc[i] else 1.0)
             is_spike = v > med * f
             if np.isfinite(p.iloc[i]) and p.iloc[i] > 0:
                 is_spike = is_spike or (v > p.iloc[i] * pred_hard_factor)
-
             if is_spike:
                 s.iloc[i] = np.nan
-                logs.append({
-                    'group': keys,
-                    'value_col': value_col,
-                    'date': str(pd.to_datetime(d).date()),
-                    'action': 'local_spike_drop',
-                    'old': float(v),
-                    'local_median': float(med),
-                    'pred': float(p.iloc[i]) if np.isfinite(p.iloc[i]) else np.nan
-                })
+                logs.append(
+                    {
+                        "group": keys,
+                        "value_col": value_col,
+                        "date": str(pd.to_datetime(d).date()),
+                        "action": "local_spike_drop",
+                        "old": float(v),
+                        "local_median": float(med),
+                        "pred": float(p.iloc[i]) if np.isfinite(p.iloc[i]) else np.nan,
+                    }
+                )
 
         update_map = s
         mask_group = np.ones(len(hist_df), dtype=bool)
@@ -139,7 +169,7 @@ def drop_local_spikes_v12(
     return hist_df, pd.DataFrame(logs)
 
 
-def spread_cumul_spikes_v3(df: pd.DataFrame, group_cols, date_col: str, value_col: str, cfg: dict, expected_range: dict | None):
+def spread_cumul_spikes_v3(df: pd.DataFrame, group_cols, date_col: str, value_col: str, cfg: dict, expected_range: dict | None = None):
     df = df.copy()
     logs = []
     if value_col not in df.columns or date_col not in df.columns:
@@ -147,11 +177,11 @@ def spread_cumul_spikes_v3(df: pd.DataFrame, group_cols, date_col: str, value_co
 
     df[value_col] = _num(df[value_col])
 
-    min_run = int(cfg.get('min_missing_run', 3))
-    spike_factor = float(cfg.get('spike_factor', 20.0))
-    strategy = cfg.get('strategy', 'spread')
-    baseline_points = int(cfg.get('baseline_points', 30))
-    max_spread_days = int(cfg.get('max_spread_days', 370))
+    min_run = int(cfg.get("min_missing_run", 3))
+    spike_factor = float(cfg.get("spike_factor", 20.0))
+    strategy = cfg.get("strategy", "spread")
+    baseline_points = int(cfg.get("baseline_points", 30))
+    max_spread_days = int(cfg.get("max_spread_days", 370))
 
     out_parts = []
     for keys, g in df.groupby(group_cols, dropna=False):
@@ -166,11 +196,12 @@ def spread_cumul_spikes_v3(df: pd.DataFrame, group_cols, date_col: str, value_co
             start, end = expected_range[keys]
         else:
             start, end = g[date_col].min(), g[date_col].max()
+
         if pd.isna(start) or pd.isna(end):
             out_parts.append(g)
             continue
 
-        idx = pd.date_range(pd.to_datetime(start).floor('D'), pd.to_datetime(end).floor('D'), freq='D')
+        idx = pd.date_range(pd.to_datetime(start).floor("D"), pd.to_datetime(end).floor("D"), freq="D")
         g2 = g.set_index(date_col).reindex(idx)
         g2.index.name = date_col
         for c, v in zip(group_cols, keys):
@@ -179,7 +210,6 @@ def spread_cumul_spikes_v3(df: pd.DataFrame, group_cols, date_col: str, value_co
         x = g2[value_col].copy()
         valid = x.notna() & (x > 0)
         is_missing = ~valid
-
         overall_med = float(np.nanmedian(x[valid].to_numpy())) if valid.any() else np.nan
 
         last_valid_pos = np.full(len(x), -1, dtype=int)
@@ -200,7 +230,7 @@ def spread_cumul_spikes_v3(df: pd.DataFrame, group_cols, date_col: str, value_co
             if gap < min_run:
                 continue
 
-            prev_vals = x.iloc[:prev + 1]
+            prev_vals = x.iloc[: prev + 1]
             prev_valid = prev_vals[prev_vals.notna() & (prev_vals > 0)]
             baseline = float(np.nanmedian(prev_valid.tail(baseline_points).to_numpy())) if len(prev_valid) else np.nan
             if not np.isfinite(baseline) or baseline <= 0:
@@ -213,19 +243,42 @@ def spread_cumul_spikes_v3(df: pd.DataFrame, group_cols, date_col: str, value_co
 
             span = gap + 1
             action = strategy
-            if span > max_spread_days and strategy == 'spread':
-                action = 'drop'
+            if span > max_spread_days and strategy == "spread":
+                action = "drop"
 
-            if action == 'drop':
+            if action == "drop":
                 x.iloc[i] = np.nan
-                logs.append({'group': keys, 'value_col': value_col, 'date': str(g2.index[i].date()), 'action': 'drop', 'old': float(v), 'gap_days': int(gap), 'span_days': int(span), 'baseline': float(baseline)})
+                logs.append(
+                    {
+                        "group": keys,
+                        "value_col": value_col,
+                        "date": str(g2.index[i].date()),
+                        "action": "drop",
+                        "old": float(v),
+                        "gap_days": int(gap),
+                        "span_days": int(span),
+                        "baseline": float(baseline),
+                    }
+                )
             else:
                 per_day = v / span
                 start_i = i - gap
                 for j in range(start_i, i + 1):
                     if j == i or is_missing.iloc[j]:
                         x.iloc[j] = per_day
-                logs.append({'group': keys, 'value_col': value_col, 'date': str(g2.index[i].date()), 'action': 'spread', 'old': float(v), 'new_per_day': float(per_day), 'gap_days': int(gap), 'span_days': int(span), 'baseline': float(baseline)})
+                logs.append(
+                    {
+                        "group": keys,
+                        "value_col": value_col,
+                        "date": str(g2.index[i].date()),
+                        "action": "spread",
+                        "old": float(v),
+                        "new_per_day": float(per_day),
+                        "gap_days": int(gap),
+                        "span_days": int(span),
+                        "baseline": float(baseline),
+                    }
+                )
 
         g2[value_col] = x
         out_parts.append(g2.reset_index())
@@ -249,9 +302,6 @@ def cap_point_outliers_v1(
     x_new = min(x, cap_factor * roll_median(window, shift=1))
     Returns (df_out, log_df)
     """
-    import numpy as np
-    import pandas as pd
-
     df = df.copy()
     logs = []
 
@@ -260,27 +310,20 @@ def cap_point_outliers_v1(
 
     df[date_col] = pd.to_datetime(df[date_col], errors="coerce").dt.floor("D")
     df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
-
     df = df.sort_values(group_cols + [date_col])
 
     g = df.groupby(group_cols, dropna=False)
 
-    # rolling median of previous values
     base = g[value_col].shift(1).rolling(window, min_periods=max(5, window // 3)).median()
-
-    # avoid tiny/zero baseline
     base = base.where(base >= min_baseline, np.nan)
     cap_val = cap_factor * base
 
-    # identify outliers
     m = df[value_col].notna() & cap_val.notna() & (df[value_col] > cap_val)
-
     if m.any():
         old = df.loc[m, value_col].to_numpy()
         new = cap_val.loc[m].to_numpy()
         df.loc[m, value_col] = new
 
-        # log
         tmp = df.loc[m, group_cols + [date_col]].copy()
         tmp["value_col"] = value_col
         tmp["action"] = "cap"

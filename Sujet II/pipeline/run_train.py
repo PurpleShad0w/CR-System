@@ -21,6 +21,7 @@ from .features import (
 )
 from .modeling import make_model, save_model
 from .site_infos import load_site_infos
+from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_signal, add_elec_total_accurate
 
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
@@ -64,8 +65,8 @@ def main():
 
     LEVELS = ["site", "zone"]
     BASE_TARGETS_BY_LEVEL = {
-        "site": ["elecTotalKwh", "elecTotalNoBveKwh", "waterM3", "indoorTempDegC"],
-        "zone": ["elecTotalKwh", "elecTotalNoBveKwh", "waterM3", "indoorTempDegC"],
+        "site": ["elecTotalKwh", "elecTotalNoBveKwh", "elecTotalAccurateKwh", "waterM3", "indoorTempDegC"],
+        "zone": ["elecTotalKwh", "elecTotalNoBveKwh", "elecTotalAccurateKwh", "waterM3", "indoorTempDegC"],
     }
     TARGETS_BY_LEVEL = {
         "site": BASE_TARGETS_BY_LEVEL["site"] + ELECTRIC_USES,
@@ -80,7 +81,11 @@ def main():
         if target == "elecUses":
             return ELECTRIC_USES[:]
         if target == "all":
-            return BASE_TARGETS_BY_LEVEL[level][:] + ELECTRIC_USES
+            # base + tous les usages élec présents
+            hist = pd.read_csv(out_dir / f"{level}hist_cleaned.csv")  # ou load_level_tables
+            hist = add_elec_total_accurate(hist)
+            elec_usages = discover_elec_usage_targets(hist)
+            return ["elecTotalKwh", "elecTotalNoBveKwh", "elecTotalAccurateKwh", "waterM3", "indoorTempDegC"] + elec_usages
         return [target]
 
     def train_one(level: str, target: str):
@@ -103,6 +108,7 @@ def main():
         if len(site_infos) and "siteId" in hist.columns:
             hist = hist.merge(site_infos, on="siteId", how="left")
 
+        hist = add_elec_total_accurate(hist)
         hist = add_elec_total_no_bve(hist)
 
         _, _, weath = load_level_tables(db_dir, level_cfg)
@@ -120,6 +126,9 @@ def main():
 
         df = hist[id_cols + ["date", target] + extra_cols].copy()
         df[target] = pd.to_numeric(df[target], errors="coerce")
+
+        if target in discover_elec_usage_targets(hist):
+            df = drop_groups_with_no_signal(df, id_cols, target)
 
         # sécurité spécifique température
         if target == "indoorTempDegC":

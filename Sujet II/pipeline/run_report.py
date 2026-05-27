@@ -15,6 +15,7 @@ from .features import add_calendar_features, build_lag_features, build_rolling_f
 from .modeling import load_model
 from .reporting import parity_linear_95, parity_linear_99, parity_log, residual_hist, ts_train_valid_site
 from .site_infos import load_site_infos
+from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_signal, add_elec_total_accurate
 
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
@@ -26,10 +27,10 @@ ENERGY_TARGETS = ELECTRIC_ALL + ["waterM3"]
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
     if ELEC_TOTAL_NOBVE in df.columns:
         return df
-    if "elecTotalKwh" not in df.columns or "elecBveKwh" not in df.columns:
+    if "elecTotalAccurateKwh" not in df.columns or "elecBveKwh" not in df.columns:
         return df
     out = df.copy()
-    total = pd.to_numeric(out["elecTotalKwh"], errors="coerce")
+    total = pd.to_numeric(out["elecTotalAccurateKwh"], errors="coerce")
     bve = pd.to_numeric(out["elecBveKwh"], errors="coerce").fillna(0.0)
     out[ELEC_TOTAL_NOBVE] = np.maximum(total - bve, 0.0)
     return out
@@ -232,8 +233,8 @@ def main():
 
     # all inclut NoBVE
     BASE_TARGETS_BY_LEVEL = {
-        "site": ["elecTotalKwh", ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
-        "zone": ["elecTotalKwh", ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
+        "site": ["elecTotalKwh", "elecTotalAccurateKwh", ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
+        "zone": ["elecTotalKwh", "elecTotalAccurateKwh", ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
     }
     TARGETS_BY_LEVEL = {
         "site": BASE_TARGETS_BY_LEVEL["site"] + ELECTRIC_USES,
@@ -249,8 +250,11 @@ def main():
         if target == "elecUses":
             return ELECTRIC_USES[:]
         if target == "all":
-            # pour que le reporting "all" regénère aussi les usages + comparaisons
-            return BASE_TARGETS_BY_LEVEL[level][:] + ELECTRIC_USES
+            # base + tous les usages élec présents
+            hist = pd.read_csv(out_dir / f"{level}hist_cleaned.csv")  # ou load_level_tables
+            hist = add_elec_total_accurate(hist)
+            elec_usages = discover_elec_usage_targets(hist)
+            return ["elecTotalKwh", "elecTotalNoBveKwh", "elecTotalAccurateKwh", "waterM3", "indoorTempDegC"] + elec_usages
         return [target]
 
     def report_one(level: str, target: str, site: str):
@@ -420,7 +424,7 @@ def main():
     cmp_dir = ensure_dir(fig_dir / "compare")
     by_lt = {(r["level"], r["target"]): r for r in reports}
 
-    TOTAL = "elecTotalKwh"
+    TOTAL = "elecTotalAccurateKwh"
     USES = ELECTRIC_USES[:]
 
     for lvl in ["site", "zone"]:
