@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import argparse
 import json
 from pathlib import Path
@@ -15,23 +16,23 @@ from .site_infos import load_site_infos
 from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_signal, add_elec_total_accurate
 
 
-ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
-BASE_TARGETS = ["elecTotalKwh", "elecTotalAccurateKwh", "elecTotalNoBveKwh", "waterM3", "indoorTempDegC"]
+ELECTRIC_USES_LEGACY = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
+ELEC_TOTAL_ACCURATE = "elecTotalAccurateKwh"
 ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
-TARGETS_ALL = BASE_TARGETS + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
+
+BASE_TARGETS = ["elecTotalKwh", ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"]
+
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Add derived target: elecTotalNoBveKwh = elecTotalAccurateKwh - elecBveKwh (fillna 0), clamp >= 0.
-    If elecTotalAccurateKwh is NaN => output is NaN.
+    elecTotalNoBveKwh = elecTotalAccurateKwh - elecBveKwh (fillna 0), clamp >=0.
     """
     if ELEC_TOTAL_NOBVE in df.columns:
         return df
-    if "elecTotalAccurateKwh" not in df.columns or "elecBveKwh" not in df.columns:
+    if ELEC_TOTAL_ACCURATE not in df.columns or "elecBveKwh" not in df.columns:
         return df
-
     out = df.copy()
-    total = pd.to_numeric(out["elecTotalAccurateKwh"], errors="coerce")
+    total = pd.to_numeric(out[ELEC_TOTAL_ACCURATE], errors="coerce")
     bve = pd.to_numeric(out["elecBveKwh"], errors="coerce").fillna(0.0)
     out[ELEC_TOTAL_NOBVE] = np.maximum(total - bve, 0.0)
     return out
@@ -53,56 +54,78 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", required=True)
     ap.add_argument("--level", default="site")  # site | zone | all
-    ap.add_argument(
-        "--target",
-        required=True,
-        # elecTotalKwh | waterM3 | indoorTempDegC | elecUses | all
-    )
+    ap.add_argument("--target", required=True)  # ... | elecUses | all
     ap.add_argument("--days", type=int, default=None)
     args = ap.parse_args()
 
     LEVELS = ["site", "zone"]
-    BASE_TARGETS_BY_LEVEL = {"site": BASE_TARGETS, "zone": BASE_TARGETS}
-    TARGETS_BY_LEVEL = {"site": TARGETS_ALL, "zone": TARGETS_ALL}
-
     cfg = load_config(args.config).raw
     db_dir = Path(cfg["paths"]["db_dir"])
     out_dir = ensure_dir(Path(cfg["paths"]["out_dir"]))
 
+    def _load_hist(level: str) -> pd.DataFrame:
+        cleaned_path = out_dir / f"{level}hist_cleaned.csv"
+        if cleaned_path.exists():
+            hist = pd.read_csv(cleaned_path)
+        else:
+            hist, _, _ = load_level_tables(db_dir, cfg["level_defaults"][level])
+        hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
+        hist = add_elec_total_accurate(hist)
+        hist = add_elec_total_no_bve(hist)
+        return hist
+
     def expand_targets(level: str, target: str) -> list[str]:
         if target == "elecUses":
-            return ELECTRIC_USES[:]
+            # legacy shortcut (still useful)
+            return ELECTRIC_USES_LEGACY[:]
         if target == "all":
-            # base + tous les usages élec présents
-            hist = pd.read_csv(out_dir / f"{level}hist_cleaned.csv")  # ou load_level_tables
-            hist = add_elec_total_accurate(hist)
-            elec_usages = discover_elec_usage_targets(hist)
-            return ["elecTotalKwh", "elecTotalNoBveKwh", "elecTotalAccurateKwh", "waterM3", "indoorTempDegC"] + elec_usages
+            hist = _load_hist(level)
+            dyn_usages = discover_elec_usage_targets(hist)
+            base = BASE_TARGETS[:]
+            return base + [c for c in dyn_usages if c not in base]
         return [target]
+
+    def allowed_targets(level: str) -> set[str]:
+        hist = _load_hist(level)
+        dyn_usages = discover_elec_usage_targets(hist)
+        return set(BASE_TARGETS) | set(dyn_usages)
 
     def predict_one(level: str, target: str, days: int | None):
         level_cfg = cfg["level_defaults"][level]
         id_cols = level_cfg["id_cols"]
 
-        cleaned_path = out_dir / f"{level}hist_cleaned.csv"
-        hist = pd.read_csv(cleaned_path)
-        hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
+        hist = _load_hist(level)
 
-        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get("site_infos_file", "Sites_Shyrka_Infos.xlsx")
+        # site infos
+        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get(
+            "site_infos_file", "Sites_Shyrka_Infos.xlsx"
+        )
         site_infos = load_site_infos(info_path)
         if len(site_infos) and "siteId" in hist.columns:
             hist = hist.merge(site_infos, on="siteId", how="left")
 
+        # Restrict groups if this is a usage: skip sites/zones where fully absent
+        dyn_usages = set(discover_elec_usage_targets(hist))
+        if target in dyn_usages:
+            hist = drop_groups_with_no_signal(hist, id_cols, target)
+
+        # weather
         _, _, weath = load_level_tables(db_dir, level_cfg)
         if len(weath) == 0:
             raise RuntimeError("Missing siteweath.csv")
         weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
 
         model_dir = out_dir / "models"
-        meta = json.loads((model_dir / f"{level}_{target}.meta.json").read_text(encoding="utf-8"))
+        meta_path = model_dir / f"{level}_{target}.meta.json"
+        model_path = model_dir / f"{level}_{target}.joblib"
+        if not meta_path.exists() or not model_path.exists():
+            print(f"[WARN] Missing meta/model for {level}_{target}. Skipping.")
+            return
+
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
         feat_cols = meta["feature_columns"]
         log1p_target = bool(meta.get("log1p_target", False))
-        model = load_model(model_dir / f"{level}_{target}.joblib")
+        model = load_model(model_path)
 
         hist = hist.dropna(subset=id_cols + ["date"]).sort_values(id_cols + ["date"])
         last_hist_date = hist["date"].max()
@@ -132,8 +155,11 @@ def main():
             if state.empty:
                 continue
 
-            dates = pd.date_range(last_hist_date + pd.Timedelta(days=1), last_hist_date + pd.Timedelta(days=horizon), freq="D")
-            wsite = weath[weath["siteId"] == site_id].drop_duplicates(subset=["siteId", "date"], keep="last").set_index("date")
+            dates = pd.date_range(last_hist_date + pd.Timedelta(days=1),
+                                  last_hist_date + pd.Timedelta(days=horizon), freq="D")
+            wsite = weath[weath["siteId"] == site_id].drop_duplicates(
+                subset=["siteId", "date"], keep="last"
+            ).set_index("date")
 
             for d in dates:
                 row = {**base_feat, "date": d}
@@ -185,12 +211,14 @@ def main():
         if lvl not in LEVELS:
             raise ValueError("Unknown level. Use site|zone|all")
 
+        allowed = allowed_targets(lvl)
         targets = expand_targets(lvl, args.target)
+
         for tgt in targets:
             if tgt == "elecAggregatedKwh":
                 raise ValueError("elecAggregatedKwh est exclu (pas un usage).")
-            if tgt not in TARGETS_BY_LEVEL[lvl]:
-                raise ValueError(f"Target {tgt} not supported for level {lvl}. Use {TARGETS_BY_LEVEL[lvl]} or elecUses or all")
+            if tgt not in allowed:
+                raise ValueError(f"Target {tgt} not supported for level {lvl}. Allowed base + dyn usages.")
             predict_one(lvl, tgt, args.days)
 
 

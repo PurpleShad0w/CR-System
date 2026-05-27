@@ -19,18 +19,17 @@ from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_sign
 
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
+ELEC_TOTAL_ACCURATE = "elecTotalAccurateKwh"
 ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
-ELECTRIC_ALL = ["elecTotalKwh", ELEC_TOTAL_NOBVE] + ELECTRIC_USES
-ENERGY_TARGETS = ELECTRIC_ALL + ["waterM3"]
 
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
     if ELEC_TOTAL_NOBVE in df.columns:
         return df
-    if "elecTotalAccurateKwh" not in df.columns or "elecBveKwh" not in df.columns:
+    if ELEC_TOTAL_ACCURATE not in df.columns or "elecBveKwh" not in df.columns:
         return df
     out = df.copy()
-    total = pd.to_numeric(out["elecTotalAccurateKwh"], errors="coerce")
+    total = pd.to_numeric(out[ELEC_TOTAL_ACCURATE], errors="coerce")
     bve = pd.to_numeric(out["elecBveKwh"], errors="coerce").fillna(0.0)
     out[ELEC_TOTAL_NOBVE] = np.maximum(total - bve, 0.0)
     return out
@@ -113,11 +112,9 @@ def _compute_caps(x, y, p_full=99, p_zoom=95):
     if len(v) == 0:
         return 1.0, 1.0
 
-    # percentile caps
     lim_full = float(np.nanpercentile(v, p_full))
     lim_zoom = float(np.nanpercentile(v, p_zoom))
 
-    # IQR cap (anti-outliers quand N petit)
     q1 = float(np.nanpercentile(v, 25))
     q3 = float(np.nanpercentile(v, 75))
     iqr = max(q3 - q1, 1e-12)
@@ -226,16 +223,17 @@ def main():
     ap.add_argument("--config", required=True)
     ap.add_argument("--level", default="site")  # site | zone | all
     ap.add_argument("--target", required=True)
-    ap.add_argument("--site", default="170", help='siteId pour timeseries, ou \"all\"')
+    ap.add_argument("--site", default="170", help='siteId pour timeseries, ou "all"')
     args = ap.parse_args()
 
     LEVELS = ["site", "zone"]
 
-    # all inclut NoBVE
     BASE_TARGETS_BY_LEVEL = {
-        "site": ["elecTotalKwh", "elecTotalAccurateKwh", ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
-        "zone": ["elecTotalKwh", "elecTotalAccurateKwh", ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
+        "site": ["elecTotalKwh", ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
+        "zone": ["elecTotalKwh", ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
     }
+
+    # garde-fou "historique" (mais on va autoriser dynamiquement en plus)
     TARGETS_BY_LEVEL = {
         "site": BASE_TARGETS_BY_LEVEL["site"] + ELECTRIC_USES,
         "zone": BASE_TARGETS_BY_LEVEL["zone"] + ELECTRIC_USES,
@@ -246,31 +244,46 @@ def main():
     out_dir = ensure_dir(Path(cfg["paths"]["out_dir"]))
     fig_dir = ensure_dir(out_dir / "figures")
 
+    def _load_hist(level: str) -> pd.DataFrame:
+        cleaned_path = out_dir / f"{level}hist_cleaned.csv"
+        hist = pd.read_csv(cleaned_path)
+        hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
+        hist = add_elec_total_accurate(hist)
+        hist = add_elec_total_no_bve(hist)
+        return hist
+
+    def allowed_targets(level: str) -> set[str]:
+        hist = _load_hist(level)
+        dyn_usages = discover_elec_usage_targets(hist)
+        return set(BASE_TARGETS_BY_LEVEL[level]) | set(dyn_usages)
+
     def expand_targets(level: str, target: str) -> list[str]:
         if target == "elecUses":
             return ELECTRIC_USES[:]
         if target == "all":
-            # base + tous les usages élec présents
-            hist = pd.read_csv(out_dir / f"{level}hist_cleaned.csv")  # ou load_level_tables
-            hist = add_elec_total_accurate(hist)
+            hist = _load_hist(level)
             elec_usages = discover_elec_usage_targets(hist)
-            return ["elecTotalKwh", "elecTotalNoBveKwh", "elecTotalAccurateKwh", "waterM3", "indoorTempDegC"] + elec_usages
+            base = BASE_TARGETS_BY_LEVEL[level][:]
+            return base + [c for c in elec_usages if c not in base]
         return [target]
 
     def report_one(level: str, target: str, site: str):
-        cleaned_path = out_dir / f"{level}hist_cleaned.csv"
-        hist = pd.read_csv(cleaned_path)
-        hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
+        hist = _load_hist(level)
 
-        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get("site_infos_file", "Sites_Shyrka_Infos.xlsx")
+        info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get(
+            "site_infos_file", "Sites_Shyrka_Infos.xlsx"
+        )
         site_infos = load_site_infos(info_path)
         if len(site_infos) and "siteId" in hist.columns:
             hist = hist.merge(site_infos, on="siteId", how="left")
 
-        hist = add_elec_total_no_bve(hist)
-
         level_cfg = cfg["level_defaults"][level]
         id_cols = level_cfg["id_cols"]
+
+        # si c'est un usage élec : ne garder que les groupes ayant du signal
+        dyn_usages = set(discover_elec_usage_targets(hist))
+        if target in dyn_usages:
+            hist = drop_groups_with_no_signal(hist, id_cols, target)
 
         model_dir = out_dir / "models"
         meta_path = model_dir / f"{level}_{target}.meta.json"
@@ -314,10 +327,8 @@ def main():
         df0 = build_rolling_features(df0, id_cols, "date", target, cfg["features"]["rolling_windows"])
 
         cutoff = df0["date"].max() - pd.Timedelta(days=valid_days)
-
         model = load_model(model_path)
 
-        # eval truth window
         df_eval = df0.dropna(subset=[target]).copy()
         valid_eval = df_eval[df_eval["date"] > cutoff].copy()
         if len(valid_eval) == 0:
@@ -332,7 +343,6 @@ def main():
         else:
             yhat_eval = pe
 
-        # core reporting (parity/residual/ts)
         parity_linear_99(y_eval, yhat_eval, f"Parity — {level} {target} (valid)", fig_dir / f"parity_{level}_{target}_p99.png")
         parity_linear_95(y_eval, yhat_eval, f"Parity — {level} {target} (valid)", fig_dir / f"parity_{level}_{target}_p95.png")
         parity_log(y_eval, yhat_eval, f"Parity log — {level} {target} (valid)", fig_dir / f"parity_{level}_{target}_log.png")
@@ -342,7 +352,6 @@ def main():
         eval_df["y_true"] = y_eval
         eval_df["y_pred"] = yhat_eval
 
-        # prediction window (for comparisons): same keys as total valid window
         win = df0[df0["date"] > cutoff].copy()
         if len(win):
             Xw = win[feat_cols].copy()
@@ -358,7 +367,6 @@ def main():
             win_pred = win[id_cols + ["date"]].copy()
             win_pred["y_pred"] = np.nan
 
-        # TS (simple : only site level, zone level graphs handled elsewhere if needed)
         site_arg = str(site).lower()
         if site_arg == "all":
             site_ids = sorted([int(x) for x in df0["siteId"].dropna().unique().tolist()]) if "siteId" in df0.columns else []
@@ -410,21 +418,22 @@ def main():
     reports = []
     levels = LEVELS if args.level == "all" else [args.level]
     for lvl in levels:
+        allowed = allowed_targets(lvl)
         targets = expand_targets(lvl, args.target)
         for tgt in targets:
             if tgt == "elecAggregatedKwh":
                 raise ValueError("elecAggregatedKwh est exclu.")
-            if tgt not in TARGETS_BY_LEVEL[lvl]:
-                raise ValueError(f"Target {tgt} not supported for level {lvl}.")
+            if tgt not in allowed:
+                raise ValueError(f"Target {tgt} not supported for level {lvl}. Allowed base + dyn usages.")
             r = report_one(lvl, tgt, args.site)
             if r is not None:
                 reports.append(r)
 
-    # compare direct vs sum uses (on la fenêtre du total)
+    # comparaison direct vs somme des 4 usages (legacy)
     cmp_dir = ensure_dir(fig_dir / "compare")
     by_lt = {(r["level"], r["target"]): r for r in reports}
 
-    TOTAL = "elecTotalAccurateKwh"
+    TOTAL = ELEC_TOTAL_ACCURATE
     USES = ELECTRIC_USES[:]
 
     for lvl in ["site", "zone"]:
@@ -455,7 +464,6 @@ def main():
         )
         base["y_pred_total_from_uses"] = np.maximum(pd.to_numeric(base["y_pred_total_from_uses"], errors="coerce"), 0.0)
 
-        # per-group metrics
         rows = []
         for keys, g in base.groupby(id_cols, dropna=False):
             if not isinstance(keys, tuple):
@@ -463,6 +471,7 @@ def main():
             yt_g = pd.to_numeric(g["y_true_total"], errors="coerce").to_numpy(dtype=float)
             yd_g = pd.to_numeric(g["y_pred_total_direct"], errors="coerce").to_numpy(dtype=float)
             ys_g = pd.to_numeric(g["y_pred_total_from_uses"], errors="coerce").to_numpy(dtype=float)
+
             row = {c: v for c, v in zip(id_cols, keys)}
             row.update({
                 "n": int(len(g)),
@@ -478,15 +487,12 @@ def main():
         df_rows = pd.DataFrame(rows)
         df_rows.to_csv(cmp_dir / f"compare_total_direct_vs_sumuses_{lvl}_by_group.csv", index=False)
 
-        # outliers dump (diagnostic)
         for col in ["RMSE_direct", "RMSE_sumUses", "WAPE_direct", "WAPE_sumUses"]:
             tmp = df_rows.copy()
             tmp[col] = pd.to_numeric(tmp[col], errors="coerce")
             tmp = tmp.sort_values(col, ascending=False).head(50)
             tmp.to_csv(cmp_dir / f"outliers_{lvl}_{col}.csv", index=False)
 
-        # ---- plots with caps (full + zoom)
-        # WAPE
         xw = pd.to_numeric(df_rows["WAPE_direct"], errors="coerce").to_numpy(dtype=float)
         yw = pd.to_numeric(df_rows["WAPE_sumUses"], errors="coerce").to_numpy(dtype=float)
         gw = pd.to_numeric(df_rows["WAPE_improvement_%"], errors="coerce").to_numpy(dtype=float)
@@ -507,7 +513,6 @@ def main():
             "WAPE somme usages (4 modèles)",
             cmp_dir / f"compare_total_direct_vs_sumuses_{lvl}_wape_hexbin_full.png",
         )
-
         _scatter_gain(
             xw, yw, gw, lim_zoom_w,
             f"WAPE — {lvl} — direct vs somme usages (ZOOM cap)",
@@ -524,7 +529,6 @@ def main():
             cmp_dir / f"compare_total_direct_vs_sumuses_{lvl}_wape_hexbin_zoom.png",
         )
 
-        # RMSE
         xr = pd.to_numeric(df_rows["RMSE_direct"], errors="coerce").to_numpy(dtype=float)
         yr = pd.to_numeric(df_rows["RMSE_sumUses"], errors="coerce").to_numpy(dtype=float)
         gr = pd.to_numeric(df_rows["RMSE_improvement_%"], errors="coerce").to_numpy(dtype=float)
@@ -545,7 +549,6 @@ def main():
             "RMSE somme usages (4 modèles)",
             cmp_dir / f"compare_total_direct_vs_sumuses_{lvl}_rmse_hexbin_full.png",
         )
-
         _scatter_gain(
             xr, yr, gr, lim_zoom_r,
             f"RMSE — {lvl} — direct vs somme usages (ZOOM cap)",
