@@ -138,11 +138,38 @@ def _page_section_path(page: Dict[str, Any]) -> str:
     return ''
 
 
-def _audio_fallback_text(page: Dict[str, Any]) -> str:
-    """Fail-safe: build text from audio blocks even if collect_text() misses it.
+def _ensure_full_pages(pages: List[Dict[str, Any]], pages_dir: Path) -> List[Dict[str, Any]]:
+    """pages_index.json often contains lightweight entries (no blocks/assets).
 
-    This prevents 'no slide created' when a page only contains audio recordings.
+    To build bullets (including audio transcripts) and select images, we need the
+    full per-page JSON produced by process_onenote. This function upgrades each
+    page entry by loading its pages/<page_id>.json file when available.
     """
+    out: List[Dict[str, Any]] = []
+    for pg in pages:
+        if not isinstance(pg, dict):
+            continue
+        pid = (_page_id(pg) or '').strip()
+        # If blocks already present, keep as-is
+        if isinstance(pg.get('blocks'), list) and pg.get('blocks'):
+            out.append(pg)
+            continue
+        # Try to load full page json
+        pfile = _find_page_json_file(pid, pages_dir) if pid else None
+        if pfile and pfile.exists():
+            try:
+                full = load_json(pfile)
+                # keep some fields from lightweight entry if missing in full
+                if isinstance(full, dict):
+                    out.append(full)
+                    continue
+            except Exception:
+                pass
+        out.append(pg)
+    return out
+
+
+def _audio_fallback_text(page: Dict[str, Any]) -> str:
     blocks = page.get('blocks')
     if not isinstance(blocks, list):
         return ''
@@ -166,7 +193,6 @@ def _audio_fallback_text(page: Dict[str, Any]) -> str:
                     msg += f" ({err})"
                 parts.append(msg)
                 continue
-        # audio exists but not transcribed => still force a bullet so slide exists
         parts.append('Note vocale : (enregistrement présent, transcription absente)')
     return "\n".join(parts).strip()
 
@@ -180,11 +206,17 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
 
     obj = load_json(pages_source)
     pages = iter_pages_from_pages_index(obj)
+
     pages_dir = pages_source.parent / 'pages'
     if not pages_dir.exists():
         pages_dir = REPO_ROOT / 'process' / 'onenote' / 'pages'
+
     if not pages:
         pages = iter_pages_from_manifest(obj, pages_dir)
+    else:
+        # Critical fix: pages_index.json entries may not contain blocks/assets
+        pages = _ensure_full_pages(pages, pages_dir)
+
     if not pages:
         raise SystemExit('No pages found (need pages_index.json with pages, or manifest.json with processed_pages + per-page JSON files).')
 
@@ -199,14 +231,12 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
         grp_norm = normalize_section_name(_page_section_group(pg))
         path_norm = normalize_section_name(_page_section_path(pg))
         if section_norm:
-            # If group metadata exists, prefer group match; else fallback to section match
             if grp_norm:
                 if grp_norm != section_norm:
                     continue
             else:
                 if sec_norm and sec_norm != section_norm:
                     continue
-            # Accept full path match if user entered it
             if path_norm and path_norm == section_norm:
                 pass
         if pid:
@@ -221,23 +251,13 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
         title = (pg.get('title') or 'Page').strip()
 
         text = collect_text(pg)
-
-        # DEBUG SAFETY: log raw blocks if empty
-        if not text.strip():
-            print("⚠️ EMPTY TEXT → checking audio blocks")
-            for b in pg.get("blocks", []):
-                if b.get("type") == "audio":
-                    print("AUDIO BLOCK:", b)
-
         if not (text or '').strip():
-            # Robust fallback: if page only contains audio, we still build text
             text = _audio_fallback_text(pg)
 
         bul = to_bullets(text, max_lines=max_bullets)
         imgs = collect_images(pg)
         imgs = select_best_images(pg, imgs, title=title, bullets=bul, max_images=max_images)
 
-        # Skip completely empty pages only (no bullets, no images)
         if not (bul or '').strip() and not imgs:
             continue
 

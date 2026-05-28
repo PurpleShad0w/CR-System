@@ -63,7 +63,7 @@ def main() -> None:
     ap.add_argument('--renderer', default='render_report_pptx.py')
     ap.add_argument('--out', default='')
     ap.add_argument('--max-images', type=int, default=6)
-    ap.add_argument('--max-bullets', type=int, default=10)
+    ap.add_argument('--max-bullets', type=int, default=20)
 
     # per-slide HF rewrite (default ON)
     ap.add_argument('--humanize', dest='humanize', action='store_true')

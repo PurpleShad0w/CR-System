@@ -49,6 +49,15 @@ def sanitize_client_body(text: str) -> str:
     out: List[str] = []
     for ln in t.splitlines():
         s = ln.strip()
+
+        # si une ligne provient d'une transcription audio, on enlève le préfixe
+        low = s.lower()
+        if low.startswith("note vocale :"):
+            s2 = s.split(":", 1)[1].strip()
+            if s2:
+                out.append(s2)
+            continue
+
         if not s:
             out.append('')
             continue
