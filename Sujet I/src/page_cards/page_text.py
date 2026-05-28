@@ -6,6 +6,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List
 
+# Explicit caption markers (so legends never leak into slide bullets)
 CAPTION_PREFIXES = (
     'légende:', 'legende:', 'legend:',
     'caption:',
@@ -37,6 +38,11 @@ def strip_markdown(text: str) -> str:
 
 
 def sanitize_client_body(text: str) -> str:
+    """Prepare text for bullet extraction.
+
+    - Removes 'Preuve:' and 'page_id=' traces.
+    - Removes explicit caption lines (Légende:/Caption:) so they don't become bullets.
+    """
     if not text:
         return ''
     t = normalize_whitespace(strip_markdown(text))
@@ -47,12 +53,10 @@ def sanitize_client_body(text: str) -> str:
             out.append('')
             continue
         low = s.lower()
-        # Remove proof traces from generated text
         if 'page_id=' in low:
             continue
         if low.startswith('preuve:') or 'preuve:' in low:
             continue
-        # Remove explicit caption lines from body text to prevent leakage into slide bullets
         if _is_caption_line(s):
             continue
         out.append(ln)
@@ -62,13 +66,13 @@ def sanitize_client_body(text: str) -> str:
 def _collect_from_blocks(blocks: Any) -> List[str]:
     """Collect human-readable text from OneNote page JSON blocks.
 
-    - Includes audio transcripts (key: 'transcript') so --transcribe matters downstream.
-    - Excludes caption-tagged lines (Légende:/Caption:) so legends don't leak into bullets.
+    Important: audio transcripts are stored under key 'transcript' (not 'text').
+    If --transcribe was enabled, we include these transcripts so they show up in
+    bullets/LLM prompts.
     """
     parts: List[str] = []
     if not isinstance(blocks, list):
         return parts
-
     for b in blocks:
         if not isinstance(b, dict):
             continue
@@ -77,7 +81,6 @@ def _collect_from_blocks(blocks: Any) -> List[str]:
         # Standard textual content
         text = b.get('text')
         if isinstance(text, str) and text.strip():
-            # If it's an explicit caption line, do not treat as body text
             if _is_caption_line(text):
                 continue
             if btype in ('paragraph', 'text', 'heading', 'list', 'bullet'):
@@ -88,7 +91,13 @@ def _collect_from_blocks(blocks: Any) -> List[str]:
 
         # Audio transcript
         if btype == 'audio':
-            tr = b.get('transcript')
+            tr = (
+                b.get('transcript')
+                or b.get('text')
+                or b.get('transcription')
+                or b.get('content')
+            )
+
             if isinstance(tr, str) and tr.strip():
                 parts.append(f"Note vocale : {tr.strip()}")
                 continue
@@ -103,7 +112,7 @@ def _collect_from_blocks(blocks: Any) -> List[str]:
                     parts.append(msg)
                     continue
 
-        # Ignore images (handled elsewhere)
+        # Ignore images
         if btype == 'image':
             continue
 
@@ -129,8 +138,9 @@ def to_bullets(text: str, *, max_lines: int = 10) -> str:
         if len(s) > 190:
             s = s[:187].rstrip() + '…'
         out.append(s)
-        if len(out) > max_lines:
-            out = out[:max_lines-1] + ['…']
+        if len(out) >= max_lines:
+            if len(lines) > max_lines:
+                out = out[:max_lines-1] + ['…']
             break
     if not out:
         return ''

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 from __future__ import annotations
 
 import argparse
@@ -32,13 +33,11 @@ def save_json(p: Path, obj: Any) -> None:
 
 
 def find_existing_pages_source(hint: Path) -> Optional[Path]:
-    # Accept either process/onenote/<notebook>/manifest.json or older paths
     candidates = [
         hint,
         REPO_ROOT / 'process' / 'onenote' / 'manifest.json',
         REPO_ROOT / 'process' / 'onenote' / 'pages_index.json',
     ]
-    # Also search under process/onenote/*/manifest.json
     base = REPO_ROOT / 'process' / 'onenote'
     if base.exists():
         for cand in base.rglob('manifest.json'):
@@ -61,7 +60,6 @@ def iter_pages_from_pages_index(obj: Any) -> List[Dict[str, Any]]:
 
 
 def _safe_page_filename(page_id: str) -> str:
-    # process_onenote.py writes: pages/<page_id>.json with '/' replaced by '_'
     return (page_id or '').replace('/', '_')
 
 
@@ -140,12 +138,46 @@ def _page_section_path(page: Dict[str, Any]) -> str:
     return ''
 
 
+def _audio_fallback_text(page: Dict[str, Any]) -> str:
+    """Fail-safe: build text from audio blocks even if collect_text() misses it.
+
+    This prevents 'no slide created' when a page only contains audio recordings.
+    """
+    blocks = page.get('blocks')
+    if not isinstance(blocks, list):
+        return ''
+    parts: List[str] = []
+    for b in blocks:
+        if not isinstance(b, dict):
+            continue
+        if (b.get('type') or '').lower() != 'audio':
+            continue
+        tr = b.get('transcript')
+        if isinstance(tr, str) and tr.strip():
+            parts.append(f"Note vocale : {tr.strip()}")
+            continue
+        meta = b.get('transcript_meta')
+        if isinstance(meta, dict):
+            status = (meta.get('status') or '').strip().lower()
+            err = (meta.get('error') or '').strip()
+            if status and status != 'ok':
+                msg = f"Note vocale : transcription {status}"
+                if err:
+                    msg += f" ({err})"
+                parts.append(msg)
+                continue
+        # audio exists but not transcribed => still force a bullet so slide exists
+        parts.append('Note vocale : (enregistrement présent, transcription absente)')
+    return "\n".join(parts).strip()
+
+
 def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str, max_images: int, max_bullets: int) -> None:
     if not pages_source.exists():
         found = find_existing_pages_source(pages_source)
         if not found:
             raise FileNotFoundError(f"pages source not found: {pages_source}")
         pages_source = found
+
     obj = load_json(pages_source)
     pages = iter_pages_from_pages_index(obj)
     pages_dir = pages_source.parent / 'pages'
@@ -156,8 +188,6 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
     if not pages:
         raise SystemExit('No pages found (need pages_index.json with pages, or manifest.json with processed_pages + per-page JSON files).')
 
-    # section_name can now be either a section OR a section-group name.
-    # If pages contain section_group metadata and it matches, we include all pages under that group.
     section_norm = normalize_section_name(section_name)
     filtered: List[Dict[str, Any]] = []
     seen_pid = set()
@@ -168,34 +198,49 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
         sec_norm = normalize_section_name(_page_section(pg))
         grp_norm = normalize_section_name(_page_section_group(pg))
         path_norm = normalize_section_name(_page_section_path(pg))
-
         if section_norm:
-            # Prefer matching group if present
+            # If group metadata exists, prefer group match; else fallback to section match
             if grp_norm:
                 if grp_norm != section_norm:
                     continue
             else:
-                # fallback to exact section match (legacy behavior)
                 if sec_norm and sec_norm != section_norm:
                     continue
-            # optional: if section_path exists and user typed a full path, accept it
-            if path_norm and (path_norm == section_norm):
+            # Accept full path match if user entered it
+            if path_norm and path_norm == section_norm:
                 pass
-
         if pid:
             seen_pid.add(pid)
         filtered.append(pg)
-
     pages = filtered
 
     slides: List[Dict[str, Any]] = []
     slides.append({'type': 'PART_DIVIDER', 'part': 1, 'title': 'Etat des lieux (Pages OneNote)'})
+
     for pg in pages:
         title = (pg.get('title') or 'Page').strip()
+
         text = collect_text(pg)
+
+        # DEBUG SAFETY: log raw blocks if empty
+        if not text.strip():
+            print("⚠️ EMPTY TEXT → checking audio blocks")
+            for b in pg.get("blocks", []):
+                if b.get("type") == "audio":
+                    print("AUDIO BLOCK:", b)
+
+        if not (text or '').strip():
+            # Robust fallback: if page only contains audio, we still build text
+            text = _audio_fallback_text(pg)
+
         bul = to_bullets(text, max_lines=max_bullets)
         imgs = collect_images(pg)
         imgs = select_best_images(pg, imgs, title=title, bullets=bul, max_images=max_images)
+
+        # Skip completely empty pages only (no bullets, no images)
+        if not (bul or '').strip() and not imgs:
+            continue
+
         slides.append({
             'type': 'CONTENT_TEXT_IMAGES' if imgs else 'CONTENT_TEXT',
             'part': 1,
