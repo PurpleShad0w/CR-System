@@ -208,12 +208,17 @@ def extract_title_and_bullets(model_text: str) -> Tuple[Optional[str], str]:
 
 def fallback_bullets_from_notes(raw_notes: str) -> str:
     n = _norm(raw_notes or '')
-    if len(n) < 25:
+    if len(n) < 12:
         return '- Rien à signaler (notes insuffisantes).'
     items: List[str] = []
     for ln in normalize_whitespace(raw_notes).split('\n'):
         s = ln.strip()
         if not s:
+            continue
+        if s.startswith("- "):
+            s = s[2:].strip()
+        if _norm(s) == _norm(raw_notes.splitlines()[0].lstrip("- ").strip()):
+            # évite de traiter le simple titre comme une vraie puce informative
             continue
         if 'Texte Détail' in s or 'Info Clé' in s or 'User flow' in s or s.strip().lower() == 'page':
             continue
@@ -319,7 +324,13 @@ def humanize_assembled(assembled: Dict[str, Any], *, enabled: bool, style_card: 
         s['title'] = normalize_title(title_raw)
         # ensure captions exist even if we don't call LLM
         ensure_image_captions(s, s['title'] or title_raw)
-        raw_notes = (s.get('bullets') or s.get('body') or '').strip()
+        raw_notes = (
+            s.get("raw_bullets")
+            or s.get("bullets")
+            or s.get("body")
+            or ""
+        ).strip()
+
         if len(_norm(raw_notes)) < 25:
             s['raw_bullets'] = raw_notes
             s['bullets'] = '- Rien à signaler (notes insuffisantes).'
@@ -330,16 +341,27 @@ def humanize_assembled(assembled: Dict[str, Any], *, enabled: bool, style_card: 
         if out:
             t_new, b_new = extract_title_and_bullets(out)
             if t_new:
-                s['title'] = t_new
-            # update captions with final title
-            ensure_image_captions(s, s['title'] or title_raw)
-            if b_new:
-                s['raw_bullets'] = raw_notes
-                s['bullets'] = b_new
+                s["title"] = t_new
+
+            ensure_image_captions(s, s["title"] or title_raw)
+
+            norm_raw = _norm(raw_notes)
+            raw_is_rich = len(norm_raw) >= 80
+
+            llm_returned_insufficient = (
+                b_new
+                and "rien a signaler" in _norm(b_new)
+            )
+
+            if b_new and not (raw_is_rich and llm_returned_insufficient):
+                s["raw_bullets"] = raw_notes
+                s["bullets"] = b_new
             else:
-                s['raw_bullets'] = raw_notes
-                s['bullets'] = fallback_bullets_from_notes(raw_notes)
-                s['llm_noncompliant'] = True
+                s["raw_bullets"] = raw_notes
+                s["bullets"] = fallback_bullets_from_notes(raw_notes)
+                if llm_returned_insufficient:
+                    s["llm_noncompliant"] = True
+
         else:
             s['llm_error'] = err or 'unknown'
             s['raw_bullets'] = raw_notes

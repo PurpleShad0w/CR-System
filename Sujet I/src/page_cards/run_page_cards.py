@@ -12,8 +12,6 @@ SRC = REPO_ROOT / 'src'
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from legacy.section_names import DEFAULT_SECTION_NAME, normalize_section_name
-
 
 def _run(cmd: list[str]) -> None:
     print('>', ' '.join(cmd))
@@ -44,7 +42,7 @@ def maybe_run_process_onenote(args) -> Path:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument('--case-id', required=True)
-    ap.add_argument('--section-name', default=DEFAULT_SECTION_NAME)
+    ap.add_argument('--section-name')
 
     # process_onenote wiring
     ap.add_argument('--ensure-onenote', action='store_true', default=True)
@@ -78,7 +76,6 @@ def main() -> None:
 
     manifest = maybe_run_process_onenote(args)
     pages_src = Path(args.pages_index) if args.pages_index else manifest
-    section = normalize_section_name(args.section_name or DEFAULT_SECTION_NAME)
 
     assembled = Path('process/page_cards/assembled_page_cards.json')
     out_pptx = Path(args.out) if args.out else Path(f'output/reports/{args.case_id}/Part1_PageCards.pptx')
@@ -90,7 +87,7 @@ def main() -> None:
         '--pages-index', str(pages_src),
         '--out', str(assembled),
         '--case-id', args.case_id,
-        '--section-name', section,
+        '--section-name', args.section_name,
         '--max-images', str(args.max_images),
         '--max-bullets', str(args.max_bullets),
     ])

@@ -14,7 +14,6 @@ SRC = REPO_ROOT / 'src'
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from legacy.section_names import DEFAULT_SECTION_NAME, normalize_section_name
 from page_text import collect_text, to_bullets
 from page_images import collect_images
 from image_selection import select_best_images
@@ -220,16 +219,16 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
     if not pages:
         raise SystemExit('No pages found (need pages_index.json with pages, or manifest.json with processed_pages + per-page JSON files).')
 
-    section_norm = normalize_section_name(section_name)
+    section_norm = section_name
     filtered: List[Dict[str, Any]] = []
     seen_pid = set()
     for pg in pages:
         pid = (_page_id(pg) or '').strip()
         if pid and pid in seen_pid:
             continue
-        sec_norm = normalize_section_name(_page_section(pg))
-        grp_norm = normalize_section_name(_page_section_group(pg))
-        path_norm = normalize_section_name(_page_section_path(pg))
+        sec_norm = _page_section(pg)
+        grp_norm = _page_section_group(pg)
+        path_norm = _page_section_path(pg)
         if section_norm:
             if grp_norm:
                 if grp_norm != section_norm:
@@ -285,12 +284,11 @@ def main() -> None:
     ap.add_argument('--pages-index', required=True)
     ap.add_argument('--out', default='process/page_cards/assembled_page_cards.json')
     ap.add_argument('--case-id', required=True)
-    ap.add_argument('--section-name', default=DEFAULT_SECTION_NAME)
+    ap.add_argument('--section-name')
     ap.add_argument('--max-images', type=int, default=6)
     ap.add_argument('--max-bullets', type=int, default=10)
     args = ap.parse_args()
-    section = normalize_section_name(args.section_name or DEFAULT_SECTION_NAME)
-    build(Path(args.pages_index), Path(args.out), case_id=args.case_id, section_name=section, max_images=args.max_images, max_bullets=args.max_bullets)
+    build(Path(args.pages_index), Path(args.out), case_id=args.case_id, section_name=args.section_name, max_images=args.max_images, max_bullets=args.max_bullets)
     print('Wrote:', args.out)
 
 
