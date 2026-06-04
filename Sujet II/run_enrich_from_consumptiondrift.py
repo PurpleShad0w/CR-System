@@ -6,12 +6,37 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-
-ELECTRIC_METER_TYPE_ID = 1
+import re
 
 # Existing 4 columns in historical db
 EXISTING_4 = {"elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"}
+
+
+def _to_camel(s: str) -> str:
+    parts = re.split(r"[^a-zA-Z0-9]+", str(s))
+    parts = [p for p in parts if p]
+    return "".join(p[:1].upper() + p[1:] for p in parts) if parts else ""
+
+
+def drift_col_name(meter_name: str, usage_name: str) -> str:
+    u = _to_camel(usage_name)
+
+    if meter_name == "elec":
+        return f"elec{u}Kwh"
+
+    if meter_name == "water":
+        # same convention as existing historical DB
+        return f"water{u}M3"
+
+    if meter_name == "eg":
+        # chilled water meter — keep neutral naming if your legacy DB has no established suffix
+        return f"eg{u}"
+
+    if meter_name == "ec":
+        # hot water meter — keep neutral naming if your legacy DB has no established suffix
+        return f"ec{u}"
+
+    return f"{meter_name}{u}"
 
 
 def _to_camel(s: str) -> str:
@@ -90,42 +115,101 @@ def enrich_histories(
     cdr = cdr.merge(usg, left_on="usageId", right_on="id", how="left")
     cdr = cdr.merge(mt, left_on="meterTypeId", right_on="id", how="left")
 
-    cdr_e = cdr[cdr["meterTypeId"] == ELECTRIC_METER_TYPE_ID].copy()
-    cdr_e["usage_col"] = cdr_e["usage_name"].map(_usage_to_col)
+    # meter type mapping from metertypes.csv
+    # source-supported IDs:
+    # 1 = elec, 2 = water, 4 = eg (chilled water), 5 = ec (hot water)
+    meter_name_map = (
+        mt[["id", "name"]]
+        .drop_duplicates()
+        .rename(columns={"id": "meterTypeId", "name": "meter_name"})
+    )
 
-    # Canonical decomposition from zone perimeter
-    z = cdr_e[cdr_e["perimeter"] == perimeter].copy()
-    z = z.dropna(subset=["siteId", "zoneId", "date", "consumption", "usage_col"])
-    z["siteId"] = z["siteId"].astype(int)
-    z["zoneId"] = z["zoneId"].astype(int)
-    z["consumption"] = pd.to_numeric(z["consumption"], errors="coerce")
-    z = z.dropna(subset=["consumption"])
+    cdr = cdr.merge(meter_name_map, on="meterTypeId", how="left")
+    cdr = cdr.merge(
+        usg[["id", "name"]].drop_duplicates().rename(columns={"id": "usageId", "name": "usage_name"}),
+        on="usageId",
+        how="left",
+    )
+    cdr["usage_col"] = cdr.apply(
+    lambda r: drift_col_name(r["meter_name"], r["usage_name"]),
+    axis=1,
+)
+
+    # canonical perimeter for enrichment
+    # zone is the safest for zonehist, then aggregate to sitehist
+    cdr_base = cdr[cdr["perimeter"] == "zone"].copy()
+
+    cdr_base = cdr_base.dropna(subset=["siteId", "zoneId", "date", "consumption", "usage_col"]).copy()
+    cdr_base["siteId"] = cdr_base["siteId"].astype(int)
+    cdr_base["zoneId"] = cdr_base["zoneId"].astype(int)
+    cdr_base["consumption"] = pd.to_numeric(cdr_base["consumption"], errors="coerce")
+    cdr_base = cdr_base.dropna(subset=["consumption"])
 
     # zone-level wide
-    agg_zone = z.groupby(["siteId", "zoneId", "date", "usage_col"], as_index=False)["consumption"].sum()
-    wide_zone = agg_zone.pivot_table(
-        index=["siteId", "zoneId", "date"],
-        columns="usage_col",
-        values="consumption",
-        aggfunc="sum",
-    ).reset_index()
+    agg_zone = (
+    cdr_base
+    .groupby(["siteId", "zoneId", "date", "usage_col"], as_index=False)["consumption"]
+    .sum()
+)
+
+    wide_zone = (
+        agg_zone
+        .pivot_table(
+            index=["siteId", "zoneId", "date"],
+            columns="usage_col",
+            values="consumption",
+            aggfunc="sum",
+        ).reset_index()
+    )
+
     wide_zone.columns.name = None
 
     usage_cols_zone = [c for c in wide_zone.columns if c not in ("siteId", "zoneId", "date")]
     wide_zone["elecTotalFromDriftKwh"] = wide_zone[usage_cols_zone].sum(axis=1, min_count=1)
 
-    # site-level wide (sum zones)
-    agg_site = z.groupby(["siteId", "date", "usage_col"], as_index=False)["consumption"].sum()
-    wide_site = agg_site.pivot_table(
-        index=["siteId", "date"],
-        columns="usage_col",
-        values="consumption",
-        aggfunc="sum",
-    ).reset_index()
+    # site-level wide
+    agg_site = (
+    cdr_base
+    .groupby(["siteId", "date", "usage_col"], as_index=False)["consumption"]
+    .sum()
+)
+
+    wide_site = (
+        agg_site
+        .pivot_table(
+            index=["siteId", "date"],
+            columns="usage_col",
+            values="consumption",
+            aggfunc="sum",
+        ).reset_index()
+    )
+
     wide_site.columns.name = None
 
     usage_cols_site = [c for c in wide_site.columns if c not in ("siteId", "date")]
     wide_site["elecTotalFromDriftKwh"] = wide_site[usage_cols_site].sum(axis=1, min_count=1)
+
+    def electric_usage_cols(df: pd.DataFrame) -> list[str]:
+        return sorted([
+            c for c in df.columns
+            if isinstance(c, str)
+            and c.startswith("elec")
+            and c.endswith("Kwh")
+            and c not in {"elecTotalKwh", "elecAggregatedKwh", "elecTotalFromDriftKwh", "elecTotalAccurateKwh"}
+            and not c.endswith("_drift")
+        ])
+
+    elec_cols_zone = electric_usage_cols(wide_zone)
+    elec_cols_site = electric_usage_cols(wide_site)
+
+    wide_zone["elecTotalFromDriftKwh"] = wide_zone[elec_cols_zone].sum(axis=1, min_count=1)
+    wide_site["elecTotalFromDriftKwh"] = wide_site[elec_cols_site].sum(axis=1, min_count=1)
+
+    created_site_cols = [c for c in wide_site.columns if c not in {"siteId", "date"}]
+    created_zone_cols = [c for c in wide_zone.columns if c not in {"siteId", "zoneId", "date"}]
+
+    print("[ENRICH] site cols created:", created_site_cols)
+    print("[ENRICH] zone cols created:", created_zone_cols)
 
     # Merge
     zone_en = zone.merge(wide_zone, on=["siteId", "zoneId", "date"], how="left")
@@ -158,7 +242,7 @@ def enrich_histories(
     site_en.to_csv(site_out, sep=";", index=False)
     zone_en.to_csv(zone_out, sep=";", index=False)
 
-    mapping = cdr_e[["usageId", "usage_name"]].drop_duplicates().copy()
+    mapping = cdr[["usageId", "usage_name"]].drop_duplicates().copy()
     mapping["column"] = mapping["usage_name"].map(_usage_to_base_col)
     mapping["column_in_enriched"] = mapping["usage_name"].map(_usage_to_col)
     mapping = mapping.sort_values("usageId")
