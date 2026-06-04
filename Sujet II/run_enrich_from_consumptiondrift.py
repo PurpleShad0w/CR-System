@@ -6,10 +6,39 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import re
+
 
 # Existing 4 columns in historical db
 EXISTING_4 = {"elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"}
+
+
+def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df.columns = [str(c).replace("\ufeff", "").strip() for c in df.columns]
+    return df
+
+
+def _read_lookup_csv(path: Path) -> pd.DataFrame:
+    """
+    Read lookup CSV robustly without sep autodetection.
+    """
+    last_err = None
+
+    for sep in [",", ";"]:
+        try:
+            df = pd.read_csv(
+                path,
+                sep=sep,
+                encoding="utf-8-sig",
+                on_bad_lines="skip",
+            )
+            df = _normalize_columns(df)
+            if {"id", "name"}.issubset(df.columns):
+                return df
+        except Exception as e:
+            last_err = e
+
+    raise ValueError(f"Unable to parse lookup CSV {path}. Last error: {last_err}")
 
 
 def _to_camel(s: str) -> str:
@@ -22,37 +51,21 @@ def drift_col_name(meter_name: str, usage_name: str) -> str:
     u = _to_camel(usage_name)
 
     if meter_name == "elec":
-        return f"elec{u}Kwh"
+        base = f"elec{u}Kwh"
+        return base + "_drift" if base in EXISTING_4 else base
 
     if meter_name == "water":
-        # same convention as existing historical DB
         return f"water{u}M3"
 
     if meter_name == "eg":
-        # chilled water meter — keep neutral naming if your legacy DB has no established suffix
+        # chilled water meter
         return f"eg{u}"
 
     if meter_name == "ec":
-        # hot water meter — keep neutral naming if your legacy DB has no established suffix
+        # hot water meter
         return f"ec{u}"
 
     return f"{meter_name}{u}"
-
-
-def _to_camel(s: str) -> str:
-    parts = re.split(r"[^a-zA-Z0-9]+", str(s))
-    parts = [p for p in parts if p]
-    return "".join(p[:1].upper() + p[1:] for p in parts) if parts else ""
-
-
-def _usage_to_base_col(usage_name: str) -> str:
-    return f"elec{_to_camel(usage_name)}Kwh"
-
-
-def _usage_to_col(usage_name: str) -> str:
-    base = _usage_to_base_col(usage_name)
-    # Avoid column collision with existing 4 by keeping a *_drift version
-    return base + "_drift" if base in EXISTING_4 else base
 
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
@@ -109,41 +122,52 @@ def enrich_histories(
     cdr = pd.read_csv(drift_path)
     cdr["date"] = pd.to_datetime(cdr["date"], errors="coerce").dt.floor("D")
 
-    usg = pd.read_csv(usages_path)[["id", "name"]].rename(columns={"name": "usage_name"})
-    mt = pd.read_csv(meters_path)[["id", "name"]].rename(columns={"name": "meter_name"})
+    usg = _read_lookup_csv(usages_path)
+    mt = _read_lookup_csv(meters_path)
+
+    print("[DEBUG] usages columns:", usg.columns.tolist())
+    print("[DEBUG] metertypes columns:", mt.columns.tolist())
+
+    required_cols = {"id", "name"}
+
+    if not required_cols.issubset(set(usg.columns)):
+        raise ValueError(f"usages.csv missing columns {required_cols}. Found: {usg.columns.tolist()}")
+
+    if not required_cols.issubset(set(mt.columns)):
+        raise ValueError(f"metertypes.csv missing columns {required_cols}. Found: {mt.columns.tolist()}")
+
+    usg = usg[["id", "name"]].copy().rename(columns={"name": "usage_name"})
+    mt = mt[["id", "name"]].copy().rename(columns={"name": "meter_name"})
+
+    usg["id"] = pd.to_numeric(usg["id"], errors="coerce")
+    mt["id"] = pd.to_numeric(mt["id"], errors="coerce")
+
+    usg = usg.dropna(subset=["id"]).copy()
+    mt = mt.dropna(subset=["id"]).copy()
+
+    usg["id"] = usg["id"].astype(int)
+    mt["id"] = mt["id"].astype(int)
 
     cdr = cdr.merge(usg, left_on="usageId", right_on="id", how="left")
-    cdr = cdr.merge(mt, left_on="meterTypeId", right_on="id", how="left")
+    cdr = cdr.merge(mt, left_on="meterTypeId", right_on="id", how="left", suffixes=("", "_meter"))
 
-    # meter type mapping from metertypes.csv
-    # source-supported IDs:
-    # 1 = elec, 2 = water, 4 = eg (chilled water), 5 = ec (hot water)
-    meter_name_map = (
-        mt[["id", "name"]]
-        .drop_duplicates()
-        .rename(columns={"id": "meterTypeId", "name": "meter_name"})
-    )
-
-    cdr = cdr.merge(meter_name_map, on="meterTypeId", how="left")
-    cdr = cdr.merge(
-        usg[["id", "name"]].drop_duplicates().rename(columns={"id": "usageId", "name": "usage_name"}),
-        on="usageId",
-        how="left",
-    )
     cdr["usage_col"] = cdr.apply(
-    lambda r: drift_col_name(r["meter_name"], r["usage_name"]),
-    axis=1,
-)
+        lambda r: drift_col_name(r["meter_name"], r["usage_name"]),
+        axis=1,
+    )
 
     # canonical perimeter for enrichment
     # zone is the safest for zonehist, then aggregate to sitehist
     cdr_base = cdr[cdr["perimeter"] == "zone"].copy()
 
     cdr_base = cdr_base.dropna(subset=["siteId", "zoneId", "date", "consumption", "usage_col"]).copy()
+    cdr_base["siteId"] = pd.to_numeric(cdr_base["siteId"], errors="coerce")
+    cdr_base["zoneId"] = pd.to_numeric(cdr_base["zoneId"], errors="coerce")
+    cdr_base["consumption"] = pd.to_numeric(cdr_base["consumption"], errors="coerce")
+
+    cdr_base = cdr_base.dropna(subset=["siteId", "zoneId", "consumption"]).copy()
     cdr_base["siteId"] = cdr_base["siteId"].astype(int)
     cdr_base["zoneId"] = cdr_base["zoneId"].astype(int)
-    cdr_base["consumption"] = pd.to_numeric(cdr_base["consumption"], errors="coerce")
-    cdr_base = cdr_base.dropna(subset=["consumption"])
 
     # zone-level wide
     agg_zone = (
@@ -164,9 +188,6 @@ def enrich_histories(
 
     wide_zone.columns.name = None
 
-    usage_cols_zone = [c for c in wide_zone.columns if c not in ("siteId", "zoneId", "date")]
-    wide_zone["elecTotalFromDriftKwh"] = wide_zone[usage_cols_zone].sum(axis=1, min_count=1)
-
     # site-level wide
     agg_site = (
     cdr_base
@@ -186,9 +207,6 @@ def enrich_histories(
 
     wide_site.columns.name = None
 
-    usage_cols_site = [c for c in wide_site.columns if c not in ("siteId", "date")]
-    wide_site["elecTotalFromDriftKwh"] = wide_site[usage_cols_site].sum(axis=1, min_count=1)
-
     def electric_usage_cols(df: pd.DataFrame) -> list[str]:
         return sorted([
             c for c in df.columns
@@ -199,11 +217,54 @@ def enrich_histories(
             and not c.endswith("_drift")
         ])
 
+    def water_usage_cols(df: pd.DataFrame) -> list[str]:
+        return sorted([
+            c for c in df.columns
+            if isinstance(c, str)
+            and c.startswith("water")
+            and c.endswith("M3")
+        ])
+
+    def ec_usage_cols(df: pd.DataFrame) -> list[str]:
+        return sorted([
+            c for c in df.columns
+            if isinstance(c, str)
+            and c.startswith("ec")
+        ])
+
+    def eg_usage_cols(df: pd.DataFrame) -> list[str]:
+        return sorted([
+            c for c in df.columns
+            if isinstance(c, str)
+            and c.startswith("eg")
+        ])
+
     elec_cols_zone = electric_usage_cols(wide_zone)
     elec_cols_site = electric_usage_cols(wide_site)
 
     wide_zone["elecTotalFromDriftKwh"] = wide_zone[elec_cols_zone].sum(axis=1, min_count=1)
     wide_site["elecTotalFromDriftKwh"] = wide_site[elec_cols_site].sum(axis=1, min_count=1)
+
+    water_cols_zone = water_usage_cols(wide_zone)
+    water_cols_site = water_usage_cols(wide_site)
+    if water_cols_zone:
+        wide_zone["waterTotalFromDriftM3"] = wide_zone[water_cols_zone].sum(axis=1, min_count=1)
+    if water_cols_site:
+        wide_site["waterTotalFromDriftM3"] = wide_site[water_cols_site].sum(axis=1, min_count=1)
+
+    ec_cols_zone = ec_usage_cols(wide_zone)
+    ec_cols_site = ec_usage_cols(wide_site)
+    if ec_cols_zone:
+        wide_zone["ecTotalFromDrift"] = wide_zone[ec_cols_zone].sum(axis=1, min_count=1)
+    if ec_cols_site:
+        wide_site["ecTotalFromDrift"] = wide_site[ec_cols_site].sum(axis=1, min_count=1)
+
+    eg_cols_zone = eg_usage_cols(wide_zone)
+    eg_cols_site = eg_usage_cols(wide_site)
+    if eg_cols_zone:
+        wide_zone["egTotalFromDrift"] = wide_zone[eg_cols_zone].sum(axis=1, min_count=1)
+    if eg_cols_site:
+        wide_site["egTotalFromDrift"] = wide_site[eg_cols_site].sum(axis=1, min_count=1)
 
     created_site_cols = [c for c in wide_site.columns if c not in {"siteId", "date"}]
     created_zone_cols = [c for c in wide_zone.columns if c not in {"siteId", "zoneId", "date"}]
@@ -242,10 +303,8 @@ def enrich_histories(
     site_en.to_csv(site_out, sep=";", index=False)
     zone_en.to_csv(zone_out, sep=";", index=False)
 
-    mapping = cdr[["usageId", "usage_name"]].drop_duplicates().copy()
-    mapping["column"] = mapping["usage_name"].map(_usage_to_base_col)
-    mapping["column_in_enriched"] = mapping["usage_name"].map(_usage_to_col)
-    mapping = mapping.sort_values("usageId")
+    mapping = cdr[["usageId", "usage_name", "meterTypeId", "meter_name", "usage_col"]].drop_duplicates().copy()
+    mapping = mapping.sort_values(["meterTypeId", "usageId"])
     mapping.to_csv(map_out, index=False)
 
     return site_out, zone_out, map_out
