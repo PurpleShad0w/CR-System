@@ -1,0 +1,5 @@
+ezdxf[draw]
+opencv-python
+numpy
+pyyaml
+matplotlib

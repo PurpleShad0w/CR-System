@@ -4,6 +4,7 @@ Autocontroles/
 __pycache__/
 cache/
 db/
+input_plans/
 output/
 output_ai/
 process/

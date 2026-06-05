@@ -1,0 +1,45 @@
+keep_layers: []
+drop_layers_contains:
+  - text
+  - texte
+  - cote
+  - dim
+  - axis
+  - axe
+  - repere
+  - mobilier
+  - meuble
+  - hatch
+  - hachure
+  - annotation
+  - annotations
+
+drop_entity_types:
+  - TEXT
+  - MTEXT
+  - DIMENSION
+  - LEADER
+  - MULTILEADER
+  - HATCH
+
+drop_small_entities:
+  enabled: true
+  min_length: 5.0
+
+render:
+  dpi: 300
+  background: white
+  foreground: black
+  lineweight_scaling: 1.0
+
+raster_cleanup:
+  enabled: true
+  threshold: 220
+  min_component_area: 20
+  morph_open_kernel: 3
+  morph_close_kernel: 0
+
+converter:
+  backend: oda   # oda | libredwg
+  exe_path: "C:/Program Files (x86)/ODA/Teigha File Converter 4.3.2/TeighaFileConverter.exe"
+  version: "ACAD2018"
