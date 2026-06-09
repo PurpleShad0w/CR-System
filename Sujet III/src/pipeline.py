@@ -4,7 +4,6 @@ from pathlib import Path
 import argparse
 
 from src.utils import load_yaml, ensure_dir
-from src.convert_dwg import convert_dwg_to_dxf
 from src.inspect_dxf import inspect_dxf
 from src.filter_dxf import filter_dxf
 from src.render_dxf import render_dxf_to_png
@@ -45,12 +44,6 @@ def main() -> None:
 
     local_dwg = dwg_input_dir / args.input_dwg.name
     local_dwg.write_bytes(args.input_dwg.read_bytes())
-
-    convert_dwg_to_dxf(
-        oda_exe=args.oda_exe,
-        input_dir=dwg_input_dir,
-        output_dir=dxf_output_dir,
-    )
 
     converter = build_converter(rules)
     dxf_path = converter.convert(args.input_dwg, dxf_output_dir)
