@@ -258,6 +258,99 @@ def _collect_segments(
         stats["empty_geom"][dxftype] = stats["empty_geom"].get(dxftype, 0) + 1
 
 
+def _segment_bbox(seg):
+    (x1, y1), (x2, y2) = seg
+    return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+
+
+def _bbox_expand(bbox, margin):
+    x1, y1, x2, y2 = bbox
+    return x1 - margin, y1 - margin, x2 + margin, y2 + margin
+
+
+def _bbox_intersects(a, b):
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    return not (ax2 < bx1 or bx2 < ax1 or ay2 < by1 or by2 < ay1)
+
+
+def _segment_length(seg):
+    (x1, y1), (x2, y2) = seg
+    return math.hypot(x2 - x1, y2 - y1)
+
+
+def _merge_bbox(a, b):
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    return min(ax1, bx1), min(ay1, by1), max(ax2, bx2), max(ay2, by2)
+
+
+def _cluster_segments(segments, proximity=200.0):
+    """
+    Regroupe naïvement les segments par proximité spatiale en utilisant
+    leurs bounding boxes dilatées.
+    """
+    items = []
+    for seg in segments:
+        bbox = _bbox_expand(_segment_bbox(seg), proximity)
+        items.append({"seg": seg, "bbox": bbox})
+
+    clusters = []
+
+    for item in items:
+        attached = []
+        for idx, cluster in enumerate(clusters):
+            if _bbox_intersects(item["bbox"], cluster["bbox"]):
+                attached.append(idx)
+
+        if not attached:
+            clusters.append({
+                "segments": [item["seg"]],
+                "bbox": item["bbox"],
+            })
+        else:
+            first = attached[0]
+            clusters[first]["segments"].append(item["seg"])
+            clusters[first]["bbox"] = _merge_bbox(clusters[first]["bbox"], item["bbox"])
+
+            # fusionne les clusters multiples si nécessaire
+            for other_idx in reversed(attached[1:]):
+                clusters[first]["segments"].extend(clusters[other_idx]["segments"])
+                clusters[first]["bbox"] = _merge_bbox(clusters[first]["bbox"], clusters[other_idx]["bbox"])
+                del clusters[other_idx]
+
+    return clusters
+
+
+def _score_cluster(cluster):
+    segs = cluster["segments"]
+    bbox = cluster["bbox"]
+    x1, y1, x2, y2 = bbox
+    width = max(1.0, x2 - x1)
+    height = max(1.0, y2 - y1)
+    area = width * height
+    total_length = sum(_segment_length(s) for s in segs)
+    n = len(segs)
+
+    # score simple :
+    # - beaucoup de segments
+    # - grande emprise
+    # - beaucoup de longueur totale
+    return (total_length * 1.0) + (n * 5.0) + (math.sqrt(area) * 2.0)
+
+
+def _select_main_cluster(segments, proximity=200.0):
+    clusters = _cluster_segments(segments, proximity=proximity)
+    if not clusters:
+        return segments, None, []
+
+    scored = [(c, _score_cluster(c)) for c in clusters]
+    scored.sort(key=lambda x: x[1], reverse=True)
+
+    best_cluster = scored[0][0]
+    return best_cluster["segments"], best_cluster["bbox"], scored
+
+
 def render_dxf_to_png(
     dxf_path: Path,
     png_path: Path,
@@ -314,11 +407,37 @@ def render_dxf_to_png(
             "Vérifie render_debug.json pour voir quels types / layers sont ignorés."
         )
 
+    main_segments, main_bbox, scored_clusters = _select_main_cluster(segments, proximity=200.0)
+
+    if debug_json is not None:
+        debug_payload = {
+            "segment_count_total": len(segments),
+            "segment_count_main_cluster": len(main_segments),
+            "main_bbox": main_bbox,
+            "cluster_count": len(scored_clusters),
+            "cluster_scores": [
+                {
+                    "score": score,
+                    "segment_count": len(cluster["segments"]),
+                    "bbox": cluster["bbox"],
+                }
+                for cluster, score in scored_clusters[:10]
+            ],
+            "stats": stats,
+        }
+        debug_json.parent.mkdir(parents=True, exist_ok=True)
+        debug_json.write_text(
+            json.dumps(debug_payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+    segments = main_segments
+
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.set_facecolor("white")
     fig.patch.set_facecolor("white")
 
-    lc = LineCollection(segments, colors="black", linewidths=0.6)
+    lc = LineCollection(segments, colors="black", linewidths=0.2)
     ax.add_collection(lc)
 
     xs = []

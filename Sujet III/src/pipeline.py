@@ -6,6 +6,7 @@ import argparse
 from src.utils import load_yaml, ensure_dir
 from src.convert_dwg import convert_dwg_to_dxf
 from src.inspect_dxf import inspect_dxf
+from src.explore_layouts import explore_layouts
 from src.filter_dxf import filter_dxf
 from src.render_dxf import render_dxf_to_png
 from src.clean_raster import clean_rendered_plan
@@ -40,6 +41,8 @@ def main() -> None:
 
     inspect_json = work_dir / "inspection.json"
     inspect_dxf(dxf_path, inspect_json)
+
+    explore_layouts(dxf_path, work_dir / "layouts_debug")
 
     # On garde le filtered.dxf uniquement pour debug éventuel,
     # mais on ne l'utilise plus comme source de rendu principal.

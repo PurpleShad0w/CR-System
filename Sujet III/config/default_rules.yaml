@@ -41,7 +41,7 @@ render:
   lineweight_scaling: 1.0
 
 raster_cleanup:
-  enabled: true
+  enabled: false
   threshold: 220
   min_component_area: 20
   morph_open_kernel: 3
