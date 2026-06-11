@@ -5,6 +5,8 @@ import math
 import ezdxf
 
 
+# On garde uniquement des primitives simples pour fabriquer
+# un DXF "de debug" propre et léger.
 SUPPORTED_TYPES = {
     "LINE",
     "LWPOLYLINE",
@@ -13,7 +15,7 @@ SUPPORTED_TYPES = {
     "CIRCLE",
     "ELLIPSE",
     "SPLINE",
-    "INSERT",   # on les traite par explosion contrôlée
+    "INSERT",  # traité par explosion contrôlée
 }
 
 DROP_TYPES = {
@@ -29,6 +31,8 @@ DROP_TYPES = {
     "ACAD_PROXY_OBJECT",
     "WIPEOUT",
     "TABLE",
+    "IMAGE",
+    "UNDERLAY",
 }
 
 
@@ -53,16 +57,20 @@ def _layer_should_drop(layer: str, rules: dict) -> bool:
 def _entity_should_drop(entity, rules: dict) -> bool:
     dxftype = entity.dxftype()
 
+    # Types explicitement exclus
     if dxftype in DROP_TYPES:
         return True
 
+    # Types non supportés
     if dxftype not in SUPPORTED_TYPES:
         return True
 
+    # Layer à exclure
     layer = _safe_layer(entity)
     if _layer_should_drop(layer, rules):
         return True
 
+    # Petits segments parasites
     small_cfg = rules.get("drop_small_entities", {})
     if small_cfg.get("enabled", False) and dxftype == "LINE":
         try:
@@ -89,13 +97,16 @@ def _copy_basic_entity(src_entity, dst_msp, forced_layer: str | None = None):
         )
 
     if dxftype == "LWPOLYLINE":
-        points = list(src_entity.get_points("xyb"))
-        return dst_msp.add_lwpolyline(
-            points,
-            format="xyb",
-            close=src_entity.closed,
-            dxfattribs={"layer": layer},
-        )
+        try:
+            points = list(src_entity.get_points("xyb"))
+            return dst_msp.add_lwpolyline(
+                points,
+                format="xyb",
+                close=src_entity.closed,
+                dxfattribs={"layer": layer},
+            )
+        except Exception:
+            return None
 
     if dxftype == "POLYLINE":
         try:
@@ -109,30 +120,39 @@ def _copy_basic_entity(src_entity, dst_msp, forced_layer: str | None = None):
             return None
 
     if dxftype == "ARC":
-        return dst_msp.add_arc(
-            center=src_entity.dxf.center,
-            radius=src_entity.dxf.radius,
-            start_angle=src_entity.dxf.start_angle,
-            end_angle=src_entity.dxf.end_angle,
-            dxfattribs={"layer": layer},
-        )
+        try:
+            return dst_msp.add_arc(
+                center=src_entity.dxf.center,
+                radius=src_entity.dxf.radius,
+                start_angle=src_entity.dxf.start_angle,
+                end_angle=src_entity.dxf.end_angle,
+                dxfattribs={"layer": layer},
+            )
+        except Exception:
+            return None
 
     if dxftype == "CIRCLE":
-        return dst_msp.add_circle(
-            center=src_entity.dxf.center,
-            radius=src_entity.dxf.radius,
-            dxfattribs={"layer": layer},
-        )
+        try:
+            return dst_msp.add_circle(
+                center=src_entity.dxf.center,
+                radius=src_entity.dxf.radius,
+                dxfattribs={"layer": layer},
+            )
+        except Exception:
+            return None
 
     if dxftype == "ELLIPSE":
-        return dst_msp.add_ellipse(
-            center=src_entity.dxf.center,
-            major_axis=src_entity.dxf.major_axis,
-            ratio=src_entity.dxf.ratio,
-            start_param=src_entity.dxf.start_param,
-            end_param=src_entity.dxf.end_param,
-            dxfattribs={"layer": layer},
-        )
+        try:
+            return dst_msp.add_ellipse(
+                center=src_entity.dxf.center,
+                major_axis=src_entity.dxf.major_axis,
+                ratio=src_entity.dxf.ratio,
+                start_param=src_entity.dxf.start_param,
+                end_param=src_entity.dxf.end_param,
+                dxfattribs={"layer": layer},
+            )
+        except Exception:
+            return None
 
     if dxftype == "SPLINE":
         try:
@@ -145,10 +165,10 @@ def _copy_basic_entity(src_entity, dst_msp, forced_layer: str | None = None):
     return None
 
 
-def _flatten_insert(insert_entity, dst_msp, rules: dict, depth: int = 0, max_depth: int = 5) -> int:
+def _flatten_insert(insert_entity, dst_msp, rules: dict, depth: int = 0, max_depth: int = 8) -> int:
     """
-    Explose un INSERT depuis le document source (où les block definitions existent encore),
-    puis copie uniquement les primitives utiles.
+    Explose récursivement un INSERT à partir du document source, puis ne recopie
+    que les primitives simples utiles.
     """
     if depth > max_depth:
         return 0
@@ -164,25 +184,20 @@ def _flatten_insert(insert_entity, dst_msp, rules: dict, depth: int = 0, max_dep
     for sub in virtuals:
         dxftype = sub.dxftype()
 
-        # Hérite du layer du sous-objet si présent, sinon du parent insert
         effective_layer = _safe_layer(sub)
         if not effective_layer or effective_layer == "0":
             effective_layer = parent_layer
 
-        # Si le layer du contenu doit être supprimé, on saute
         if _layer_should_drop(effective_layer, rules):
             continue
 
-        # On retire explicitement les types de bruit
         if dxftype in DROP_TYPES:
             continue
 
-        # Si on rencontre un INSERT imbriqué, on recurse
         if dxftype == "INSERT":
             copied_count += _flatten_insert(sub, dst_msp, rules, depth + 1, max_depth)
             continue
 
-        # On ne garde que les primitives supportées
         if dxftype not in {"LINE", "LWPOLYLINE", "POLYLINE", "ARC", "CIRCLE", "ELLIPSE", "SPLINE"}:
             continue
 
@@ -194,6 +209,17 @@ def _flatten_insert(insert_entity, dst_msp, rules: dict, depth: int = 0, max_dep
 
 
 def filter_dxf(input_dxf: Path, output_dxf: Path, rules: dict) -> Path:
+    """
+    Fonction attendue par pipeline.py :
+
+        filter_dxf(dxf_path, filtered_dxf, rules)
+
+    Elle crée un DXF filtré "de debug" plus léger.
+    Le pipeline principal peut ensuite l'utiliser ou non.
+    """
+    input_dxf = Path(input_dxf)
+    output_dxf = Path(output_dxf)
+
     src_doc = ezdxf.readfile(input_dxf)
     src_msp = src_doc.modelspace()
 
