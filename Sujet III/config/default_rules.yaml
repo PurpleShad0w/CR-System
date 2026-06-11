@@ -1,4 +1,5 @@
 keep_layers: []
+
 drop_layers_contains:
   - text
   - texte
@@ -13,6 +14,8 @@ drop_layers_contains:
   - hachure
   - annotation
   - annotations
+  - trame
+  - remplissage
 
 drop_entity_types:
   - TEXT
@@ -21,6 +24,11 @@ drop_entity_types:
   - LEADER
   - MULTILEADER
   - HATCH
+  - FIELD
+  - DIMASSOC
+  - ACAD_PROXY_OBJECT
+  - WIPEOUT
+  - TABLE
 
 drop_small_entities:
   enabled: true
