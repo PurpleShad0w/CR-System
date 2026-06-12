@@ -4,6 +4,7 @@ from pathlib import Path
 import math
 import json
 from dataclasses import dataclass
+from collections import defaultdict
 
 import ezdxf
 import matplotlib.pyplot as plt
@@ -74,6 +75,10 @@ class WorldBBox:
     def height(self) -> float:
         return max(1e-9, self.max_y - self.min_y)
 
+
+# ============================================================
+# Helpers généraux
+# ============================================================
 
 def _safe_layer(entity) -> str:
     try:
@@ -164,13 +169,202 @@ def _segment_length(seg):
     return math.hypot(x2 - x1, y2 - y1)
 
 
+def _segment_angle_deg(seg):
+    (x1, y1), (x2, y2) = seg
+    ang = abs(math.degrees(math.atan2(y2 - y1, x2 - x1))) % 180.0
+    return ang
+
+
 def _compute_size_filters(global_bbox: WorldBBox):
     ref = max(global_bbox.width, global_bbox.height)
     return {
         "min_arc_radius": ref * 0.0020,
         "min_segment_length": ref * 0.0006,
+
+        # seuils anti-triangle
+        "triangle_min_bbox": ref * 0.08,
+        "triangle_min_area": (ref * ref) * 0.0020,
+        "long_diag_len": ref * 0.06,
+
+        # éventails de diagonales
+        "fan_endpoint_radius": ref * 0.012,
+        "fan_min_segments": 4,
+
+        # nettoyage petits composants
+        "cc_min_area_px": 50,
+        "cc_min_width_px": 10,
+        "cc_min_height_px": 10,
     }
 
+
+# ============================================================
+# Géométrie supplémentaire pour anti-triangles
+# ============================================================
+
+def _poly_bbox(pts):
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _polygon_area(pts):
+    if len(pts) < 3:
+        return 0.0
+    area = 0.0
+    for i in range(len(pts)):
+        x1, y1 = pts[i]
+        x2, y2 = pts[(i + 1) % len(pts)]
+        area += x1 * y2 - x2 * y1
+    return abs(area) * 0.5
+
+
+def _angle_at(p_prev, p, p_next):
+    ax, ay = p_prev[0] - p[0], p_prev[1] - p[1]
+    bx, by = p_next[0] - p[0], p_next[1] - p[1]
+    na = math.hypot(ax, ay)
+    nb = math.hypot(bx, by)
+    if na == 0 or nb == 0:
+        return 180.0
+    c = max(-1.0, min(1.0, (ax * bx + ay * by) / (na * nb)))
+    return math.degrees(math.acos(c))
+
+
+def _is_axisish(seg, tol_deg: float = 12.0) -> bool:
+    ang = _segment_angle_deg(seg)
+    return (
+        abs(ang - 0.0) <= tol_deg
+        or abs(ang - 90.0) <= tol_deg
+        or abs(ang - 180.0) <= tol_deg
+    )
+
+
+def _is_large_triangle_closed(pts, filters):
+    """
+    Détecte une polyline fermée triangulaire/quasi triangulaire suffisamment grande.
+    """
+    if len(pts) < 3:
+        return False
+
+    uniq = pts[:]
+    if len(uniq) >= 2 and uniq[0] == uniq[-1]:
+        uniq = uniq[:-1]
+
+    if len(uniq) not in (3, 4):
+        return False
+
+    minx, miny, maxx, maxy = _poly_bbox(uniq)
+    w = maxx - minx
+    h = maxy - miny
+    area = _polygon_area(uniq)
+
+    if max(w, h) < filters["triangle_min_bbox"]:
+        return False
+    if area < filters["triangle_min_area"]:
+        return False
+
+    if len(uniq) == 3:
+        return True
+
+    angles = []
+    for i in range(len(uniq)):
+        angles.append(_angle_at(uniq[i - 1], uniq[i], uniq[(i + 1) % len(uniq)]))
+    if any(a > 170.0 for a in angles):
+        return True
+
+    return False
+
+
+def _is_large_open_vshape(pts, filters):
+    """
+    Détecte un grand "V" ouvert parasite.
+    """
+    if len(pts) != 3:
+        return False
+
+    s1 = [pts[0], pts[1]]
+    s2 = [pts[1], pts[2]]
+
+    l1 = _segment_length(s1)
+    l2 = _segment_length(s2)
+
+    if l1 < filters["long_diag_len"] or l2 < filters["long_diag_len"]:
+        return False
+
+    if _is_axisish(s1) or _is_axisish(s2):
+        return False
+
+    ang = _angle_at(pts[0], pts[1], pts[2])
+    if ang < 15.0 or ang > 120.0:
+        return False
+
+    minx, miny, maxx, maxy = _poly_bbox(pts)
+    if max(maxx - minx, maxy - miny) < filters["triangle_min_bbox"]:
+        return False
+
+    return True
+
+
+def _remove_triangle_fans(segments, filters, debug: dict | None = None):
+    """
+    Supprime les groupes de longues diagonales obliques convergeant vers un même point.
+    Cible les gros éventails noirs visibles dans le rendu.
+    """
+    if not segments:
+        return segments
+
+    long_oblique_idx = []
+    for i, seg in enumerate(segments):
+        if _segment_length(seg) > filters["long_diag_len"] and not _is_axisish(seg):
+            long_oblique_idx.append(i)
+
+    if not long_oblique_idx:
+        if debug is not None:
+            debug["triangle_fan_cleanup"] = {
+                "long_oblique_candidates": 0,
+                "fan_centers": 0,
+                "segments_removed": 0,
+            }
+        return segments
+
+    r = filters["fan_endpoint_radius"]
+    cell = max(r, 1e-9)
+
+    endpoint_bins = defaultdict(list)
+
+    def _bin_key(p):
+        return (int(round(p[0] / cell)), int(round(p[1] / cell)))
+
+    for i in long_oblique_idx:
+        seg = segments[i]
+        p1, p2 = seg
+        endpoint_bins[_bin_key(p1)].append(i)
+        endpoint_bins[_bin_key(p2)].append(i)
+
+    fan_segment_ids = set()
+
+    fan_centers = 0
+    for _, idxs in endpoint_bins.items():
+        uniq = set(idxs)
+        if len(uniq) >= filters["fan_min_segments"]:
+            fan_centers += 1
+            fan_segment_ids.update(uniq)
+
+    if debug is not None:
+        debug["triangle_fan_cleanup"] = {
+            "long_oblique_candidates": len(long_oblique_idx),
+            "fan_centers": fan_centers,
+            "segments_removed": len(fan_segment_ids),
+        }
+
+    if not fan_segment_ids:
+        return segments
+
+    return [seg for i, seg in enumerate(segments) if i not in fan_segment_ids]
+
+
+# ============================================================
+# DXF -> segments
+# ============================================================
 
 def _arc_points(center, radius, start_angle_deg, end_angle_deg, n=20):
     start = math.radians(start_angle_deg)
@@ -233,6 +427,18 @@ def _entity_to_segments(entity, geom_filters):
 
     if dxftype == "LWPOLYLINE":
         pts = _lwpolyline_points(entity)
+        if not pts:
+            return []
+
+        closed = bool(entity.closed)
+
+        # filtre triangle parasite
+        if closed and _is_large_triangle_closed(pts + [pts[0]], geom_filters):
+            return []
+
+        if (not closed) and _is_large_open_vshape(pts, geom_filters):
+            return []
+
         segs = _polyline_to_segments(pts)
         if entity.closed and len(pts) >= 2:
             segs.append([pts[-1], pts[0]])
@@ -240,6 +446,17 @@ def _entity_to_segments(entity, geom_filters):
 
     if dxftype == "POLYLINE":
         pts = _polyline_points(entity)
+        if not pts:
+            return []
+
+        closed = bool(getattr(entity, "is_closed", False))
+
+        if closed and _is_large_triangle_closed(pts + [pts[0]], geom_filters):
+            return []
+
+        if (not closed) and _is_large_open_vshape(pts, geom_filters):
+            return []
+
         segs = _polyline_to_segments(pts)
         if getattr(entity, "is_closed", False) and len(pts) >= 2:
             segs.append([pts[-1], pts[0]])
@@ -313,6 +530,10 @@ def _initial_bbox_from_linework(dxf_path: Path, rules: dict) -> WorldBBox:
                 )
                 raw_segments.extend(_polyline_to_segments(pts))
 
+        elif dxftype == "SPLINE":
+            pts = _spline_points(entity)
+            raw_segments.extend(_polyline_to_segments(pts))
+
     if not raw_segments:
         raise RuntimeError("Impossible d'établir la bbox initiale à partir du linework.")
 
@@ -379,6 +600,10 @@ def _collect_segments(
         stats["empty_geom"][dxftype] = stats["empty_geom"].get(dxftype, 0) + 1
 
 
+# ============================================================
+# Sélection de la bbox principale
+# ============================================================
+
 def _choose_main_component_bbox(segments, debug: dict | None = None) -> WorldBBox:
     bbox = _segments_bbox(segments)
 
@@ -436,13 +661,6 @@ def _choose_main_component_bbox(segments, debug: dict | None = None) -> WorldBBo
         top_touch = 1 if y <= int(0.02 * height_px) else 0
         right_touch = 1 if (x + w) >= int(0.98 * width_px) else 0
 
-        # On valorise :
-        # - grande largeur
-        # - ratio horizontal
-        # - nombre de segments important
-        # On pénalise :
-        # - composants pleins/compacts
-        # - composants collés aux bords (souvent détails parasites)
         score = (
             w * 12.0
             + aspect * 1800.0
@@ -520,6 +738,90 @@ def _filter_segments_in_bbox(segments, bbox: WorldBBox):
     return kept
 
 
+# ============================================================
+# Nettoyage léger des petites composantes
+# ============================================================
+
+def _remove_small_components(segments, filters, debug: dict | None = None):
+    """
+    Supprime les très petites composantes isolées sans allouer
+    un masque image complet pour chaque segment.
+    """
+    if not segments:
+        return segments
+
+    bbox = _segments_bbox(segments)
+
+    # Image de travail un peu plus petite pour limiter la mémoire
+    target_long_side = 1400
+    if bbox.width >= bbox.height:
+        width_px = target_long_side
+        height_px = max(500, int(round(target_long_side * bbox.height / bbox.width)))
+    else:
+        height_px = target_long_side
+        width_px = max(500, int(round(target_long_side * bbox.width / bbox.height)))
+
+    canvas = np.zeros((height_px, width_px), dtype=np.uint8)
+
+    # Dessine tous les segments sur une seule image
+    seg_midpoints_px = []
+    for seg in segments:
+        (x1, y1), (x2, y2) = seg
+        p1 = _world_to_px(x1, y1, bbox, width_px, height_px)
+        p2 = _world_to_px(x2, y2, bbox, width_px, height_px)
+        cv2.line(canvas, p1, p2, 255, 1, lineType=cv2.LINE_8)
+
+        mx, my = _segment_midpoint(seg)
+        pm = _world_to_px(mx, my, bbox, width_px, height_px)
+        seg_midpoints_px.append(pm)
+
+    # Petite fermeture pour éviter de casser le linework utile
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    work = cv2.morphologyEx(canvas, cv2.MORPH_CLOSE, kernel)
+
+    num_labels, labels, stats_cc, _ = cv2.connectedComponentsWithStats(
+        (work > 0).astype(np.uint8),
+        connectivity=8
+    )
+
+    kept_labels = set()
+    for i in range(1, num_labels):
+        x = int(stats_cc[i, cv2.CC_STAT_LEFT])
+        y = int(stats_cc[i, cv2.CC_STAT_TOP])
+        w = int(stats_cc[i, cv2.CC_STAT_WIDTH])
+        h = int(stats_cc[i, cv2.CC_STAT_HEIGHT])
+        area = int(stats_cc[i, cv2.CC_STAT_AREA])
+
+        if area < filters["cc_min_area_px"]:
+            continue
+        if w < filters["cc_min_width_px"] and h < filters["cc_min_height_px"]:
+            continue
+
+        kept_labels.add(i)
+
+    kept_segments = []
+    for seg, (px, py) in zip(segments, seg_midpoints_px):
+        lbl = labels[py, px]
+        if lbl in kept_labels:
+            kept_segments.append(seg)
+
+    if debug is not None:
+        debug["small_component_cleanup"] = {
+            "segments_before": len(segments),
+            "segments_after": len(kept_segments),
+            "component_count": int(num_labels - 1),
+            "kept_component_count": len(kept_labels),
+            "width_px": width_px,
+            "height_px": height_px,
+        }
+
+    return kept_segments
+
+
+# ============================================================
+# Compatibilité layout
+# ============================================================
+
 def render_layout_to_png(
     dxf_path: Path,
     png_path: Path,
@@ -561,6 +863,10 @@ def render_layout_to_png(
     return png_path
 
 
+# ============================================================
+# API publique principale
+# ============================================================
+
 def render_dxf_to_png(
     dxf_path: Path,
     png_path: Path,
@@ -570,8 +876,9 @@ def render_dxf_to_png(
 ) -> Path:
     """
     Rendu principal du modelspace :
-    - ignore ellipses/circles pour éviter le bruit massif
-    - sélectionne la zone dominante à partir du linework structurel
+    - base = ta version la plus satisfaisante
+    - + filtre anti-triangles/éventails
+    - + nettoyage léger des petites composantes
     """
     initial_bbox = _initial_bbox_from_linework(dxf_path, rules)
     geom_filters = _compute_size_filters(initial_bbox)
@@ -632,12 +939,21 @@ def render_dxf_to_png(
     else:
         debug["fallback_used"] = None
 
+    # === NOUVEAUTÉ 1 : suppression ciblée des éventails diagonaux ===
+    filtered_segments = _remove_triangle_fans(filtered_segments, geom_filters, debug=debug)
+
+    # === NOUVEAUTÉ 2 : suppression légère des petits objets détachés ===
+    filtered_segments = _remove_small_components(filtered_segments, geom_filters, debug=debug)
+
+    if not filtered_segments:
+        raise RuntimeError("Tous les segments ont été supprimés après nettoyage.")
+
     debug["segment_count_selected"] = len(filtered_segments)
-    debug["selected_bbox"] = {
-        "min_x": selected_bbox.min_x,
-        "min_y": selected_bbox.min_y,
-        "max_x": selected_bbox.max_x,
-        "max_y": selected_bbox.max_y,
+    debug["selected_bbox_after_cleanup"] = {
+        "min_x": _segments_bbox(filtered_segments).min_x,
+        "min_y": _segments_bbox(filtered_segments).min_y,
+        "max_x": _segments_bbox(filtered_segments).max_x,
+        "max_y": _segments_bbox(filtered_segments).max_y,
     }
 
     if debug_json is not None:

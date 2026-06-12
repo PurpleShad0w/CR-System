@@ -1,21 +1,13 @@
 keep_layers: []
 
 drop_layers_contains:
-  - text
-  - texte
-  - cote
-  - dim
-  - axis
-  - axe
-  - repere
-  - mobilier
-  - meuble
-  - hatch
-  - hachure
-  - annotation
-  - annotations
-  - trame
-  - remplissage
+  - TEXT
+  - TEXTE
+  - COTE
+  - DIM
+  - HACH
+  - HACHURE
+  - TRAME
 
 drop_entity_types:
   - TEXT
