@@ -175,20 +175,33 @@ def _segment_angle_deg(seg):
     return ang
 
 
+def _is_axisish(seg, tol_deg: float = 12.0) -> bool:
+    ang = _segment_angle_deg(seg)
+    return (
+        abs(ang - 0.0) <= tol_deg
+        or abs(ang - 90.0) <= tol_deg
+        or abs(ang - 180.0) <= tol_deg
+    )
+
+
 def _compute_size_filters(global_bbox: WorldBBox):
     ref = max(global_bbox.width, global_bbox.height)
     return {
         "min_arc_radius": ref * 0.0020,
         "min_segment_length": ref * 0.0006,
 
-        # seuils anti-triangle
+        # seuils anti-triangle / éventails
         "triangle_min_bbox": ref * 0.08,
         "triangle_min_area": (ref * ref) * 0.0020,
+
+        # utilisé seulement pour jeter des très longues diagonales individuelles
         "long_diag_len": ref * 0.06,
 
-        # éventails de diagonales
-        "fan_endpoint_radius": ref * 0.012,
-        "fan_min_segments": 4,
+        # NOUVEAU : seuil plus bas pour détecter les éventails
+        "fan_diag_len": ref * 0.018,
+        "fan_endpoint_radius": ref * 0.008,
+        "fan_min_segments": 3,
+        "fan_min_angle_spread_deg": 25.0,
 
         # nettoyage petits composants
         "cc_min_area_px": 50,
@@ -229,15 +242,6 @@ def _angle_at(p_prev, p, p_next):
     return math.degrees(math.acos(c))
 
 
-def _is_axisish(seg, tol_deg: float = 12.0) -> bool:
-    ang = _segment_angle_deg(seg)
-    return (
-        abs(ang - 0.0) <= tol_deg
-        or abs(ang - 90.0) <= tol_deg
-        or abs(ang - 180.0) <= tol_deg
-    )
-
-
 def _is_large_triangle_closed(pts, filters):
     """
     Détecte une polyline fermée triangulaire/quasi triangulaire suffisamment grande.
@@ -265,10 +269,11 @@ def _is_large_triangle_closed(pts, filters):
     if len(uniq) == 3:
         return True
 
+    # cas quadrilatère quasi triangle
     angles = []
     for i in range(len(uniq)):
         angles.append(_angle_at(uniq[i - 1], uniq[i], uniq[(i + 1) % len(uniq)]))
-    if any(a > 170.0 for a in angles):
+    if any(a > 170 for a in angles):
         return True
 
     return False
@@ -276,7 +281,7 @@ def _is_large_triangle_closed(pts, filters):
 
 def _is_large_open_vshape(pts, filters):
     """
-    Détecte un grand "V" ouvert parasite.
+    Détecte un grand 'V' ouvert parasite.
     """
     if len(pts) != 3:
         return False
@@ -286,7 +291,6 @@ def _is_large_open_vshape(pts, filters):
 
     l1 = _segment_length(s1)
     l2 = _segment_length(s2)
-
     if l1 < filters["long_diag_len"] or l2 < filters["long_diag_len"]:
         return False
 
@@ -294,7 +298,7 @@ def _is_large_open_vshape(pts, filters):
         return False
 
     ang = _angle_at(pts[0], pts[1], pts[2])
-    if ang < 15.0 or ang > 120.0:
+    if ang < 15 or ang > 120:
         return False
 
     minx, miny, maxx, maxy = _poly_bbox(pts)
@@ -306,21 +310,27 @@ def _is_large_open_vshape(pts, filters):
 
 def _remove_triangle_fans(segments, filters, debug: dict | None = None):
     """
-    Supprime les groupes de longues diagonales obliques convergeant vers un même point.
-    Cible les gros éventails noirs visibles dans le rendu.
+    Supprime les groupes de diagonales obliques convergeant vers un même point.
+    Version plus permissive que précédemment :
+    - seuil de longueur plus bas
+    - groupe dès 3 segments
+    - contrôle d'étalement angulaire pour éviter de supprimer n'importe quoi
     """
     if not segments:
         return segments
 
-    long_oblique_idx = []
-    for i, seg in enumerate(segments):
-        if _segment_length(seg) > filters["long_diag_len"] and not _is_axisish(seg):
-            long_oblique_idx.append(i)
+    candidate_idx = []
+    candidate_angles = {}
 
-    if not long_oblique_idx:
+    for i, seg in enumerate(segments):
+        if _segment_length(seg) >= filters["fan_diag_len"] and not _is_axisish(seg):
+            candidate_idx.append(i)
+            candidate_angles[i] = _segment_angle_deg(seg)
+
+    if not candidate_idx:
         if debug is not None:
             debug["triangle_fan_cleanup"] = {
-                "long_oblique_candidates": 0,
+                "candidate_count": 0,
                 "fan_centers": 0,
                 "segments_removed": 0,
             }
@@ -328,30 +338,38 @@ def _remove_triangle_fans(segments, filters, debug: dict | None = None):
 
     r = filters["fan_endpoint_radius"]
     cell = max(r, 1e-9)
-
     endpoint_bins = defaultdict(list)
 
     def _bin_key(p):
         return (int(round(p[0] / cell)), int(round(p[1] / cell)))
 
-    for i in long_oblique_idx:
+    for i in candidate_idx:
         seg = segments[i]
         p1, p2 = seg
         endpoint_bins[_bin_key(p1)].append(i)
         endpoint_bins[_bin_key(p2)].append(i)
 
     fan_segment_ids = set()
-
     fan_centers = 0
+
     for _, idxs in endpoint_bins.items():
-        uniq = set(idxs)
-        if len(uniq) >= filters["fan_min_segments"]:
-            fan_centers += 1
-            fan_segment_ids.update(uniq)
+        uniq = sorted(set(idxs))
+        if len(uniq) < filters["fan_min_segments"]:
+            continue
+
+        angs = sorted(candidate_angles[i] for i in uniq)
+        spread = max(angs) - min(angs) if angs else 0.0
+
+        # Si les angles sont trop proches, ce n'est pas un éventail.
+        if spread < filters["fan_min_angle_spread_deg"]:
+            continue
+
+        fan_centers += 1
+        fan_segment_ids.update(uniq)
 
     if debug is not None:
         debug["triangle_fan_cleanup"] = {
-            "long_oblique_candidates": len(long_oblique_idx),
+            "candidate_count": len(candidate_idx),
             "fan_centers": fan_centers,
             "segments_removed": len(fan_segment_ids),
         }
@@ -739,20 +757,19 @@ def _filter_segments_in_bbox(segments, bbox: WorldBBox):
 
 
 # ============================================================
-# Nettoyage léger des petites composantes
+# Nettoyage léger des petites composantes (version memory-safe)
 # ============================================================
 
 def _remove_small_components(segments, filters, debug: dict | None = None):
     """
-    Supprime les très petites composantes isolées sans allouer
-    un masque image complet pour chaque segment.
+    Supprime les très petites composantes isolées sans créer un masque complet
+    par segment.
     """
     if not segments:
         return segments
 
     bbox = _segments_bbox(segments)
 
-    # Image de travail un peu plus petite pour limiter la mémoire
     target_long_side = 1400
     if bbox.width >= bbox.height:
         width_px = target_long_side
@@ -763,7 +780,6 @@ def _remove_small_components(segments, filters, debug: dict | None = None):
 
     canvas = np.zeros((height_px, width_px), dtype=np.uint8)
 
-    # Dessine tous les segments sur une seule image
     seg_midpoints_px = []
     for seg in segments:
         (x1, y1), (x2, y2) = seg
@@ -775,7 +791,6 @@ def _remove_small_components(segments, filters, debug: dict | None = None):
         pm = _world_to_px(mx, my, bbox, width_px, height_px)
         seg_midpoints_px.append(pm)
 
-    # Petite fermeture pour éviter de casser le linework utile
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
     work = cv2.morphologyEx(canvas, cv2.MORPH_CLOSE, kernel)
 
@@ -876,8 +891,8 @@ def render_dxf_to_png(
 ) -> Path:
     """
     Rendu principal du modelspace :
-    - base = ta version la plus satisfaisante
-    - + filtre anti-triangles/éventails
+    - exactement la structure de ta version de référence
+    - + filtre anti-éventails triangulaires
     - + nettoyage léger des petites composantes
     """
     initial_bbox = _initial_bbox_from_linework(dxf_path, rules)
@@ -939,21 +954,23 @@ def render_dxf_to_png(
     else:
         debug["fallback_used"] = None
 
-    # === NOUVEAUTÉ 1 : suppression ciblée des éventails diagonaux ===
+    # NOUVEAUTÉ 1 : suppression ciblée des éventails diagonaux
     filtered_segments = _remove_triangle_fans(filtered_segments, geom_filters, debug=debug)
 
-    # === NOUVEAUTÉ 2 : suppression légère des petits objets détachés ===
+    # NOUVEAUTÉ 2 : suppression légère des petits objets détachés
     filtered_segments = _remove_small_components(filtered_segments, geom_filters, debug=debug)
 
     if not filtered_segments:
         raise RuntimeError("Tous les segments ont été supprimés après nettoyage.")
 
+    cleaned_bbox = _segments_bbox(filtered_segments)
+
     debug["segment_count_selected"] = len(filtered_segments)
     debug["selected_bbox_after_cleanup"] = {
-        "min_x": _segments_bbox(filtered_segments).min_x,
-        "min_y": _segments_bbox(filtered_segments).min_y,
-        "max_x": _segments_bbox(filtered_segments).max_x,
-        "max_y": _segments_bbox(filtered_segments).max_y,
+        "min_x": cleaned_bbox.min_x,
+        "min_y": cleaned_bbox.min_y,
+        "max_x": cleaned_bbox.max_x,
+        "max_y": cleaned_bbox.max_y,
     }
 
     if debug_json is not None:
@@ -963,8 +980,6 @@ def render_dxf_to_png(
             encoding="utf-8",
         )
 
-    bbox = _segments_bbox(filtered_segments)
-
     fig, ax = plt.subplots(figsize=(14, 8))
     ax.set_facecolor("white")
     fig.patch.set_facecolor("white")
@@ -972,11 +987,11 @@ def render_dxf_to_png(
     lc = LineCollection(filtered_segments, colors="black", linewidths=0.18)
     ax.add_collection(lc)
 
-    margin_x = bbox.width * 0.02
-    margin_y = bbox.height * 0.02
+    margin_x = cleaned_bbox.width * 0.02
+    margin_y = cleaned_bbox.height * 0.02
 
-    ax.set_xlim(bbox.min_x - margin_x, bbox.max_x + margin_x)
-    ax.set_ylim(bbox.min_y - margin_y, bbox.max_y + margin_y)
+    ax.set_xlim(cleaned_bbox.min_x - margin_x, cleaned_bbox.max_x + margin_x)
+    ax.set_ylim(cleaned_bbox.min_y - margin_y, cleaned_bbox.max_y + margin_y)
     ax.set_aspect("equal", adjustable="box")
     ax.axis("off")
 
