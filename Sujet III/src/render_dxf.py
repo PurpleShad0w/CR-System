@@ -87,14 +87,43 @@ def _safe_layer(entity) -> str:
         return "0"
 
 
+def _layer_token_match(layer: str, token: str) -> bool:
+    """
+    Matching plus sûr pour éviter que 'SUR' matche
+    'Cloison Vitrée sur allège'.
+    """
+    layer_l = layer.lower()
+    token_l = token.lower()
+
+    # pour les tokens courts, on demande un séparateur explicite
+    if len(token_l) <= 4:
+        patterns = [
+            f"-{token_l}-",
+            f"_{token_l}_",
+            f"/{token_l}/",
+            f" {token_l} ",
+        ]
+        if any(p in layer_l for p in patterns):
+            return True
+
+        if layer_l.startswith(token_l + "-") or layer_l.endswith("-" + token_l):
+            return True
+
+        return False
+
+    # pour les tokens plus longs, comportement standard
+    return token_l in layer_l
+
+
 def _layer_should_drop(layer: str, rules: dict) -> bool:
     keep_layers = {x.lower() for x in rules.get("keep_layers", [])}
     if keep_layers and layer.lower() in keep_layers:
         return False
 
     for token in rules.get("drop_layers_contains", []):
-        if token.lower() in layer.lower():
+        if _layer_token_match(layer, token):
             return True
+
     return False
 
 
@@ -198,10 +227,10 @@ def _compute_size_filters(global_bbox: WorldBBox):
         "long_diag_len": ref * 0.06,
 
         # NOUVEAU : seuil plus bas pour détecter les éventails
-        "fan_diag_len": ref * 0.018,
-        "fan_endpoint_radius": ref * 0.008,
-        "fan_min_segments": 3,
-        "fan_min_angle_spread_deg": 25.0,
+        "fan_diag_len": ref * 0.012,
+        "fan_endpoint_radius": ref * 0.012,
+        "fan_min_segments": 4,
+        "fan_min_angle_spread_deg": 30.0,
 
         # nettoyage petits composants
         "cc_min_area_px": 50,
@@ -308,76 +337,161 @@ def _is_large_open_vshape(pts, filters):
     return True
 
 
-def _remove_triangle_fans(segments, filters, debug: dict | None = None):
+def _remove_triangle_fans_once(segments, filters, debug: dict | None = None):
     """
-    Supprime les groupes de diagonales obliques convergeant vers un même point.
-    Version plus permissive que précédemment :
-    - seuil de longueur plus bas
-    - groupe dès 3 segments
-    - contrôle d'étalement angulaire pour éviter de supprimer n'importe quoi
+    Supprime les paquets de diagonales obliques convergeant vers une même zone.
+    Détection basée sur les MILIEUX des segments.
+    Un seul passage.
     """
     if not segments:
         return segments
 
     candidate_idx = []
     candidate_angles = {}
+    candidate_midpoints = {}
 
     for i, seg in enumerate(segments):
-        if _segment_length(seg) >= filters["fan_diag_len"] and not _is_axisish(seg):
-            candidate_idx.append(i)
-            candidate_angles[i] = _segment_angle_deg(seg)
+        length = _segment_length(seg)
+        angle = _segment_angle_deg(seg)
+
+        if length < filters["fan_diag_len"]:
+            continue
+        if _is_axisish(seg, tol_deg=4.0):
+            continue
+
+        candidate_idx.append(i)
+        candidate_angles[i] = angle
+        candidate_midpoints[i] = _segment_midpoint(seg)
 
     if not candidate_idx:
         if debug is not None:
-            debug["triangle_fan_cleanup"] = {
-                "candidate_count": 0,
-                "fan_centers": 0,
-                "segments_removed": 0,
-            }
+            debug["candidate_count"] = 0
+            debug["fan_clusters"] = 0
+            debug["segments_removed"] = 0
         return segments
 
     r = filters["fan_endpoint_radius"]
     cell = max(r, 1e-9)
-    endpoint_bins = defaultdict(list)
+
+    midpoint_bins = defaultdict(list)
 
     def _bin_key(p):
-        return (int(round(p[0] / cell)), int(round(p[1] / cell)))
+        return (int(math.floor(p[0] / cell)), int(math.floor(p[1] / cell)))
 
     for i in candidate_idx:
-        seg = segments[i]
-        p1, p2 = seg
-        endpoint_bins[_bin_key(p1)].append(i)
-        endpoint_bins[_bin_key(p2)].append(i)
+        midpoint_bins[_bin_key(candidate_midpoints[i])].append(i)
 
     fan_segment_ids = set()
-    fan_centers = 0
+    fan_clusters = 0
+    visited_bins = set()
 
-    for _, idxs in endpoint_bins.items():
-        uniq = sorted(set(idxs))
+    for bk in list(midpoint_bins.keys()):
+        if bk in visited_bins:
+            continue
+
+        neighborhood = []
+        bx, by = bk
+        local_bins = []
+
+        for dx in (-2, -1, 0, 1, 2):
+            for dy in (-2, -1, 0, 1, 2):
+                nb = (bx + dx, by + dy)
+                if nb in midpoint_bins:
+                    neighborhood.extend(midpoint_bins[nb])
+                    local_bins.append(nb)
+
+        for nb in local_bins:
+            visited_bins.add(nb)
+
+        uniq = sorted(set(neighborhood))
         if len(uniq) < filters["fan_min_segments"]:
             continue
 
-        angs = sorted(candidate_angles[i] for i in uniq)
-        spread = max(angs) - min(angs) if angs else 0.0
+        angles = [candidate_angles[i] for i in uniq]
+        angle_buckets = set(int(a // 15) for a in angles)
+        if len(angle_buckets) < 3:
+            continue
 
-        # Si les angles sont trop proches, ce n'est pas un éventail.
+        spread = max(angles) - min(angles)
         if spread < filters["fan_min_angle_spread_deg"]:
             continue
 
-        fan_centers += 1
+        fan_clusters += 1
         fan_segment_ids.update(uniq)
 
     if debug is not None:
-        debug["triangle_fan_cleanup"] = {
-            "candidate_count": len(candidate_idx),
-            "fan_centers": fan_centers,
-            "segments_removed": len(fan_segment_ids),
-        }
+        debug["candidate_count"] = len(candidate_idx)
+        debug["fan_clusters"] = fan_clusters
+        debug["segments_removed"] = len(fan_segment_ids)
 
     if not fan_segment_ids:
         return segments
 
     return [seg for i, seg in enumerate(segments) if i not in fan_segment_ids]
+
+
+def _remove_triangle_fans(segments, filters, debug: dict | None = None):
+    """
+    Plusieurs passes successives pour nettoyer les éventails résiduels.
+    On resserre légèrement les seuils à chaque passe.
+    """
+    if not segments:
+        return segments
+
+    current = segments
+    passes = []
+
+    for pass_idx in range(3):
+        pass_debug = {}
+
+        local_filters = dict(filters)
+        if pass_idx == 0:
+            local_filters["fan_diag_len"] = filters["fan_diag_len"]
+            local_filters["fan_endpoint_radius"] = filters["fan_endpoint_radius"]
+            local_filters["fan_min_segments"] = 4
+            local_filters["fan_min_angle_spread_deg"] = 30.0
+        elif pass_idx == 1:
+            local_filters["fan_diag_len"] = filters["fan_diag_len"] * 0.75
+            local_filters["fan_endpoint_radius"] = filters["fan_endpoint_radius"] * 1.50
+            local_filters["fan_min_segments"] = 3
+            local_filters["fan_min_angle_spread_deg"] = 20.0
+        else:
+            local_filters["fan_diag_len"] = filters["fan_diag_len"] * 0.60
+            local_filters["fan_endpoint_radius"] = filters["fan_endpoint_radius"] * 1.80
+            local_filters["fan_min_segments"] = 3
+            local_filters["fan_min_angle_spread_deg"] = 15.0
+
+        before = len(current)
+        current = _remove_triangle_fans_once(current, local_filters, debug=pass_debug)
+        removed = before - len(current)
+
+        passes.append({
+            "pass_index": pass_idx + 1,
+            "filters": {
+                "fan_diag_len": local_filters["fan_diag_len"],
+                "fan_endpoint_radius": local_filters["fan_endpoint_radius"],
+                "fan_min_segments": local_filters["fan_min_segments"],
+                "fan_min_angle_spread_deg": local_filters["fan_min_angle_spread_deg"],
+            },
+            "candidate_count": pass_debug.get("candidate_count", 0),
+            "fan_clusters": pass_debug.get("fan_clusters", 0),
+            "segments_removed": pass_debug.get("segments_removed", 0),
+            "segments_before": before,
+            "segments_after": len(current),
+        })
+
+        # si la passe n'enlève presque plus rien, on arrête
+        if removed < 20:
+            break
+
+    if debug is not None:
+        total_removed = len(segments) - len(current)
+        debug["triangle_fan_cleanup"] = {
+            "passes": passes,
+            "segments_removed_total": total_removed,
+        }
+
+    return current
 
 
 # ============================================================
@@ -718,23 +832,71 @@ def _choose_main_component_bbox(segments, debug: dict | None = None) -> WorldBBo
     candidates.sort(key=lambda c: c["score"], reverse=True)
     best = candidates[0]
 
-    margin_x = int(round(best["w"] * 0.05))
-    margin_y = int(round(best["h"] * 0.08))
+    def _interval_overlap(a1, a2, b1, b2):
+        inter = max(0, min(a2, b2) - max(a1, b1))
+        return inter
 
-    bx = max(0, best["x"] - margin_x)
-    by = max(0, best["y"] - margin_y)
-    bw = min(width_px - bx, best["w"] + 2 * margin_x)
-    bh = min(height_px - by, best["h"] + 2 * margin_y)
+    best_x1 = best["x"]
+    best_y1 = best["y"]
+    best_x2 = best["x"] + best["w"]
+    best_y2 = best["y"] + best["h"]
+
+    merged = [best]
+
+    for c in candidates[1:]:
+        cx1 = c["x"]
+        cy1 = c["y"]
+        cx2 = c["x"] + c["w"]
+        cy2 = c["y"] + c["h"]
+
+        # si le composant touche à la fois le haut et la droite,
+        # on se méfie fortement (typique des tableaux/légendes détachés)
+        if c["top_touch"] and c["right_touch"]:
+            continue
+
+        x_overlap = _interval_overlap(best_x1, best_x2, cx1, cx2)
+        y_overlap = _interval_overlap(best_y1, best_y2, cy1, cy2)
+
+        x_gap = max(0, max(best_x1, cx1) - min(best_x2, cx2))
+        y_gap = max(0, max(best_y1, cy1) - min(best_y2, cy2))
+
+        # On fusionne seulement si le composant est réellement voisin :
+        # - soit il chevauche bien verticalement et est proche en horizontal,
+        # - soit il chevauche bien horizontalement et est proche en vertical.
+        cond_horizontal_neighbor = (y_overlap >= 0.20 * min(best["h"], c["h"])) and (x_gap <= 0.30 * best["w"])
+        cond_vertical_neighbor = (x_overlap >= 0.20 * min(best["w"], c["w"])) and (y_gap <= 0.30 * best["h"])
+
+        if cond_horizontal_neighbor or cond_vertical_neighbor:
+            merged.append(c)
+
+
+    # Fusion des rectangles sélectionnés
+    min_x = min(c["x"] for c in merged)
+    min_y = min(c["y"] for c in merged)
+    max_x = max(c["x"] + c["w"] for c in merged)
+    max_y = max(c["y"] + c["h"] for c in merged)
+
+    w = max_x - min_x
+    h = max_y - min_y
+
+    margin_x = int(round(w * 0.05))
+    margin_y = int(round(h * 0.08))
+
+    bx = max(0, min_x - margin_x)
+    by = max(0, min_y - margin_y)
+    bw = min(width_px - bx, w + 2 * margin_x)
+    bh = min(height_px - by, h + 2 * margin_y)
 
     best_world_bbox = _px_to_world_bbox(bx, by, bw, bh, bbox, width_px, height_px)
 
     if debug is not None:
         debug["component_selection"] = {
-            "mode": "connected_components_lowres",
+            "mode": "connected_components_lowres_merged",
             "width_px": width_px,
             "height_px": height_px,
             "component_count": len(candidates),
             "selected_component": best,
+            "merged_components": merged,
             "top_components": candidates[:10],
             "selected_world_bbox": {
                 "min_x": best_world_bbox.min_x,
@@ -935,11 +1097,17 @@ def render_dxf_to_png(
         "stats": stats,
     }
 
-    selected_bbox = _choose_main_component_bbox(segments, debug=debug)
-    filtered_segments = _filter_segments_in_bbox(segments, selected_bbox)
+    # 1) Nettoyage anti-éventails AVANT la détection de la bbox
+    cleaned_for_bbox = _remove_triangle_fans(segments, geom_filters, debug=debug)
+
+    # 2) Choix de bbox sur la géométrie nettoyée
+    selected_bbox = _choose_main_component_bbox(cleaned_for_bbox, debug=debug)
+
+    # 3) Application de la bbox sur la géométrie nettoyée
+    filtered_segments = _filter_segments_in_bbox(cleaned_for_bbox, selected_bbox)
 
     # Si la sélection est trop faible, on élargit légèrement autour de la bbox
-    if len(filtered_segments) < max(2000, int(0.03 * len(segments))):
+    if len(filtered_segments) < max(2000, int(0.03 * len(cleaned_for_bbox))):
         pad_x = selected_bbox.width * 0.15
         pad_y = selected_bbox.height * 0.15
         expanded = WorldBBox(
@@ -948,17 +1116,39 @@ def render_dxf_to_png(
             max_x=selected_bbox.max_x + pad_x,
             max_y=selected_bbox.max_y + pad_y,
         )
-        filtered_segments = _filter_segments_in_bbox(segments, expanded)
+        filtered_segments = _filter_segments_in_bbox(cleaned_for_bbox, expanded)
         debug["fallback_used"] = "expanded_selected_bbox"
         selected_bbox = expanded
     else:
         debug["fallback_used"] = None
 
-    # NOUVEAUTÉ 1 : suppression ciblée des éventails diagonaux
+    # SECOND PASS anti-éventails sur la géométrie déjà recadrée.
+    second_pass_filters = dict(geom_filters)
+    second_pass_filters["fan_diag_len"] = geom_filters["fan_diag_len"] * 0.85
+    second_pass_filters["fan_endpoint_radius"] = geom_filters["fan_endpoint_radius"] * 1.20
+    second_pass_filters["fan_min_segments"] = 3
+    second_pass_filters["fan_min_angle_spread_deg"] = 25.0
+
+    filtered_segments = _remove_triangle_fans(filtered_segments, second_pass_filters, debug=debug)
+
+
+    # PASS 1 anti-éventails avec filtres globaux
     filtered_segments = _remove_triangle_fans(filtered_segments, geom_filters, debug=debug)
 
-    # NOUVEAUTÉ 2 : suppression légère des petits objets détachés
-    filtered_segments = _remove_small_components(filtered_segments, geom_filters, debug=debug)
+    # PASS 2 anti-éventails avec filtres locaux recalculés sur la bbox déjà recadrée
+    local_bbox = _segments_bbox(filtered_segments)
+    local_ref = max(local_bbox.width, local_bbox.height)
+
+    local_filters = dict(geom_filters)
+    local_filters["fan_diag_len"] = local_ref * 0.010
+    local_filters["fan_endpoint_radius"] = local_ref * 0.015
+    local_filters["fan_min_segments"] = 4
+    local_filters["fan_min_angle_spread_deg"] = 35.0
+
+    filtered_segments = _remove_triangle_fans(filtered_segments, local_filters, debug=debug)
+
+    # Nettoyage léger des petits objets détachés
+    filtered_segments = _remove_small_components(filtered_segments, local_filters, debug=debug)
 
     if not filtered_segments:
         raise RuntimeError("Tous les segments ont été supprimés après nettoyage.")
