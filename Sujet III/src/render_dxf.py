@@ -89,13 +89,11 @@ def _safe_layer(entity) -> str:
 
 def _layer_token_match(layer: str, token: str) -> bool:
     """
-    Matching plus sûr pour éviter que 'SUR' matche
-    'Cloison Vitrée sur allège'.
+    Matching prudent pour éviter que 'SUR' matche 'sur allège'.
     """
     layer_l = layer.lower()
     token_l = token.lower()
 
-    # pour les tokens courts, on demande un séparateur explicite
     if len(token_l) <= 4:
         patterns = [
             f"-{token_l}-",
@@ -111,8 +109,78 @@ def _layer_token_match(layer: str, token: str) -> bool:
 
         return False
 
-    # pour les tokens plus longs, comportement standard
     return token_l in layer_l
+
+
+def _layer_is_architectural_after_crop(layer: str) -> bool:
+    """
+    Filtrage sémantique APRES bbox :
+    - on garde les couches de cloisons / murs / portes / circulation
+    - on enlève les couches de surfaces / mobilier / plafonds / toiture / présentation
+    """
+    layer_l = layer.lower()
+
+    drop_tokens = (
+        "kdm-sur-",
+        "kdm-mob-",
+        "kdm-age-",
+        "kdm-sec-",
+        "kdm-cvc-",
+        "kdm-fpl-",
+        "kdm-fxp-",
+        "kdm-plo-",
+        "kdm-sol-",
+        "kdm-rvm-",
+        "kdm-sig-",
+        "kdm-xrf-",
+        "kdm-prz-",
+        "plf-",
+        "vpa",
+        "facade",
+        "fa-",
+        "toit",
+        "couv",
+        "beton",
+        "brique",
+        "trame",
+        "hach",
+        "texte",
+        "cote",
+        "dim",
+        "legende",
+        "légende",
+        "cartouche",
+        "tableau",
+    )
+
+    for tok in drop_tokens:
+        if tok in layer_l:
+            return False
+
+    keep_tokens = (
+        "kdm-clo-",
+        "mur",
+        "porte",
+        "menuis",
+        "baie",
+        "cir",
+        "gaine",
+        "esc",
+        "asc",
+        "noyau",
+        "san",
+    )
+
+    for tok in keep_tokens:
+        if tok in layer_l:
+            return True
+
+    # la couche 0 peut contenir de la géométrie utile dans les blocs
+    if layer_l == "0":
+        return True
+
+    # par défaut, on ne garde pas
+    return False
 
 
 def _layer_should_drop(layer: str, rules: dict) -> bool:
@@ -676,10 +744,12 @@ def _collect_segments(
     entity,
     rules: dict,
     segments: list,
+    segment_layers: list,
     stats: dict,
     geom_filters: dict,
     depth: int = 0,
-    max_depth: int = 8,
+    max_depth: int = 8
+
 ):
     dxftype = entity.dxftype()
     layer = _safe_layer(entity)
@@ -717,6 +787,7 @@ def _collect_segments(
                 sub,
                 rules,
                 segments,
+                segment_layers,
                 stats,
                 geom_filters,
                 depth=depth + 1,
@@ -727,6 +798,7 @@ def _collect_segments(
     segs = _entity_to_segments(entity, geom_filters)
     if segs:
         segments.extend(segs)
+        segment_layers.extend([layer] * len(segs))
         stats["drawn"][dxftype] = stats["drawn"].get(dxftype, 0) + len(segs)
     else:
         stats["empty_geom"][dxftype] = stats["empty_geom"].get(dxftype, 0) + 1
@@ -1064,6 +1136,7 @@ def render_dxf_to_png(
     msp = doc.modelspace()
 
     segments = []
+    segment_layers = []
     stats = {
         "seen": {},
         "drawn": {},
@@ -1078,7 +1151,7 @@ def render_dxf_to_png(
     }
 
     for entity in msp:
-        _collect_segments(entity, rules, segments, stats, geom_filters)
+        _collect_segments(entity, rules, segments, segment_layers, stats, geom_filters)
 
     if not segments:
         raise RuntimeError(
@@ -1097,14 +1170,44 @@ def render_dxf_to_png(
         "stats": stats,
     }
 
-    # 1) Nettoyage anti-éventails AVANT la détection de la bbox
     cleaned_for_bbox = _remove_triangle_fans(segments, geom_filters, debug=debug)
 
-    # 2) Choix de bbox sur la géométrie nettoyée
-    selected_bbox = _choose_main_component_bbox(cleaned_for_bbox, debug=debug)
+    selected_bbox = _choose_main_component_bbox(segments, debug=debug)
 
-    # 3) Application de la bbox sur la géométrie nettoyée
-    filtered_segments = _filter_segments_in_bbox(cleaned_for_bbox, selected_bbox)
+    filtered_pairs = [
+        (seg, layer)
+        for seg, layer in zip(segments, segment_layers)
+        if selected_bbox.min_x <= _segment_midpoint(seg)[0] <= selected_bbox.max_x
+        and selected_bbox.min_y <= _segment_midpoint(seg)[1] <= selected_bbox.max_y
+    ]
+
+    filtered_segments = [seg for seg, _ in filtered_pairs]
+
+    # Filtrage architectural APRES crop :
+    # on enlève les couches toiture/plafond/surface/etc. sans casser la bbox.
+    arch_pairs = [
+        (seg, layer)
+        for seg, layer in filtered_pairs
+        if _layer_is_architectural_after_crop(layer)
+    ]
+
+    # On n'applique ce filtre que s'il garde une quantité raisonnable de géométrie.
+    # Sinon on reste sur le crop brut.
+    if len(arch_pairs) >= max(1200, int(0.18 * len(filtered_pairs))):
+        filtered_pairs = arch_pairs
+        filtered_segments = [seg for seg, _ in filtered_pairs]
+        debug["post_crop_layer_filter"] = {
+            "mode": "architectural_after_crop",
+            "segments_before": len([seg for seg, _ in zip(segments, segment_layers)
+                                    if selected_bbox.min_x <= _segment_midpoint(seg)[0] <= selected_bbox.max_x
+                                    and selected_bbox.min_y <= _segment_midpoint(seg)[1] <= selected_bbox.max_y]),
+            "segments_after": len(filtered_segments),
+        }
+    else:
+        debug["post_crop_layer_filter"] = {
+            "mode": "skipped_not_enough_geometry",
+            "segments_after": len(filtered_segments),
+        }
 
     # Si la sélection est trop faible, on élargit légèrement autour de la bbox
     if len(filtered_segments) < max(2000, int(0.03 * len(cleaned_for_bbox))):
