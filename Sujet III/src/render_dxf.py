@@ -112,77 +112,6 @@ def _layer_token_match(layer: str, token: str) -> bool:
     return token_l in layer_l
 
 
-def _layer_is_architectural_after_crop(layer: str) -> bool:
-    """
-    Filtrage sémantique APRES bbox :
-    - on garde les couches de cloisons / murs / portes / circulation
-    - on enlève les couches de surfaces / mobilier / plafonds / toiture / présentation
-    """
-    layer_l = layer.lower()
-
-    drop_tokens = (
-        "kdm-sur-",
-        "kdm-mob-",
-        "kdm-age-",
-        "kdm-sec-",
-        "kdm-cvc-",
-        "kdm-fpl-",
-        "kdm-fxp-",
-        "kdm-plo-",
-        "kdm-sol-",
-        "kdm-rvm-",
-        "kdm-sig-",
-        "kdm-xrf-",
-        "kdm-prz-",
-        "plf-",
-        "vpa",
-        "facade",
-        "fa-",
-        "toit",
-        "couv",
-        "beton",
-        "brique",
-        "trame",
-        "hach",
-        "texte",
-        "cote",
-        "dim",
-        "legende",
-        "légende",
-        "cartouche",
-        "tableau",
-    )
-
-    for tok in drop_tokens:
-        if tok in layer_l:
-            return False
-
-    keep_tokens = (
-        "kdm-clo-",
-        "mur",
-        "porte",
-        "menuis",
-        "baie",
-        "cir",
-        "gaine",
-        "esc",
-        "asc",
-        "noyau",
-        "san",
-    )
-
-    for tok in keep_tokens:
-        if tok in layer_l:
-            return True
-
-    # la couche 0 peut contenir de la géométrie utile dans les blocs
-    if layer_l == "0":
-        return True
-
-    # par défaut, on ne garde pas
-    return False
-
-
 def _layer_should_drop(layer: str, rules: dict) -> bool:
     keep_layers = {x.lower() for x in rules.get("keep_layers", [])}
     if keep_layers and layer.lower() in keep_layers:
@@ -1124,10 +1053,13 @@ def render_dxf_to_png(
     debug_json: Path | None = None,
 ) -> Path:
     """
-    Rendu principal du modelspace :
-    - exactement la structure de ta version de référence
-    - + filtre anti-éventails triangulaires
-    - + nettoyage léger des petites composantes
+    Version stabilisée :
+    - collecte globale proche de la version qui marchait le mieux
+    - bbox principale sur géométrie globale
+    - crop simple
+    - un seul nettoyage anti-éventails local
+    - nettoyage léger des petites composantes
+    - aucun filtrage architectural post-crop destructeur
     """
     initial_bbox = _initial_bbox_from_linework(dxf_path, rules)
     geom_filters = _compute_size_filters(initial_bbox)
@@ -1136,7 +1068,8 @@ def render_dxf_to_png(
     msp = doc.modelspace()
 
     segments = []
-    segment_layers = []
+    segment_layers = []  # conservé pour compatibilité avec _collect_segments actuel
+
     stats = {
         "seen": {},
         "drawn": {},
@@ -1151,7 +1084,14 @@ def render_dxf_to_png(
     }
 
     for entity in msp:
-        _collect_segments(entity, rules, segments, segment_layers, stats, geom_filters)
+        _collect_segments(
+            entity,
+            rules,
+            segments,
+            segment_layers,
+            stats,
+            geom_filters,
+        )
 
     if not segments:
         raise RuntimeError(
@@ -1170,88 +1110,60 @@ def render_dxf_to_png(
         "stats": stats,
     }
 
-    cleaned_for_bbox = _remove_triangle_fans(segments, geom_filters, debug=debug)
-
+    # 1) Choix de la bbox principale sur la géométrie globale.
+    # Important : pas de filtre architectural avant cette étape.
     selected_bbox = _choose_main_component_bbox(segments, debug=debug)
 
-    filtered_pairs = [
-        (seg, layer)
-        for seg, layer in zip(segments, segment_layers)
-        if selected_bbox.min_x <= _segment_midpoint(seg)[0] <= selected_bbox.max_x
-        and selected_bbox.min_y <= _segment_midpoint(seg)[1] <= selected_bbox.max_y
-    ]
+    # 2) Crop simple dans la bbox.
+    filtered_segments = _filter_segments_in_bbox(segments, selected_bbox)
 
-    filtered_segments = [seg for seg, _ in filtered_pairs]
-
-    # Filtrage architectural APRES crop :
-    # on enlève les couches toiture/plafond/surface/etc. sans casser la bbox.
-    arch_pairs = [
-        (seg, layer)
-        for seg, layer in filtered_pairs
-        if _layer_is_architectural_after_crop(layer)
-    ]
-
-    # On n'applique ce filtre que s'il garde une quantité raisonnable de géométrie.
-    # Sinon on reste sur le crop brut.
-    if len(arch_pairs) >= max(1200, int(0.18 * len(filtered_pairs))):
-        filtered_pairs = arch_pairs
-        filtered_segments = [seg for seg, _ in filtered_pairs]
-        debug["post_crop_layer_filter"] = {
-            "mode": "architectural_after_crop",
-            "segments_before": len([seg for seg, _ in zip(segments, segment_layers)
-                                    if selected_bbox.min_x <= _segment_midpoint(seg)[0] <= selected_bbox.max_x
-                                    and selected_bbox.min_y <= _segment_midpoint(seg)[1] <= selected_bbox.max_y]),
-            "segments_after": len(filtered_segments),
-        }
-    else:
-        debug["post_crop_layer_filter"] = {
-            "mode": "skipped_not_enough_geometry",
-            "segments_after": len(filtered_segments),
-        }
-
-    # Si la sélection est trop faible, on élargit légèrement autour de la bbox
-    if len(filtered_segments) < max(2000, int(0.03 * len(cleaned_for_bbox))):
+    # 3) Si la sélection est trop faible, élargissement léger.
+    if len(filtered_segments) < max(2000, int(0.03 * len(segments))):
         pad_x = selected_bbox.width * 0.15
         pad_y = selected_bbox.height * 0.15
+
         expanded = WorldBBox(
             min_x=selected_bbox.min_x - pad_x,
             min_y=selected_bbox.min_y - pad_y,
             max_x=selected_bbox.max_x + pad_x,
             max_y=selected_bbox.max_y + pad_y,
         )
-        filtered_segments = _filter_segments_in_bbox(cleaned_for_bbox, expanded)
+
+        filtered_segments = _filter_segments_in_bbox(segments, expanded)
         debug["fallback_used"] = "expanded_selected_bbox"
         selected_bbox = expanded
     else:
         debug["fallback_used"] = None
 
-    # SECOND PASS anti-éventails sur la géométrie déjà recadrée.
-    second_pass_filters = dict(geom_filters)
-    second_pass_filters["fan_diag_len"] = geom_filters["fan_diag_len"] * 0.85
-    second_pass_filters["fan_endpoint_radius"] = geom_filters["fan_endpoint_radius"] * 1.20
-    second_pass_filters["fan_min_segments"] = 3
-    second_pass_filters["fan_min_angle_spread_deg"] = 25.0
+    if not filtered_segments:
+        raise RuntimeError("Aucun segment après crop bbox.")
 
-    filtered_segments = _remove_triangle_fans(filtered_segments, second_pass_filters, debug=debug)
-
-
-    # PASS 1 anti-éventails avec filtres globaux
-    filtered_segments = _remove_triangle_fans(filtered_segments, geom_filters, debug=debug)
-
-    # PASS 2 anti-éventails avec filtres locaux recalculés sur la bbox déjà recadrée
+    # 4) Anti-éventails local, une seule fois.
+    # Les seuils sont recalculés sur la zone réellement retenue.
     local_bbox = _segments_bbox(filtered_segments)
     local_ref = max(local_bbox.width, local_bbox.height)
 
     local_filters = dict(geom_filters)
-    local_filters["fan_diag_len"] = local_ref * 0.010
-    local_filters["fan_endpoint_radius"] = local_ref * 0.015
+    local_filters["fan_diag_len"] = local_ref * 0.012
+    local_filters["fan_endpoint_radius"] = local_ref * 0.012
     local_filters["fan_min_segments"] = 4
-    local_filters["fan_min_angle_spread_deg"] = 35.0
+    local_filters["fan_min_angle_spread_deg"] = 30.0
 
-    filtered_segments = _remove_triangle_fans(filtered_segments, local_filters, debug=debug)
+    filtered_segments = _remove_triangle_fans(
+        filtered_segments,
+        local_filters,
+        debug=debug,
+    )
 
-    # Nettoyage léger des petits objets détachés
-    filtered_segments = _remove_small_components(filtered_segments, local_filters, debug=debug)
+    if not filtered_segments:
+        raise RuntimeError("Tous les segments ont été supprimés après anti-éventails.")
+
+    # 5) Nettoyage léger des petites composantes.
+    filtered_segments = _remove_small_components(
+        filtered_segments,
+        local_filters,
+        debug=debug,
+    )
 
     if not filtered_segments:
         raise RuntimeError("Tous les segments ont été supprimés après nettoyage.")
@@ -1297,4 +1209,5 @@ def render_dxf_to_png(
         pad_inches=0,
     )
     plt.close(fig)
+
     return png_path
