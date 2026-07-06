@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import numpy as np
 import cv2
+import yaml
 
 from ezdxf.addons.drawing import Frontend, RenderContext
 from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
@@ -87,6 +88,39 @@ def _safe_layer(entity) -> str:
         return "0"
 
 
+_LAYER_DECISIONS_CACHE = {}
+
+
+def _load_layer_decisions(rules: dict) -> dict:
+    """
+    Charge layer_decisions.yaml si configuré.
+    Cache simple pour éviter de relire le fichier à chaque entité.
+    """
+    path = rules.get("layer_decisions_file")
+    if not path:
+        return {"keep": set(), "drop": set(), "undecided": set()}
+
+    path = str(path)
+
+    if path in _LAYER_DECISIONS_CACHE:
+        return _LAYER_DECISIONS_CACHE[path]
+
+    p = Path(path)
+    if not p.exists():
+        data = {"keep": [], "drop": [], "undecided": []}
+    else:
+        data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+
+    decisions = {
+        "keep": set(data.get("keep", []) or []),
+        "drop": set(data.get("drop", []) or []),
+        "undecided": set(data.get("undecided", []) or []),
+    }
+
+    _LAYER_DECISIONS_CACHE[path] = decisions
+    return decisions
+
+
 def _layer_token_match(layer: str, token: str) -> bool:
     """
     Matching prudent pour éviter que 'SUR' matche 'sur allège'.
@@ -113,6 +147,18 @@ def _layer_token_match(layer: str, token: str) -> bool:
 
 
 def _layer_should_drop(layer: str, rules: dict) -> bool:
+    """
+    Priorité absolue aux décisions exactes issues de layer_decisions.yaml.
+    Ensuite seulement on applique les règles génériques.
+    """
+    decisions = _load_layer_decisions(rules)
+
+    if layer in decisions["keep"]:
+        return False
+
+    if layer in decisions["drop"]:
+        return True
+
     keep_layers = {x.lower() for x in rules.get("keep_layers", [])}
     if keep_layers and layer.lower() in keep_layers:
         return False

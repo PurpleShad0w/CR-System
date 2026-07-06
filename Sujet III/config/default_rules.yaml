@@ -1,5 +1,7 @@
 keep_layers: []
 
+layer_decisions_file: data/work/layer_review/layer_decisions.yaml
+
 drop_layers_contains:
   - TEXT
   - TEXTE

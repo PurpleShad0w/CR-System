@@ -1,6 +1,6 @@
 # Sujet I
 
-python process_onenote.py name --transcribe
+python process_onenote.py {name} --transcribe
 
 
 # Sujet II
@@ -18,4 +18,5 @@ python -m pipeline.run_predict --config config.yaml --level all --target all --d
 # Sujet III
 
 python -m src.pipeline --input-dwg data/input_plans/sample.dwg --oda-exe "C:/Program Files (x86)/ODA/Teigha File Converter 4.3.2/TeighaFileConverter.exe"
-
+python -m src.layer_review_prepare --dxf data/work/dxf_out/sample.dxf --config config/default_rules.yaml --out-dir data/work/layer_review
+streamlit run src/layer_review_app.py -- --review-dir data/work/layer_review
