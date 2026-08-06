@@ -6,10 +6,18 @@ drop_layers_contains:
   - TEXT
   - TEXTE
   - COTE
+  - COTES
   - DIM
   - HACH
   - HACHURE
   - TRAME
+  - CARTOUCHE
+  - LEGENDE
+  - LÉGENDE
+  - ANNOT
+  - MOB
+  - SIGNAL
+  - SIG
 
 drop_entity_types:
   - TEXT
@@ -28,11 +36,57 @@ drop_small_entities:
   enabled: true
   min_length: 5.0
 
+classification:
+  keep_layer_keywords:
+    - MUR
+    - WALL
+    - CLOISON
+    - CLO
+    - BETON
+    - BÉTON
+    - BRIQUE
+    - FACADE
+    - FAÇADE
+    - PORTE
+    - DOOR
+    - FENETRE
+    - FENÊTRE
+    - WINDOW
+  drop_layer_keywords:
+    - TEXT
+    - TEXTE
+    - COTE
+    - DIM
+    - HACH
+    - TRAME
+    - CARTOUCHE
+    - LEGENDE
+    - LÉGENDE
+    - MOB
+    - PLAFOND
+    - PLF
+    - CVC
+    - CFO
+    - CFA
+    - SOL
+    - SUR
+  wall_score_threshold: 0.55
+  min_wall_length: 30.0
+  min_wall_area: 20.0
+
 render:
   dpi: 300
   background: white
   foreground: black
   lineweight_scaling: 1.0
+  margins_ratio: 0.03
+  max_preview_entities: 20000
+
+render_25d:
+  wall_height: 3000.0
+  z_scale: 0.25
+  line_width: 1.4
+  opacity: 0.32
 
 raster_cleanup:
   enabled: false

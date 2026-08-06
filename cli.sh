@@ -20,3 +20,6 @@ python -m pipeline.run_predict --config config.yaml --level all --target all --d
 python -m src.pipeline --input-dwg data/input_plans/sample.dwg --oda-exe "C:/Program Files (x86)/ODA/Teigha File Converter 4.3.2/TeighaFileConverter.exe"
 python -m src.layer_review_prepare --dxf data/work/dxf_out/sample.dxf --config config/default_rules.yaml --out-dir data/work/layer_review
 streamlit run src/layer_review_app.py -- --review-dir data/work/layer_review
+
+python cli_clean_plan.py data/input_plans/sample.dxf   --rules config/default_rules.yaml   --decisions data/work/layer_review/layer_decisions.yaml   --out output/rendered_clean.png   --entities-csv output/entities_df.csv   --html-25d output/rendered_25d.html
+streamlit run app_layer_review.py
