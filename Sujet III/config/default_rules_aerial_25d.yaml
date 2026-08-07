@@ -1,0 +1,149 @@
+# Sujet III - règles v2 pour plan propre + vue aérienne 2.5D
+# À fusionner avec config/default_rules.yaml, pas à remplacer brutalement.
+
+layer_decisions_file: data/work/layer_review/layer_decisions.yaml
+
+# On ne supprime plus trop agressivement. Les décisions manuelles restent prioritaires.
+drop_layers_contains:
+  - TEXT
+  - TEXTE
+  - COTE
+  - COTES
+  - DIM
+  - HACH
+  - HACHURE
+  - TRAME
+  - CARTOUCHE
+  - LEGENDE
+  - LÉGENDE
+  - ANNOT
+  - SIGNAL
+  - SIG
+
+# Important : ne pas dropper INSERT par défaut, sinon portes/fenêtres en blocs disparaissent.
+drop_entity_types:
+  - TEXT
+  - MTEXT
+  - DIMENSION
+  - LEADER
+  - MULTILEADER
+  - HATCH
+  - FIELD
+  - DIMASSOC
+  - ACAD_PROXY_OBJECT
+  - WIPEOUT
+  - TABLE
+
+drop_small_entities:
+  enabled: true
+  min_length: 2.0
+
+classification:
+  wall_score_threshold: 0.48
+  door_score_threshold: 0.45
+  window_score_threshold: 0.42
+  stairs_score_threshold: 0.45
+  furniture_score_threshold: 0.50
+
+  wall_keywords:
+    - MUR
+    - WALL
+    - CLOISON
+    - CLO
+    - BETON
+    - BÉTON
+    - BRIQUE
+    - FACADE
+    - FAÇADE
+    - STRUCT
+    - GROS
+
+  door_keywords:
+    - PORTE
+    - DOOR
+    - VANTAIL
+    - OUVERTURE
+    - BLOC-PORTE
+    - BP
+    - MENUI
+    - MENUISERIE
+
+  window_keywords:
+    - FENETRE
+    - FENÊTRE
+    - WINDOW
+    - CHASSIS
+    - VITRE
+    - VITRAGE
+    - VITREE
+    - VITRÉE
+    - FACADE
+    - FAÇADE
+
+  stairs_keywords:
+    - ESCALIER
+    - STAIR
+    - MARCHE
+    - EMARCHEMENT
+    - ÉMARCHEMENT
+
+  furniture_keywords:
+    - MOB
+    - MOBILIER
+    - TABLE
+    - CHAISE
+    - BUREAU
+    - SANITAIRE
+    - WC
+    - LAVABO
+
+  annotation_keywords:
+    - TEXT
+    - TEXTE
+    - COTE
+    - DIM
+    - HACH
+    - TRAME
+    - LEGENDE
+    - LÉGENDE
+    - CARTOUCHE
+
+  min_wall_length: 20.0
+  min_feature_length: 3.0
+
+render:
+  dpi: 300
+  background: white
+  margins_ratio: 0.025
+  max_preview_entities: 40000
+  wall_linewidth: 1.40
+  door_linewidth: 0.90
+  window_linewidth: 0.90
+  stairs_linewidth: 0.75
+  other_linewidth: 0.45
+  draw_other_kept: true
+  draw_debug_colors: false
+  wall_color: '#111111'
+  door_color: '#111111'
+  window_color: '#111111'
+  stairs_color: '#222222'
+  other_color: '#555555'
+
+# Vue aérienne : pas de vrai volume 3D. On génère un rendu top-down avec décalage/ombre léger.
+aerial_25d:
+  enabled: true
+  shadow_offset_px: 5
+  shadow_alpha: 0.16
+  footprint_fill: '#f3f3f3'
+  wall_color: '#111111'
+  opening_color: '#ffffff'
+  feature_color: '#222222'
+  wall_linewidth: 2.2
+  feature_linewidth: 1.0
+  draw_opening_cutouts: true
+  draw_soft_shadow: true
+
+converter:
+  backend: oda
+  exe_path: "C:/Program Files (x86)/ODA/Teigha File Converter 4.3.2/TeighaFileConverter.exe"
+  version: "ACAD2018"

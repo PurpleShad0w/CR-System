@@ -1,0 +1,160 @@
+# Sujet III - v3 nettoyage fort, sortie plan aérien propre
+# À fusionner avec le projet existant. Ne remplace pas ton README ni tes décisions manuelles.
+
+layer_decisions_file: data/work/layer_review/layer_decisions.yaml
+
+# Bruit CAD typique : annotation, trames, hachures, cartouches, plafonds, sols, équipements non architecturaux.
+hard_drop_layer_keywords:
+  - TEXT
+  - TEXTE
+  - COTE
+  - COTES
+  - DIM
+  - HACH
+  - HATCH
+  - HACHURE
+  - TRAME
+  - CARTOUCHE
+  - LEGENDE
+  - LÉGENDE
+  - NOTA
+  - ANNOT
+  - AXE
+  - GRID
+  - PLAFOND
+  - FAUX PLAFOND
+  - PLF
+  - SOL
+  - REVETEMENT
+  - REVÊTEMENT
+  - MOB
+  - MOBILIER
+  - VEGETAL
+  - VÉGÉTAL
+  - SIGNAL
+  - SIG
+  - CVC
+  - CFO
+  - CFA
+  - ELEC
+  - SSI
+  - SPRINKLER
+  - RIA
+
+hard_drop_entity_types:
+  - TEXT
+  - MTEXT
+  - DIMENSION
+  - LEADER
+  - MULTILEADER
+  - HATCH
+  - FIELD
+  - DIMASSOC
+  - ACAD_PROXY_OBJECT
+  - WIPEOUT
+  - TABLE
+  - IMAGE
+  - UNDERLAY
+
+classification:
+  wall_keywords:
+    - MUR
+    - WALL
+    - CLOISON
+    - CLO
+    - BETON
+    - BÉTON
+    - BRIQUE
+    - FACADE
+    - FAÇADE
+    - STRUCT
+    - GROS
+    - VOILE
+  door_keywords:
+    - PORTE
+    - DOOR
+    - VANTAIL
+    - OUVERTURE
+    - BLOC-PORTE
+    - BLOC PORTE
+    - BP
+    - MENUI
+    - MENUISERIE
+  window_keywords:
+    - FENETRE
+    - FENÊTRE
+    - WINDOW
+    - CHASSIS
+    - VITRE
+    - VITRAGE
+    - VITREE
+    - VITRÉE
+    - FACADE
+    - FAÇADE
+  stairs_keywords:
+    - ESCALIER
+    - STAIR
+    - MARCHE
+    - EMARCHEMENT
+    - ÉMARCHEMENT
+  min_wall_length: 25.0
+  min_feature_length: 6.0
+  wall_score_threshold: 0.42
+  door_score_threshold: 0.40
+  window_score_threshold: 0.46
+  stairs_score_threshold: 0.50
+
+noise:
+  # Principe repris de l'étude : ne pas dessiner tout le DWG, mais sélectionner uniquement les entités physiques candidates
+  # par Layer/ID/ParentID/coordonnées, puis retirer les objets non connectés au bâtiment principal.
+  keep_only_physical_classes: true
+  physical_classes:
+    - wall
+    - door
+    - window
+    - stairs
+
+  # Supprime les petits segments/détails qui créent les points noirs et motifs parasites dans ton image.
+  drop_tiny_entities: true
+  min_length_for_unclassified: 12.0
+  min_length_for_physical: 2.0
+  min_bbox_diag: 2.0
+
+  # Supprime les layers composés surtout de micro-objets répétitifs.
+  drop_noisy_layers: true
+  noisy_layer_min_entities: 80
+  noisy_layer_small_ratio: 0.72
+  noisy_layer_physical_ratio_max: 0.20
+
+  # Supprime les marques très éloignées du plan principal, comme les petits traits à droite / en haut de l'image fournie.
+  keep_largest_spatial_component: true
+  spatial_grid_size: 420
+  spatial_connectivity: 8
+  spatial_component_margin_cells: 2
+
+  # Rendu final : nettoyage raster après rendu vectoriel.
+  raster_cleanup: true
+  raster_remove_components_area_lt: 60
+  raster_keep_largest_component: true
+  raster_crop_to_content: true
+  raster_crop_margin_px: 20
+
+render:
+  dpi: 300
+  background: white
+  margins_ratio: 0.018
+  figure_size: 12
+  wall_linewidth: 1.65
+  door_linewidth: 0.85
+  window_linewidth: 0.85
+  stairs_linewidth: 0.70
+  wall_color: '#050505'
+  feature_color: '#111111'
+  window_linestyle: '-'
+  draw_debug_colors: false
+  draw_soft_shadow: false
+
+converter:
+  backend: oda
+  exe_path: "C:/Program Files (x86)/ODA/Teigha File Converter 4.3.2/TeighaFileConverter.exe"
+  version: "ACAD2018"

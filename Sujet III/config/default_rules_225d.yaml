@@ -1,0 +1,38 @@
+# Sujet III - v7 / v1+ 2.25D
+# Base recommandée : rendered_clean_v1plus_from_existing.png ou rendered_clean_v1plus.png.
+# Objectif : garder le rendu v1, ajouter une profondeur très subtile sans vraie 3D.
+
+render_225d:
+  threshold: 245
+  background: white
+
+  # Profondeur très légère. Augmenter seulement si l'effet est invisible.
+  depth_px: 10
+  direction_x: 1
+  direction_y: 1
+  depth_steps: 8
+
+  # Couleurs. L'ombre reste légère pour éviter l'effet maquette 3D.
+  side_color: '#d8d8d8'
+  side_alpha_start: 0.30
+  side_alpha_end: 0.06
+  contact_shadow_color: '#b8b8b8'
+  contact_shadow_alpha: 0.20
+  top_line_color: '#050505'
+  top_line_alpha: 1.0
+
+  # Optionnel : très faible cisaillement pour donner un angle 2.25D.
+  # false par défaut car le rendu plan original est déjà bon.
+  apply_subtle_shear: true
+  shear_x: -0.035
+  scale_y: 0.965
+
+  # Crop final autour du contenu.
+  crop_to_content: true
+  crop_margin_px: 32
+
+  # Petit épaississement optionnel du trait supérieur.
+  # 0 = aucun. 1 = léger. À garder très faible.
+  top_dilate_px: 0
+
+  output_mode: png

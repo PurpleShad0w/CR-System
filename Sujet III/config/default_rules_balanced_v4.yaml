@@ -1,0 +1,168 @@
+# Sujet III - v4 balanced cleanup
+# Objectif : moins sale que v2, beaucoup moins strict que v3.
+# À fusionner avec le projet existant.
+
+layer_decisions_file: data/work/layer_review/layer_decisions.yaml
+
+# Important : les anciens drops de layer_decisions.yaml peuvent supprimer des cloisons/portes.
+# En v4, un drop manuel peut être rescindé si l'entité ressemble fortement à un objet physique.
+manual_drop_policy:
+  allow_physical_rescue_from_dropped_layers: true
+  rescue_classes:
+    - wall
+    - door
+    - window
+    - stairs
+
+hard_drop_layer_keywords:
+  - TEXT
+  - TEXTE
+  - COTE
+  - COTES
+  - DIM
+  - HACH
+  - HATCH
+  - HACHURE
+  - TRAME
+  - CARTOUCHE
+  - LEGENDE
+  - LÉGENDE
+  - NOTA
+  - ANNOT
+  - GRID
+  - AXE
+  - PLAFOND
+  - FAUX PLAFOND
+  - PLF
+  - CVC
+  - CFO
+  - CFA
+  - ELEC
+  - SSI
+  - SPRINKLER
+  - RIA
+  - VEGETAL
+  - VÉGÉTAL
+
+hard_drop_entity_types:
+  - TEXT
+  - MTEXT
+  - DIMENSION
+  - LEADER
+  - MULTILEADER
+  - HATCH
+  - FIELD
+  - DIMASSOC
+  - ACAD_PROXY_OBJECT
+  - WIPEOUT
+  - TABLE
+  - IMAGE
+  - UNDERLAY
+
+classification:
+  wall_keywords:
+    - MUR
+    - WALL
+    - CLOISON
+    - CLO
+    - BETON
+    - BÉTON
+    - BRIQUE
+    - FACADE
+    - FAÇADE
+    - STRUCT
+    - GROS
+    - VOILE
+  door_keywords:
+    - PORTE
+    - DOOR
+    - VANTAIL
+    - OUVERTURE
+    - BLOC-PORTE
+    - BLOC PORTE
+    - BP
+    - MENUI
+    - MENUISERIE
+  window_keywords:
+    - FENETRE
+    - FENÊTRE
+    - WINDOW
+    - CHASSIS
+    - VITRE
+    - VITRAGE
+    - VITREE
+    - VITRÉE
+    - FACADE
+    - FAÇADE
+  stairs_keywords:
+    - ESCALIER
+    - STAIR
+    - MARCHE
+    - EMARCHEMENT
+    - ÉMARCHEMENT
+  min_wall_length: 14.0
+  min_feature_length: 2.5
+  wall_score_threshold: 0.42
+  door_score_threshold: 0.36
+  window_score_threshold: 0.34
+  stairs_score_threshold: 0.42
+
+balanced_noise:
+  # Garde le coeur physique, puis rescape les détails proches du bâtiment.
+  keep_physical_classes:
+    - wall
+    - door
+    - window
+    - stairs
+
+  # Détails architecturaux devant être restaurés si proches des murs : petites lignes/arcs/blocs.
+  rescue_near_footprint: true
+  footprint_buffer_ratio: 0.035
+  rescue_entity_types:
+    - LINE
+    - ARC
+    - CIRCLE
+    - LWPOLYLINE
+    - POLYLINE
+    - ELLIPSE
+    - SPLINE
+    - INSERT
+  rescue_min_length: 1.5
+  rescue_max_length_ratio: 0.20
+  rescue_min_bbox_diag: 1.0
+
+  # Pas de plus gros composant raster en v4 : c'est ce qui effaçait portes/fenêtres non connectées.
+  raster_cleanup: true
+  raster_remove_components_area_lt: 18
+  raster_keep_largest_component: false
+  raster_crop_to_content: true
+  raster_crop_margin_px: 28
+
+  # Suppression douce des couches bruiteuses : uniquement sur entités non physiques et non sauvées.
+  drop_noisy_nonphysical_layers: true
+  noisy_layer_min_entities: 180
+  noisy_layer_small_ratio: 0.86
+
+  # Les petits objets isolés à l'extérieur du bâtiment sont supprimés, mais les détails proches restent.
+  drop_far_from_footprint: true
+  far_buffer_ratio: 0.08
+
+render:
+  dpi: 300
+  background: white
+  margins_ratio: 0.018
+  figure_size: 12
+  wall_linewidth: 1.25
+  detail_linewidth: 0.55
+  door_linewidth: 0.70
+  window_linewidth: 0.70
+  stairs_linewidth: 0.55
+  wall_color: '#050505'
+  detail_color: '#151515'
+  window_linestyle: '-'
+  draw_debug_colors: false
+
+converter:
+  backend: oda
+  exe_path: "C:/Program Files (x86)/ODA/Teigha File Converter 4.3.2/TeighaFileConverter.exe"
+  version: "ACAD2018"

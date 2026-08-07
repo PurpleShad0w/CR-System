@@ -1,0 +1,72 @@
+# Sujet III - v6 / v1+ cleanup
+# Principe : revenir à la philosophie du rendered_clean.png original, puis nettoyer les artefacts éloignés.
+# Ne remplace pas ton default_rules.yaml existant. À fusionner ou utiliser avec --rules.
+
+layer_decisions_file: data/work/layer_review/layer_decisions.yaml
+
+# Rendu v1-like : on garde les détails graphiques utiles au lieu de reclassifier agressivement.
+filtering:
+  respect_manual_drop_layers: true
+  render_undecided_layers: true
+  drop_entity_types:
+    - TEXT
+    - MTEXT
+    - DIMENSION
+    - LEADER
+    - MULTILEADER
+    - HATCH
+    - FIELD
+    - DIMASSOC
+    - ACAD_PROXY_OBJECT
+    - WIPEOUT
+    - TABLE
+    - IMAGE
+    - UNDERLAY
+  drop_layers_contains:
+    - TEXT
+    - TEXTE
+    - COTE
+    - COTES
+    - DIM
+    - HACH
+    - HATCH
+    - HACHURE
+    - TRAME
+    - CARTOUCHE
+    - LEGENDE
+    - LÉGENDE
+    - NOTA
+    - ANNOT
+  drop_small_entities:
+    enabled: true
+    min_length: 1.0
+    min_bbox_diag: 0.5
+
+render:
+  dpi: 300
+  background: white
+  foreground: black
+  figure_size: 12
+  margins_ratio: 0.025
+  linewidth_default: 0.55
+  linewidth_min: 0.35
+  linewidth_max: 1.65
+  use_entity_lineweight: true
+
+# Nettoyage post-rendu : le vrai correctif par rapport au v1.
+# On garde le rendu v1, puis on supprime les composants très éloignés du plan principal.
+post_cleanup:
+  enabled: true
+  threshold: 245
+  remove_component_area_lt: 8
+  seed_min_area: 25
+  main_bbox_expand_ratio: 0.12
+  iterative_expansion_passes: 4
+  keep_components_touching_expanded_bbox: true
+  crop_to_content: true
+  crop_margin_px: 28
+
+converter:
+  backend: oda
+  exe_path: "C:/Program Files (x86)/ODA/Teigha File Converter 4.3.2/TeighaFileConverter.exe"
+  version: "ACAD2018"

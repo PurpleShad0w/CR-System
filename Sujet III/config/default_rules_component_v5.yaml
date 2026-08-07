@@ -1,0 +1,116 @@
+# Sujet III - v5 component-based cleanup
+# But : garder les détails du bâtiment principal et supprimer les blocs/traits éloignés.
+# À fusionner avec le projet existant.
+
+layer_decisions_file: data/work/layer_review/layer_decisions.yaml
+
+hard_drop_layer_keywords:
+  - TEXT
+  - TEXTE
+  - COTE
+  - COTES
+  - DIM
+  - HACH
+  - HATCH
+  - HACHURE
+  - TRAME
+  - CARTOUCHE
+  - LEGENDE
+  - LÉGENDE
+  - NOTA
+  - ANNOT
+  - GRID
+  - AXE
+  - PLAFOND
+  - FAUX PLAFOND
+  - PLF
+  - CVC
+  - CFO
+  - CFA
+  - ELEC
+  - SSI
+  - SPRINKLER
+  - RIA
+  - VEGETAL
+  - VÉGÉTAL
+
+hard_drop_entity_types:
+  - TEXT
+  - MTEXT
+  - DIMENSION
+  - LEADER
+  - MULTILEADER
+  - HATCH
+  - FIELD
+  - DIMASSOC
+  - ACAD_PROXY_OBJECT
+  - WIPEOUT
+  - TABLE
+  - IMAGE
+  - UNDERLAY
+
+classification:
+  wall_keywords: [MUR, WALL, CLOISON, CLO, BETON, BÉTON, BRIQUE, FACADE, FAÇADE, STRUCT, GROS, VOILE]
+  door_keywords: [PORTE, DOOR, VANTAIL, OUVERTURE, BLOC-PORTE, BLOC PORTE, BP, MENUI, MENUISERIE]
+  window_keywords: [FENETRE, FENÊTRE, WINDOW, CHASSIS, VITRE, VITRAGE, VITREE, VITRÉE, FACADE, FAÇADE]
+  stairs_keywords: [ESCALIER, STAIR, MARCHE, EMARCHEMENT, ÉMARCHEMENT]
+  min_wall_length: 10.0
+  min_feature_length: 2.0
+  wall_score_threshold: 0.38
+  door_score_threshold: 0.32
+  window_score_threshold: 0.30
+  stairs_score_threshold: 0.38
+
+component_cleanup:
+  # Sélectionne le composant spatial principal, pas le plus grand bbox.
+  enabled: true
+  grid_size: 650
+  connectivity: 8
+  entity_cell_dilation: 1
+  component_margin_cells: 7
+  min_component_score_ratio: 0.22
+
+  # Le composant gagnant est celui qui combine longueur physique, densité et nombre d'objets utiles.
+  score_wall_weight: 2.0
+  score_opening_weight: 1.4
+  score_detail_weight: 0.35
+  density_penalty_weight: 0.45
+  micro_entity_penalty_weight: 0.35
+
+  # Après sélection du bâtiment principal, on restaure les petits éléments proches de son bbox.
+  rescue_near_main_component: true
+  rescue_buffer_ratio: 0.055
+  rescue_max_length_ratio: 0.18
+  rescue_min_length: 1.2
+  rescue_min_bbox_diag: 0.8
+  rescue_entity_types: [LINE, ARC, CIRCLE, LWPOLYLINE, POLYLINE, ELLIPSE, SPLINE, INSERT]
+
+  # Garde les portes/fenêtres même si elles sont minuscules, supprime surtout la poussière isolée.
+  min_render_length: 0.8
+  min_render_bbox_diag: 0.5
+
+raster_cleanup:
+  enabled: true
+  remove_components_area_lt: 12
+  keep_largest_component: false
+  crop_to_content: true
+  crop_margin_px: 30
+
+render:
+  dpi: 300
+  background: white
+  margins_ratio: 0.018
+  figure_size: 12
+  wall_linewidth: 1.18
+  detail_linewidth: 0.48
+  door_linewidth: 0.68
+  window_linewidth: 0.62
+  stairs_linewidth: 0.55
+  wall_color: '#050505'
+  detail_color: '#151515'
+  draw_debug_colors: false
+
+converter:
+  backend: oda
+  exe_path: "C:/Program Files (x86)/ODA/Teigha File Converter 4.3.2/TeighaFileConverter.exe"
+  version: "ACAD2018"
