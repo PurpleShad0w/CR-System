@@ -124,6 +124,8 @@ def main():
 
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         feat_cols = meta["feature_columns"]
+        cat_cols = meta.get("cat_columns", [])
+        num_feat_cols = [c for c in feat_cols if c not in cat_cols]
         log1p_target = bool(meta.get("log1p_target", False))
         model = load_model(model_path)
 
@@ -151,6 +153,9 @@ def main():
 
             state = g[["date", target]].copy()
             state[target] = pd.to_numeric(state[target], errors="coerce")
+            state[target] = state[target].replace([np.inf, -np.inf], np.nan)
+            state.loc[state[target].abs() > 1e100, target] = np.nan
+
             state = state.dropna().sort_values("date")
             if state.empty:
                 continue
@@ -191,12 +196,36 @@ def main():
                         X[c] = np.nan
                 X = X[feat_cols].copy()
 
+                # Sanitize numeric features before sklearn.
+                # SimpleImputer handles NaN, but not inf / -inf / absurd values.
+                for c in num_feat_cols:
+                    if c in X.columns:
+                        X[c] = pd.to_numeric(X[c], errors="coerce")
+
+                X = X.replace([np.inf, -np.inf], np.nan)
+
+                for c in num_feat_cols:
+                    if c in X.columns:
+                        X.loc[X[c].abs() > 1e100, c] = np.nan
+
                 pred = model.predict(X)
+                raw_pred = float(pred[0])
+
+                if not np.isfinite(raw_pred):
+                    print(f"[WARN] Non-finite prediction skipped: level={level} target={target} keys={keys} date={d}")
+                    continue
+
                 if log1p_target:
-                    yhat = float(np.expm1(pred[0]))
+                    # Prevent expm1 overflow in autoregressive prediction.
+                    raw_pred = float(np.clip(raw_pred, 0.0, 30.0))
+                    yhat = float(np.expm1(raw_pred))
                     yhat = max(yhat, 0.0)
                 else:
-                    yhat = float(pred[0])
+                    yhat = raw_pred
+
+                if not np.isfinite(yhat) or abs(yhat) > 1e100:
+                    print(f"[WARN] Invalid yhat skipped: level={level} target={target} keys={keys} date={d} yhat={yhat}")
+                    continue
 
                 future_rows.append({**base_feat, "date": d, "yhat": yhat})
                 state = pd.concat([state, pd.DataFrame([{"date": d, target: yhat}])], ignore_index=True)

@@ -7,6 +7,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from pipeline.io_utils import read_semicolon_csv
+
 
 # Existing 4 columns in historical db
 EXISTING_4 = {"elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"}
@@ -106,20 +108,28 @@ def enrich_histories(
       - write enriched CSVs back under db_dir
     """
 
-    site_path = db_dir / "sitehist.csv"
-    zone_path = db_dir / "zonehist.csv"
-    drift_path = db_dir / "consumptiondrift.csv"
+    site_path = db_dir / "site_history.csv"
+    zone_path = db_dir / "zone_history.csv"
+    drift_path = db_dir / "consumptions_drifts.csv"
     usages_path = db_dir / "usages.csv"
     meters_path = db_dir / "metertypes.csv"
 
-    site = pd.read_csv(site_path, sep=";", engine="python")
-    zone = pd.read_csv(zone_path, sep=";", engine="python")
+    if not site_path.exists():
+        site_path = db_dir / "sitehist.csv"
+    if not zone_path.exists():
+        zone_path = db_dir / "zonehist.csv"
+    if not drift_path.exists():
+        # fallback rétrocompatible si tu relances sur l’ancienne DB
+        drift_path = db_dir / "consumptiondrift.csv"
+
+    site = read_semicolon_csv(site_path)
+    zone = read_semicolon_csv(zone_path)
 
     # date key from dtUpdate
     site["date"] = pd.to_datetime(site["dtUpdate"], errors="coerce").dt.floor("D")
     zone["date"] = pd.to_datetime(zone["dtUpdate"], errors="coerce").dt.floor("D")
 
-    cdr = pd.read_csv(drift_path)
+    cdr = read_semicolon_csv(drift_path)
     cdr["date"] = pd.to_datetime(cdr["date"], errors="coerce").dt.floor("D")
 
     usg = _read_lookup_csv(usages_path)
