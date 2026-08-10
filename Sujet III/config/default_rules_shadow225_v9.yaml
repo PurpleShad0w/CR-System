@@ -1,0 +1,69 @@
+# Sujet III - v9 / shadow-only 2.25D + parasite line cleanup
+# À utiliser après le meilleur rendu 2D propre, avant le shadow pass.
+
+parasite_cleanup:
+  enabled: true
+  threshold: 245
+
+  # Supprime les traits parasites longs et très fins, surtout ceux qui dépassent du bâti.
+  # Les valeurs sont volontairement conservatrices pour ne pas supprimer portes/fenêtres.
+  remove_long_horizontal: true
+  remove_long_vertical: true
+  min_run_length_ratio: 0.012     # 1.8% de la plus grande dimension image
+  min_run_length_px: 24
+  support_radius_px: 3
+  max_mean_perpendicular_support: 2.8
+  max_median_perpendicular_support: 2.0
+
+  # Ne supprime pas les traits fins situés dans des zones très denses, typiquement escaliers ou détails de portes.
+  density_radius_px: 10
+  min_dense_neighborhood_ink: 32
+
+  # Permet de retirer les petits traits isolés résiduels après le nettoyage des lignes.
+  remove_small_components: true
+  min_component_area_px: 20
+
+  crop_to_content: true
+  crop_margin_px: 32
+
+shadow_225d:
+  threshold: 245
+  depth_px: 10
+  direction_x: 1
+  direction_y: 1
+  shadow_steps: 10
+  shadow_color: '#b9b9b9'
+  shadow_alpha_start: 0.30
+  shadow_alpha_end: 0.04
+  blur_radius: 1.2
+  top_line_color: '#050505'
+  top_dilate_px: 0
+  crop_to_content: true
+  crop_margin_px: 34
+
+# Optional tuning for the v8 DWG selection stage.
+# Keep this section as documentation unless you wire it into default_rules_shadow225_v8.yaml.
+selection_tuning:
+  add_to_hard_drop_layer_keywords:
+    - AXE
+    - GRID
+    - GRILLE
+    - REPERE
+    - REPÈRE
+    - PROJECTION
+    - CONSTRUCTION
+    - MODULE
+    - MODULATION
+    - TRACE
+    - TRACÉ
+    - GUIDE
+    - ALIGNEMENT
+  if_doors_windows_missing:
+    rescue_bbox_expand_ratio: 0.14
+    max_rescue_length_ratio: 0.22
+    min_rescue_length: 0.4
+    min_rescue_bbox_diag: 0.2
+  if_noise_returns:
+    rescue_bbox_expand_ratio: 0.07
+    max_rescue_length_ratio: 0.10
+    keep_components_score_ratio: 0.28

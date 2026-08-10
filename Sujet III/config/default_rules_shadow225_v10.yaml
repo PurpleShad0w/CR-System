@@ -1,0 +1,66 @@
+# Sujet III - v10 / non-wall line cleanup + shadow-only 2.25D
+# But: garder la précision architecturale, mais retirer/atténuer les lignes longues non-mur.
+# À appliquer sur le rendu 2D v8, AVANT le shadow pass.
+
+nonwall_cleanup:
+  enabled: true
+  threshold: 245
+
+  # Mode principal:
+  # - erase: supprime les lignes parasites détectées
+  # - fade: les remplace par un gris très clair
+  # Je recommande erase pour les essais actuels, puisque les lignes non-mur sont encore gênantes.
+  action: erase
+  fade_gray: 225
+
+  # Séparation thick / thin.
+  # Les murs épais restent protégés. Les traits fins longs sont candidats au retrait.
+  wall_protect_radius_px: 2
+  wall_protect_dilate_px: 2
+
+  # Détection des longues lignes droites parasites.
+  remove_horizontal_runs: true
+  remove_vertical_runs: true
+  min_run_length_ratio: 0.010
+  min_run_length_px: 22
+  max_thin_support_px: 3
+
+  # Retire aussi les petits segments qui dépassent de la zone construite, mais avec prudence.
+  remove_far_thin_components: true
+  main_content_expand_ratio: 0.055
+  far_component_min_length_px: 8
+
+  # Les portes/fenêtres et petits détails sont souvent petits ou courbes: on les protège ici.
+  preserve_small_components: true
+  preserve_component_area_lt: 140
+  preserve_component_bbox_max_px: 42
+
+  # Protection des zones denses: escaliers, blocs de portes, noyaux techniques.
+  dense_zone_radius_px: 9
+  dense_zone_min_ink: 42
+
+  # Nettoyage final léger.
+  remove_tiny_components: true
+  tiny_component_area_lt: 8
+
+  crop_to_content: true
+  crop_margin_px: 34
+
+shadow_225d:
+  threshold: 245
+  depth_px: 10
+  direction_x: 1
+  direction_y: 1
+  shadow_steps: 10
+  shadow_color: '#b9b9b9'
+  shadow_alpha_start: 0.30
+  shadow_alpha_end: 0.04
+  blur_radius: 1.15
+  top_line_color: '#050505'
+  crop_to_content: true
+  crop_margin_px: 34
+
+# Si tu préfères ne pas supprimer, mais rendre les lignes parasites moins visibles:
+# nonwall_cleanup:
+#   action: fade
+#   fade_gray: 230

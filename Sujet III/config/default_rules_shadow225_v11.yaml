@@ -1,0 +1,47 @@
+# Sujet III - v11 / projection cleanup + shadow-only 2.25D
+# Objectif: enlever les lignes fines non-mur qui traversent les murs via detection par alignement global.
+
+projection_cleanup:
+  enabled: true
+  threshold: 245
+  action: erase      # erase ou fade
+  fade_gray: 232
+
+  # Protection des traits epais = murs / contours forts.
+  wall_erode_px: 2
+  wall_dilate_px: 3
+
+  # Detection par projection horizontale/verticale.
+  remove_horizontal_aligned: true
+  remove_vertical_aligned: true
+  min_span_ratio: 0.18          # une ligne candidate s'etend sur au moins 18% de l'image
+  min_pixels_ratio_in_span: 0.18
+  max_pixels_ratio_in_span: 0.80
+  min_total_pixels: 18
+  group_neighbor_px: 2
+  remove_band_halfwidth_px: 1
+
+  # Ne pas toucher les zones tres denses, typiquement escaliers / noyaux / portes.
+  protect_dense_zones: true
+  dense_radius_px: 9
+  dense_threshold: 0.30
+
+  # Nettoyage final.
+  remove_tiny_components: true
+  tiny_component_area_lt: 8
+  crop_to_content: true
+  crop_margin_px: 34
+
+shadow_225d:
+  threshold: 245
+  depth_px: 10
+  direction_x: 1
+  direction_y: 1
+  shadow_steps: 10
+  shadow_color: '#b9b9b9'
+  shadow_alpha_start: 0.30
+  shadow_alpha_end: 0.04
+  blur_radius: 1.15
+  top_line_color: '#050505'
+  crop_to_content: true
+  crop_margin_px: 34

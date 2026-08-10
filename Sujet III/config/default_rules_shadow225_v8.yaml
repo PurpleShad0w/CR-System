@@ -1,0 +1,138 @@
+# Sujet III - v8 / high-fidelity 2D + shadow-only 2.25D
+# Direction retenue : conserver la précision du rendu v1/v1+ mais appliquer un relief shadow-only subtil.
+
+layer_decisions_file: data/work/layer_review/layer_decisions.yaml
+
+selection:
+  # Mode proche v1 : on conserve les détails, on ne refait pas une classification physique agressive.
+  render_undecided_layers: true
+  respect_manual_drop_layers: true
+
+  # Rescue contrôlé : certains layers historiquement en drop peuvent contenir portes/fenêtres/menuiseries.
+  allow_detail_rescue_from_dropped_layers: true
+  rescue_only_near_main_plan: true
+  rescue_bbox_expand_ratio: 0.10
+
+  hard_drop_entity_types:
+    - TEXT
+    - MTEXT
+    - DIMENSION
+    - LEADER
+    - MULTILEADER
+    - HATCH
+    - FIELD
+    - DIMASSOC
+    - ACAD_PROXY_OBJECT
+    - WIPEOUT
+    - TABLE
+    - IMAGE
+    - UNDERLAY
+
+  hard_drop_layer_keywords:
+    - TEXT
+    - TEXTE
+    - COTE
+    - COTES
+    - DIM
+    - HACH
+    - HATCH
+    - HACHURE
+    - TRAME
+    - CARTOUCHE
+    - LEGENDE
+    - LÉGENDE
+    - NOTA
+    - ANNOT
+
+  # Important : ne PAS mettre CLOISON/PORTE/FENETRE/MENUI ici.
+  detail_rescue_keywords:
+    - PORTE
+    - DOOR
+    - VANTAIL
+    - BLOC-PORTE
+    - BLOC PORTE
+    - MENUISERIE
+    - MENUI
+    - FENETRE
+    - FENÊTRE
+    - WINDOW
+    - CHASSIS
+    - VITRE
+    - VITRAGE
+    - VITREE
+    - VITRÉE
+    - ESCALIER
+    - STAIR
+    - MARCHE
+    - GARDE-CORPS
+    - GC
+    - CLOISON
+    - CLO
+    - MUR
+    - WALL
+
+  # Géométrie à récupérer même si le layer n'est pas explicitement nommé.
+  rescue_geometry_types:
+    - LINE
+    - ARC
+    - CIRCLE
+    - LWPOLYLINE
+    - POLYLINE
+    - ELLIPSE
+    - SPLINE
+    - INSERT
+
+  # Les portes/fenêtres sont souvent petites. On garde bas.
+  min_base_length: 0.8
+  min_base_bbox_diag: 0.4
+  min_rescue_length: 0.6
+  min_rescue_bbox_diag: 0.35
+  max_rescue_length_ratio: 0.16
+
+  # Garde-fou contre pollutions éloignées.
+  remove_far_artifacts_before_render: true
+  main_component_grid_size: 700
+  main_component_dilation_cells: 1
+  keep_components_score_ratio: 0.18
+
+render_2d:
+  dpi: 300
+  background: white
+  foreground: black
+  figure_size: 12
+  margins_ratio: 0.025
+  linewidth_default: 0.52
+  linewidth_min: 0.30
+  linewidth_max: 1.55
+  rescued_linewidth_multiplier: 0.90
+  use_entity_lineweight: true
+
+post_cleanup:
+  enabled: true
+  threshold: 245
+  remove_component_area_lt: 6
+  seed_min_area: 18
+  main_bbox_expand_ratio: 0.14
+  iterative_expansion_passes: 5
+  crop_to_content: true
+  crop_margin_px: 30
+
+shadow_225d:
+  threshold: 245
+  depth_px: 10
+  direction_x: 1
+  direction_y: 1
+  shadow_steps: 10
+  shadow_color: '#b9b9b9'
+  shadow_alpha_start: 0.30
+  shadow_alpha_end: 0.04
+  blur_radius: 1.2
+  top_line_color: '#050505'
+  top_dilate_px: 0
+  crop_to_content: true
+  crop_margin_px: 34
+
+converter:
+  backend: oda
+  exe_path: "C:/Program Files (x86)/ODA/Teigha File Converter 4.3.2/TeighaFileConverter.exe"
+  version: "ACAD2018"

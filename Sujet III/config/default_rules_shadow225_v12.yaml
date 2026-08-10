@@ -1,0 +1,52 @@
+# Sujet III - v12 / mesh cleanup + shadow-only 2.25D
+# Objectif: supprimer les gros clusters de lignes non-mur type trames/mesh/hachures, tout en conservant les murs, portes, fenetres et petits details utiles.
+
+mesh_cleanup:
+  enabled: true
+  threshold: 245
+  action: erase      # erase ou fade
+  fade_gray: 232
+
+  # Protection murs / traits epais.
+  wall_erode_px: 2
+  wall_dilate_px: 3
+  wall_keep_px: 1
+
+  # Detection des lignes fines longues, y compris diagonales.
+  min_line_run_px: 14
+  min_diag_run_px: 12
+  line_mask_dilate_px: 2
+
+  # Critere mesh: gros paquet de lignes fines.
+  min_mesh_bbox_w_px: 36
+  min_mesh_bbox_h_px: 28
+  min_mesh_line_pixels: 220
+  min_mesh_density: 0.045
+  min_mesh_orientations: 2
+
+  # Si un mesh est detecte, on supprime les pixels fins dans sa bbox.
+  # Les pixels murs/contours forts restent proteges.
+  mesh_bbox_margin_px: 3
+
+  # Petites traces isolees: on supprime uniquement si loin des murs.
+  remove_specks: true
+  speck_area_lt: 45
+  speck_near_wall_px: 7
+
+  # Nettoyage final.
+  crop_to_content: true
+  crop_margin_px: 34
+
+shadow_225d:
+  threshold: 245
+  depth_px: 10
+  direction_x: 1
+  direction_y: 1
+  shadow_steps: 10
+  shadow_color: '#b9b9b9'
+  shadow_alpha_start: 0.30
+  shadow_alpha_end: 0.04
+  blur_radius: 1.15
+  top_line_color: '#050505'
+  crop_to_content: true
+  crop_margin_px: 34
