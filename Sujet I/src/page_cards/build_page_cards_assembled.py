@@ -250,10 +250,16 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
         title = (pg.get('title') or 'Page').strip()
 
         text = collect_text(pg)
-        if not (text or '').strip():
+        if not (text or "").strip():
             text = _audio_fallback_text(pg)
 
-        bul = to_bullets(text, max_lines=max_bullets)
+        # Source complète, non tronquée, utilisée ensuite par humanize_page_cards.py.
+        # Ce champ doit rester le plus proche possible des notes/transcriptions d'origine.
+        source_text = (text or "").strip()
+
+        # Version courte utilisée pour compatibilité et premier affichage.
+        bul = to_bullets(source_text, max_lines=max_bullets)
+
         imgs = collect_images(pg)
         imgs = select_best_images(pg, imgs, title=title, bullets=bul, max_images=max_images)
 
@@ -267,6 +273,10 @@ def build(pages_source: Path, out_json: Path, *, case_id: str, section_name: str
             'bullets': bul,
             'images': imgs,
             'page_id': _page_id(pg),
+
+            # Source complète, avant troncature et avant humanisation.
+            # C'est ce champ que l'on utilisera prioritairement ensuite.
+            "raw_text": source_text,
         })
 
     out = {
