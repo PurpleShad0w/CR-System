@@ -100,6 +100,58 @@ def _save_fig(path: Path):
     plt.close()
 
 
+def _read_csv_safe(path: Path) -> pd.DataFrame:
+    return pd.read_csv(
+        path,
+        encoding="utf-8-sig",
+        low_memory=False,
+        na_values=["NULL", "null", ""],
+    )
+
+
+def _plot_train_valid_ts(train_df: pd.DataFrame, valid_df: pd.DataFrame, target: str, title: str, out: Path):
+    train_df = train_df.copy()
+    valid_df = valid_df.copy()
+
+    if "date" in train_df.columns:
+        train_df["date"] = pd.to_datetime(train_df["date"], errors="coerce")
+    if "date" in valid_df.columns:
+        valid_df["date"] = pd.to_datetime(valid_df["date"], errors="coerce")
+
+    if target in train_df.columns:
+        train_df[target] = pd.to_numeric(train_df[target], errors="coerce")
+    if "y_true" in valid_df.columns:
+        valid_df["y_true"] = pd.to_numeric(valid_df["y_true"], errors="coerce")
+    if "y_pred" in valid_df.columns:
+        valid_df["y_pred"] = pd.to_numeric(valid_df["y_pred"], errors="coerce")
+
+    train_df = train_df.replace([np.inf, -np.inf], np.nan)
+    valid_df = valid_df.replace([np.inf, -np.inf], np.nan)
+
+    has_train = len(train_df.dropna(subset=["date", target])) > 0 if target in train_df.columns else False
+    has_valid = len(valid_df.dropna(subset=["date", "y_true", "y_pred"])) > 0
+
+    if not has_train and not has_valid:
+        return
+
+    plt.figure(figsize=(13, 4.5))
+
+    if has_train:
+        t = train_df.dropna(subset=["date", target]).sort_values("date")
+        plt.plot(t["date"], t[target], label="train truth", linewidth=1.2, alpha=0.75)
+
+    if has_valid:
+        v = valid_df.dropna(subset=["date", "y_true", "y_pred"]).sort_values("date")
+        plt.plot(v["date"], v["y_true"], label="valid truth", linewidth=1.5)
+        plt.plot(v["date"], v["y_pred"], label="valid prediction", linewidth=1.5)
+
+    plt.title(title)
+    plt.xlabel("date")
+    plt.ylabel(target)
+    plt.legend()
+    _save_fig(out)
+
+
 def _compute_caps(x, y, p_full=99, p_zoom=95):
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
@@ -223,7 +275,7 @@ def main():
     ap.add_argument("--config", required=True)
     ap.add_argument("--level", default="site")  # site | zone | all
     ap.add_argument("--target", required=True)
-    ap.add_argument("--site", default="170", help='siteId pour timeseries, ou "all"')
+    ap.add_argument("--site", default="all", help='siteId pour timeseries, ou "all"')
     args = ap.parse_args()
 
     LEVELS = ["site", "zone"]
@@ -244,9 +296,21 @@ def main():
     out_dir = ensure_dir(Path(cfg["paths"]["out_dir"]))
     fig_dir = ensure_dir(out_dir / "figures")
 
+    def _targets_from_eval_preds(level: str) -> list[str]:
+        prefix = f"eval_preds_{level}_"
+        targets = []
+
+        for p in out_dir.glob(f"{prefix}*.csv"):
+            name = p.stem
+            target = name.replace(prefix, "")
+            if target:
+                targets.append(target)
+
+        return sorted(set(targets))
+
     def _load_hist(level: str) -> pd.DataFrame:
         cleaned_path = out_dir / f"{level}hist_cleaned.csv"
-        hist = pd.read_csv(cleaned_path)
+        hist = _read_csv_safe(cleaned_path)
         hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
         hist = add_elec_total_accurate(hist)
         hist = add_elec_total_no_bve(hist)
@@ -258,16 +322,130 @@ def main():
         return set(BASE_TARGETS_BY_LEVEL[level]) | set(dyn_usages)
 
     def expand_targets(level: str, target: str) -> list[str]:
-        if target == "elecUses":
-            return ELECTRIC_USES[:]
         if target == "all":
+            # Source principale pour le report : ce qui a réellement été évalué.
+            eval_targets = _targets_from_eval_preds(level)
+            if eval_targets:
+                return eval_targets
+
+            # Fallback si run_evaluate n'a pas encore été lancé.
             hist = _load_hist(level)
-            elec_usages = discover_elec_usage_targets(hist)
             base = BASE_TARGETS_BY_LEVEL[level][:]
-            return base + [c for c in elec_usages if c not in base]
+            dyn_usages = discover_elec_usage_targets(hist)
+            return base + [c for c in dyn_usages if c not in base]
+
+        if target == "elecUses":
+            hist = _load_hist(level)
+            dyn_usages = discover_elec_usage_targets(hist)
+            return dyn_usages if dyn_usages else ELECTRIC_USES[:]
+
         return [target]
 
+    def report_from_eval_preds(level: str, target: str):
+        level_cfg = cfg["level_defaults"][level]
+        id_cols = level_cfg["id_cols"]
+
+        pred_path = out_dir / f"eval_preds_{level}_{target}.csv"
+        if not pred_path.exists():
+            return None
+
+        df = _read_csv_safe(pred_path)
+
+        required = set(id_cols + ["date", "y_true", "y_pred"])
+        missing = required - set(df.columns)
+        if missing:
+            print(f"[WARN] {pred_path.name}: colonnes manquantes {sorted(missing)}. Skip.")
+            return None
+
+        df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.floor("D")
+        df["y_true"] = pd.to_numeric(df["y_true"], errors="coerce")
+        df["y_pred"] = pd.to_numeric(df["y_pred"], errors="coerce")
+
+        df = df.replace([np.inf, -np.inf], np.nan)
+        df = df.dropna(subset=id_cols + ["date", "y_true", "y_pred"])
+
+        if df.empty:
+            print(f"[WARN] {pred_path.name}: aucune ligne exploitable après nettoyage. Skip.")
+            return None
+
+        y = df["y_true"].to_numpy(dtype=float)
+        yhat = df["y_pred"].to_numpy(dtype=float)
+
+        target_fig_dir = ensure_dir(fig_dir / level / target)
+
+        parity_linear_99(
+            y,
+            yhat,
+            f"Parity — {level} {target} (valid)",
+            target_fig_dir / f"parity_{level}_{target}_p99.png",
+        )
+        parity_linear_95(
+            y,
+            yhat,
+            f"Parity — {level} {target} (valid)",
+            target_fig_dir / f"parity_{level}_{target}_p95.png",
+        )
+        parity_log(
+            y,
+            yhat,
+            f"Parity log — {level} {target} (valid)",
+            target_fig_dir / f"parity_{level}_{target}_log.png",
+        )
+        residual_hist(
+            y,
+            yhat,
+            f"Residuals — {level} {target} (valid)",
+            target_fig_dir / f"resid_{level}_{target}.png",
+        )
+
+        # Timeseries simples par site ou par zone
+        site_arg = str(args.site).lower()
+
+        if "siteId" in df.columns:
+            if site_arg == "all":
+                site_ids = sorted([int(x) for x in df["siteId"].dropna().unique().tolist()])
+            else:
+                site_ids = [int(args.site)]
+
+            for sid in site_ids:
+                dsite = df[df["siteId"] == sid].copy().sort_values("date")
+                if dsite.empty:
+                    continue
+
+                plt.figure(figsize=(12, 4))
+                plt.plot(dsite["date"], dsite["y_true"], label="y_true", linewidth=1.5)
+                plt.plot(dsite["date"], dsite["y_pred"], label="y_pred", linewidth=1.5)
+                plt.title(f"{level} {target} — site {sid}")
+                plt.xlabel("date")
+                plt.ylabel(target)
+                plt.legend()
+                _save_fig(target_fig_dir / f"ts_site{sid}_{target}_eval.png")
+
+        # résumé métrique minimal
+        rep = pd.DataFrame([{
+            "rows": int(len(df)),
+            "MAE": _mae(y, yhat),
+            "RMSE": _rmse(y, yhat),
+            "WAPE": _wape(y, yhat),
+            "Bias": float(np.nanmean(yhat - y)) if len(y) else np.nan,
+        }])
+        rep.to_csv(out_dir / f"report_metrics_{level}_{target}.csv", index=False)
+
+        print(f"[REPORT] generated from eval_preds: level={level} target={target} rows={len(df)}")
+
+        return {
+            "level": level,
+            "target": target,
+            "id_cols": id_cols,
+            "eval_df": df.rename(columns={"y_true": "y_true", "y_pred": "y_pred"}),
+            "win_pred": df[id_cols + ["date", "y_pred"]].copy(),
+        }
+
     def report_one(level: str, target: str, site: str):
+        fallback = report_from_eval_preds(level, target)
+        if fallback is not None:
+            return fallback
+
         hist = _load_hist(level)
 
         info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get(
@@ -417,17 +595,29 @@ def main():
     # run
     reports = []
     levels = LEVELS if args.level == "all" else [args.level]
+
     for lvl in levels:
-        allowed = allowed_targets(lvl)
+        if lvl not in LEVELS:
+            raise ValueError("Unknown level. Use site|zone|all")
+
         targets = expand_targets(lvl, args.target)
+        print(f"[REPORT] level={lvl}: {len(targets)} target(s) detected")
+
         for tgt in targets:
             if tgt == "elecAggregatedKwh":
-                raise ValueError("elecAggregatedKwh est exclu.")
-            if tgt not in allowed:
-                raise ValueError(f"Target {tgt} not supported for level {lvl}. Allowed base + dyn usages.")
-            r = report_one(lvl, tgt, args.site)
-            if r is not None:
-                reports.append(r)
+                print(f"[REPORT][SKIP] {lvl}_{tgt}: excluded target")
+                continue
+
+            try:
+                r = report_one(lvl, tgt, args.site)
+                if r is not None:
+                    reports.append(r)
+                else:
+                    print(f"[REPORT][SKIP] {lvl}_{tgt}: no report generated")
+            except Exception as e:
+                print(f"[REPORT][ERROR] {lvl}_{tgt}: {type(e).__name__}: {e}")
+
+    print(f"[REPORT] total generated reports: {len(reports)}")
 
     # comparaison direct vs somme des 4 usages (legacy)
     cmp_dir = ensure_dir(fig_dir / "compare")
