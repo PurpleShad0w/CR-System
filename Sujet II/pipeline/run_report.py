@@ -18,8 +18,9 @@ from .targets_utils import discover_elec_usage_targets, add_elec_total_accurate
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
 ELEC_TOTAL_ACCURATE = "elecTotalAccurateKwh"
+ELEC_AGGREGATED = "elecAggregatedKwh"
 ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
-BASE_TARGETS = ["elecTotalKwh", ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"]
+BASE_TARGETS = ["elecTotalKwh", ELEC_AGGREGATED, ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"]
 
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
@@ -374,9 +375,6 @@ def main():
         targets = expand_targets(lvl, args.target)
         print(f"[REPORT] level={lvl}: {len(targets)} target(s) detected")
         for tgt in targets:
-            if tgt == "elecAggregatedKwh":
-                print(f"[REPORT][SKIP] {lvl}_{tgt}: excluded target")
-                continue
             try:
                 r = report_one(lvl, tgt, args.site)
                 if r is not None:
@@ -390,7 +388,7 @@ def main():
 
     cmp_dir = ensure_dir(fig_dir / "compare")
     by_lt = {(r["level"], r["target"]): r for r in reports}
-    total_candidates = [ELEC_TOTAL_ACCURATE, "elecTotalKwh"]
+    total_candidates = [ELEC_TOTAL_ACCURATE, ELEC_AGGREGATED, "elecTotalKwh"]
 
     for lvl in ["site", "zone"]:
         total = next((t for t in total_candidates if (lvl, t) in by_lt), None)

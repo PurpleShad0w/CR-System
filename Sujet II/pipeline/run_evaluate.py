@@ -18,10 +18,11 @@ from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_sign
 
 ELECTRIC_USES_LEGACY = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
 ELEC_TOTAL_ACCURATE = "elecTotalAccurateKwh"
+ELEC_AGGREGATED = "elecAggregatedKwh"
 ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
 
-BASE_TARGETS = ["elecTotalKwh", ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"]
-ELECTRIC_ALL = ["elecTotalKwh", ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE] + ELECTRIC_USES_LEGACY  # energy-like for metrics
+BASE_TARGETS = ["elecTotalKwh", ELEC_AGGREGATED, ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"]
+ELECTRIC_ALL = ["elecTotalKwh", ELEC_AGGREGATED, ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE] + ELECTRIC_USES_LEGACY  # energy-like for metrics
 
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
@@ -266,8 +267,6 @@ def main():
         targets = expand_targets(lvl, args.target)
 
         for tgt in targets:
-            if tgt == "elecAggregatedKwh":
-                raise ValueError("elecAggregatedKwh est exclu (pas un usage).")
             if tgt not in allowed:
                 raise ValueError(f"Target {tgt} not supported for level {lvl}. Allowed base + dyn usages.")
             evaluate_one(lvl, tgt)

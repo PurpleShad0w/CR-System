@@ -28,9 +28,10 @@ from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_sign
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
 ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
 ELEC_TOTAL_ACCURATE = "elecTotalAccurateKwh"
+ELEC_AGGREGATED = "elecAggregatedKwh"
 
 # énergie = total + accurate + usages + noBVE (pour log1p)
-ELECTRIC_ALL = ["elecTotalKwh", ELEC_TOTAL_ACCURATE] + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
+ELECTRIC_ALL = ["elecTotalKwh", ELEC_AGGREGATED, ELEC_TOTAL_ACCURATE] + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
 
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
@@ -72,8 +73,8 @@ def main():
 
     # ✅ all inclut le total "accurate" (drift) + noBVE + base
     BASE_TARGETS_BY_LEVEL = {
-        "site": ["elecTotalKwh", ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
-        "zone": ["elecTotalKwh", ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
+        "site": ["elecTotalKwh", ELEC_AGGREGATED, ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
+        "zone": ["elecTotalKwh", ELEC_AGGREGATED, ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"],
     }
 
     # ✅ targets “supportés” (validation)
@@ -137,8 +138,6 @@ def main():
         static_cols = cfg.get("features", {}).get("static_cols", [])
         extra_cols = [c for c in static_cols if c in hist.columns]
 
-        if target == "elecAggregatedKwh":
-            raise ValueError("elecAggregatedKwh est exclu (pas un usage).")
 
         if target not in hist.columns:
             raise ValueError(f"Target '{target}' absent de {level}hist.")

@@ -99,7 +99,7 @@ def main():
         dyn_elec_usages = discover_elec_usage_targets(hist)
 
         # sources that should be cleaned directly
-        total_source_cols = [c for c in ["elecTotalKwh", "elecTotalFromDriftKwh"] if c in hist.columns]
+        total_source_cols = [c for c in ["elecTotalKwh", "elecAggregatedKwh", "elecTotalFromDriftKwh"] if c in hist.columns]
         usage_cols = [c for c in dyn_elec_usages if c in hist.columns]
         water_cols = [c for c in ["waterM3"] if c in hist.columns]
 
@@ -169,7 +169,7 @@ def main():
                 CLEAN_LOGS[f"{level}_local_spike_{col}"] = log
 
         for col in measure_cols:
-            if col in {"elecTotalKwh", "elecTotalAccurateKwh", "elecTotalFromDriftKwh", "waterM3"}:
+            if col in {"elecTotalKwh", "elecAggregatedKwh", "elecTotalAccurateKwh", "elecTotalFromDriftKwh", "waterM3"}:
                 continue
             hist, log = drop_local_spikes_v12(hist, None, id_cols, "date", col, None, exp, factor=8.0)
             if len(log):
@@ -186,7 +186,7 @@ def main():
             "max_spread_days": 370,
         }
 
-        for col in [c for c in ["elecTotalKwh", "elecTotalFromDriftKwh", "waterM3"] if c in hist.columns]:
+        for col in [c for c in ["elecTotalKwh", "elecAggregatedKwh", "elecTotalFromDriftKwh", "waterM3"] if c in hist.columns]:
             hist, log = spread_cumul_spikes_v3(hist, id_cols, "date", col, cfg_cumul, exp)
             if len(log):
                 CLEAN_LOGS[f"{level}_cumul_{col}"] = log
