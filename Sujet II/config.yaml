@@ -40,3 +40,23 @@ training:
 
 prediction:
   days: null
+# Semantic variable mapping.
+# Left side = semantic role used by the pipeline.
+# Right side = actual column name in the input CSVs.
+# Change only the right side if source files use different column names.
+variables:
+  columns:
+    elec_total: elecTotalKwh
+    elec_aggregated: elecAggregatedKwh
+    elec_total_from_drift: elecTotalFromDriftKwh
+    elec_total_accurate: elecTotalAccurateKwh
+    elec_total_no_bve: elecTotalNoBveKwh
+    water_total: waterM3
+    indoor_temp: indoorTempDegC
+    pred_total_elec: totalKwh
+    pred_total_water: totalWater
+    legacy_elec_usages:
+      bve: elecBveKwh
+      cvc: elecCvcKwh
+      force: elecForceKwh
+      lighting: elecLightingKwh

@@ -73,3 +73,48 @@ def add_elec_total_accurate(df: pd.DataFrame) -> pd.DataFrame:
 
     out["elecTotalAccurateKwh"] = np.maximum(pd.to_numeric(out["elecTotalAccurateKwh"], errors="coerce"), 0.0)
     return out
+
+
+def discover_dynamic_consumption_targets(hist: pd.DataFrame) -> list[str]:
+    """
+    Discover all dynamic consumption targets generated from enriched history.
+
+    Includes:
+      - elec*...Kwh dynamic usages
+      - water*...M3 dynamic usages
+      - ec* hot-water family columns
+      - eg* chilled-water family columns
+
+    Excludes structural totals and derived totals that are handled explicitly in BASE_TARGETS.
+    """
+    excluded = {
+        "elecTotalKwh",
+        "elecAggregatedKwh",
+        "elecTotalFromDriftKwh",
+        "elecTotalAccurateKwh",
+        "elecTotalNoBveKwh",
+        "waterM3",
+        "waterTotalFromDriftM3",
+        "ecTotalFromDrift",
+        "egTotalFromDrift",
+    }
+
+    cols: list[str] = []
+    for c in hist.columns:
+        if not isinstance(c, str):
+            continue
+        if c in excluded:
+            continue
+        if c.endswith("_drift"):
+            continue
+
+        is_elec_usage = c.startswith("elec") and c.endswith("Kwh")
+        is_water_usage = c.startswith("water") and c.endswith("M3")
+        is_hot_water_usage = c.startswith("ec")
+        is_cold_water_usage = c.startswith("eg")
+
+        if is_elec_usage or is_water_usage or is_hot_water_usage or is_cold_water_usage:
+            cols.append(c)
+
+    return sorted(cols)
+

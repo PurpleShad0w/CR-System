@@ -13,7 +13,8 @@ from .config import load_config
 from .io_utils import ensure_dir
 from .dataset import load_level_tables
 from .reporting import parity_linear_95, parity_linear_99, parity_log, residual_hist
-from .targets_utils import discover_elec_usage_targets, add_elec_total_accurate
+from .targets_utils import discover_elec_usage_targets, discover_dynamic_consumption_targets, add_elec_total_accurate
+from .variable_config import normalize_input_columns
 
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
@@ -236,8 +237,10 @@ def main():
         cleaned_path = out_dir / f"{level}hist_cleaned.csv"
         if cleaned_path.exists():
             hist = _read_csv_safe(cleaned_path)
+            hist = normalize_input_columns(hist, cfg)
         else:
             hist, _, _ = load_level_tables(db_dir, cfg["level_defaults"][level])
+            hist = normalize_input_columns(hist, cfg)
         if "date" in hist.columns:
             hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
         elif "dtUpdate" in hist.columns:
@@ -261,12 +264,12 @@ def main():
             if eval_targets:
                 return eval_targets
             hist = _load_hist(level)
-            dyn_usages = discover_elec_usage_targets(hist)
-            return BASE_TARGETS + [c for c in dyn_usages if c not in BASE_TARGETS]
+            dyn_targets = discover_dynamic_consumption_targets(hist)
+            return BASE_TARGETS + [c for c in dyn_targets if c not in BASE_TARGETS]
         if target == "elecUses":
             hist = _load_hist(level)
-            dyn_usages = discover_elec_usage_targets(hist)
-            return dyn_usages if dyn_usages else ELECTRIC_USES[:]
+            dyn_targets = discover_dynamic_consumption_targets(hist)
+            return dyn_targets if dyn_targets else ELECTRIC_USES[:]
         return [target]
 
     def report_from_eval_preds(level: str, target: str):

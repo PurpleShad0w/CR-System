@@ -17,6 +17,7 @@ from .cleaning import (
     cap_point_outliers_v1,
 )
 from .targets_utils import discover_elec_usage_targets, add_elec_total_accurate
+from .variable_config import normalize_input_columns
 
 
 ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
@@ -86,6 +87,8 @@ def main():
         id_cols = level_cfg["id_cols"]
 
         hist, pred, _ = load_level_tables(db_dir, level_cfg)
+        hist = normalize_input_columns(hist, cfg)
+        pred = normalize_input_columns(pred, cfg)
 
         # always normalize dates explicitly
         hist = _ensure_date(hist)

@@ -13,7 +13,8 @@ from .dataset import load_level_tables
 from .features import add_calendar_features, build_lag_features, build_rolling_features
 from .modeling import load_model, mae, rmse
 from .site_infos import load_site_infos
-from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_signal, add_elec_total_accurate
+from .targets_utils import discover_elec_usage_targets, discover_dynamic_consumption_targets, drop_groups_with_no_signal, add_elec_total_accurate
+from .variable_config import normalize_input_columns
 
 
 ELECTRIC_USES_LEGACY = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
@@ -24,6 +25,17 @@ ELEC_TOTAL_NOBVE = "elecTotalNoBveKwh"
 BASE_TARGETS = ["elecTotalKwh", ELEC_AGGREGATED, ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE, "waterM3", "indoorTempDegC"]
 ELECTRIC_ALL = ["elecTotalKwh", ELEC_AGGREGATED, ELEC_TOTAL_ACCURATE, ELEC_TOTAL_NOBVE] + ELECTRIC_USES_LEGACY  # energy-like for metrics
 
+
+
+def _is_consumption_target(target: str) -> bool:
+    """True for non-negative consumption-like targets, including dynamic drift targets."""
+    return (
+        target in (ELECTRIC_ALL + ["waterM3"])
+        or (isinstance(target, str) and target.startswith("elec") and target.endswith("Kwh"))
+        or (isinstance(target, str) and target.startswith("water") and target.endswith("M3"))
+        or (isinstance(target, str) and target.startswith("ec"))
+        or (isinstance(target, str) and target.startswith("eg"))
+    )
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
     if ELEC_TOTAL_NOBVE in df.columns:
@@ -54,6 +66,7 @@ def main():
         if not cleaned_path.exists():
             raise RuntimeError("Run cleaning first")
         hist = pd.read_csv(cleaned_path)
+        hist = normalize_input_columns(hist, cfg)
         hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
 
         info_path = Path(args.config).resolve().parent / cfg.get("paths", {}).get(
@@ -72,15 +85,15 @@ def main():
             return ELECTRIC_USES_LEGACY[:]
         if target == "all":
             hist = _load_hist(level)
-            dyn_usages = discover_elec_usage_targets(hist)
+            dyn_targets = discover_dynamic_consumption_targets(hist)
             base = BASE_TARGETS[:]
-            return base + [c for c in dyn_usages if c not in base]
+            return base + [c for c in dyn_targets if c not in base]
         return [target]
 
     def allowed_targets(level: str) -> set[str]:
         hist = _load_hist(level)
-        dyn_usages = discover_elec_usage_targets(hist)
-        return set(BASE_TARGETS) | set(dyn_usages)
+        dyn_targets = discover_dynamic_consumption_targets(hist)
+        return set(BASE_TARGETS) | set(dyn_targets)
 
     def evaluate_one(level: str, target: str):
         hist = _load_hist(level)
@@ -88,8 +101,8 @@ def main():
         id_cols = level_cfg["id_cols"]
 
         # Restrict groups if this is a usage: skip sites/zones where fully absent
-        dyn_usages = set(discover_elec_usage_targets(hist))
-        if target in dyn_usages:
+        dyn_targets = set(discover_dynamic_consumption_targets(hist))
+        if target in dyn_targets:
             hist = drop_groups_with_no_signal(hist, id_cols, target)
 
         model_dir = out_dir / "models"
@@ -117,6 +130,7 @@ def main():
 
         # weather
         _, _, weath = load_level_tables(db_dir, level_cfg)
+        weath = normalize_input_columns(weath, cfg)
         if len(weath) and "date" in weath.columns:
             weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
 
@@ -154,7 +168,7 @@ def main():
         y = valid[target].to_numpy(dtype=float)
 
         # energy/eau: filtre négatifs
-        if target in (ELECTRIC_ALL + ["waterM3"]):
+        if _is_consumption_target(target):
             m = np.isfinite(y) & (y >= 0)
             valid = valid.loc[m].copy()
             y = y[m]
@@ -175,7 +189,7 @@ def main():
         pred_df.to_csv(out_dir / f"eval_preds_{level}_{target}.csv", index=False)
 
         # metrics
-        if target in (ELECTRIC_ALL + ["waterM3"]):
+        if _is_consumption_target(target):
             denom = float(np.sum(np.abs(y)))
             wape = float(np.sum(np.abs(y - yhat)) / denom) if denom > 0 else np.nan
         else:
@@ -193,10 +207,10 @@ def main():
             m2 = denom2 > 0
             return float(200.0 * np.mean(np.abs(y_pred[m2] - y_true[m2]) / denom2[m2])) if np.any(m2) else np.nan
 
-        smape = _smape(y, yhat) if target in (ELECTRIC_ALL + ["waterM3"]) else np.nan
+        smape = _smape(y, yhat) if _is_consumption_target(target) else np.nan
 
         mae_m2 = rmse_m2 = wape_m2 = np.nan
-        if target in (ELECTRIC_ALL + ["waterM3"]) and "surface_m2" in valid.columns:
+        if _is_consumption_target(target) and "surface_m2" in valid.columns:
             surf = pd.to_numeric(valid["surface_m2"], errors="coerce").to_numpy(dtype=float)
             m2 = np.isfinite(surf) & (surf > 0) & np.isfinite(y) & np.isfinite(yhat)
             if np.any(m2):
@@ -217,7 +231,7 @@ def main():
             if len(yy) == 0:
                 continue
             denom_g = float(np.sum(np.abs(yy)))
-            wape_g = float(np.sum(np.abs(yy - pp)) / denom_g) if (denom_g > 0 and target in (ELECTRIC_ALL + ["waterM3"])) else np.nan
+            wape_g = float(np.sum(np.abs(yy - pp)) / denom_g) if (denom_g > 0 and _is_consumption_target(target)) else np.nan
             bias_g = float(np.mean(pp - yy))
             sst_g = float(np.sum((yy - np.mean(yy)) ** 2))
             sse_g = float(np.sum((yy - pp) ** 2))

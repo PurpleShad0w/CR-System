@@ -13,7 +13,8 @@ from .dataset import load_level_tables
 from .features import add_calendar_features
 from .modeling import load_model
 from .site_infos import load_site_infos
-from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_signal, add_elec_total_accurate
+from .targets_utils import discover_elec_usage_targets, discover_dynamic_consumption_targets, drop_groups_with_no_signal, add_elec_total_accurate
+from .variable_config import normalize_input_columns
 
 
 ELECTRIC_USES_LEGACY = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
@@ -68,8 +69,10 @@ def main():
         cleaned_path = out_dir / f"{level}hist_cleaned.csv"
         if cleaned_path.exists():
             hist = pd.read_csv(cleaned_path)
+            hist = normalize_input_columns(hist, cfg)
         else:
             hist, _, _ = load_level_tables(db_dir, cfg["level_defaults"][level])
+            hist = normalize_input_columns(hist, cfg)
         hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
         hist = add_elec_total_accurate(hist)
         hist = add_elec_total_no_bve(hist)
@@ -81,15 +84,15 @@ def main():
             return ELECTRIC_USES_LEGACY[:]
         if target == "all":
             hist = _load_hist(level)
-            dyn_usages = discover_elec_usage_targets(hist)
+            dyn_targets = discover_dynamic_consumption_targets(hist)
             base = BASE_TARGETS[:]
-            return base + [c for c in dyn_usages if c not in base]
+            return base + [c for c in dyn_targets if c not in base]
         return [target]
 
     def allowed_targets(level: str) -> set[str]:
         hist = _load_hist(level)
-        dyn_usages = discover_elec_usage_targets(hist)
-        return set(BASE_TARGETS) | set(dyn_usages)
+        dyn_targets = discover_dynamic_consumption_targets(hist)
+        return set(BASE_TARGETS) | set(dyn_targets)
 
     def predict_one(level: str, target: str, days: int | None):
         level_cfg = cfg["level_defaults"][level]
@@ -106,12 +109,13 @@ def main():
             hist = hist.merge(site_infos, on="siteId", how="left")
 
         # Restrict groups if this is a usage: skip sites/zones where fully absent
-        dyn_usages = set(discover_elec_usage_targets(hist))
-        if target in dyn_usages:
+        dyn_targets = set(discover_dynamic_consumption_targets(hist))
+        if target in dyn_targets:
             hist = drop_groups_with_no_signal(hist, id_cols, target)
 
         # weather
         _, _, weath = load_level_tables(db_dir, level_cfg)
+        weath = normalize_input_columns(weath, cfg)
         if len(weath) == 0:
             raise RuntimeError("Missing siteweath.csv")
         weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")

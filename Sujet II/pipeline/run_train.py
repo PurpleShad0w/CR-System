@@ -22,7 +22,8 @@ from .features import (
 )
 from .modeling import make_model, save_model
 from .site_infos import load_site_infos
-from .targets_utils import discover_elec_usage_targets, drop_groups_with_no_signal, add_elec_total_accurate
+from .targets_utils import discover_elec_usage_targets, discover_dynamic_consumption_targets, drop_groups_with_no_signal, add_elec_total_accurate
+from .variable_config import normalize_input_columns
 
 
 ELECTRIC_USES = ["elecBveKwh", "elecCvcKwh", "elecForceKwh", "elecLightingKwh"]
@@ -33,6 +34,17 @@ ELEC_AGGREGATED = "elecAggregatedKwh"
 # énergie = total + accurate + usages + noBVE (pour log1p)
 ELECTRIC_ALL = ["elecTotalKwh", ELEC_AGGREGATED, ELEC_TOTAL_ACCURATE] + ELECTRIC_USES + [ELEC_TOTAL_NOBVE]
 
+
+
+def _is_consumption_target(target: str) -> bool:
+    """True for non-negative consumption-like targets, including dynamic drift targets."""
+    return (
+        target in (ELECTRIC_ALL + ["waterM3"])
+        or (isinstance(target, str) and target.startswith("elec") and target.endswith("Kwh"))
+        or (isinstance(target, str) and target.startswith("water") and target.endswith("M3"))
+        or (isinstance(target, str) and target.startswith("ec"))
+        or (isinstance(target, str) and target.startswith("eg"))
+    )
 
 def add_elec_total_no_bve(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -97,9 +109,10 @@ def main():
                 hist = pd.read_csv(cleaned)
             else:
                 hist, _, _ = load_level_tables(db_dir, cfg["level_defaults"][level])
+            hist = normalize_input_columns(hist, cfg)
 
             hist = add_elec_total_accurate(hist)
-            elec_usages = discover_elec_usage_targets(hist)
+            elec_usages = discover_dynamic_consumption_targets(hist)
 
             # base “all” + usages détectés (sans doublons)
             base = BASE_TARGETS_BY_LEVEL[level][:]
@@ -114,9 +127,11 @@ def main():
         cleaned_path = out_dir / f"{level}hist_cleaned.csv"
         if cleaned_path.exists():
             hist = pd.read_csv(cleaned_path)
+            hist = normalize_input_columns(hist, cfg)
             hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
         else:
             hist, _, _ = load_level_tables(db_dir, level_cfg)
+            hist = normalize_input_columns(hist, cfg)
             hist["date"] = pd.to_datetime(hist["date"], errors="coerce").dt.floor("D")
 
         # --- site static infos (surface etc.) ---
@@ -132,6 +147,7 @@ def main():
         hist = add_elec_total_no_bve(hist)
 
         _, _, weath = load_level_tables(db_dir, level_cfg)
+        weath = normalize_input_columns(weath, cfg)
         if len(weath) and "date" in weath.columns:
             weath["date"] = pd.to_datetime(weath["date"], errors="coerce").dt.floor("D")
 
@@ -146,14 +162,14 @@ def main():
         df[target] = pd.to_numeric(df[target], errors="coerce")
 
         # require enough positive points for usage targets
-        if target in discover_elec_usage_targets(hist):
+        if target in discover_dynamic_consumption_targets(hist):
             pos = (df[target].fillna(0.0) > 0).sum()
             if pos < 50:
                 print(f"[WARN] level={level} target={target}: only {pos} positive points. Skipping.")
                 return
 
         # ✅ si usage absent d’un site/zone, on le drop
-        if target in discover_elec_usage_targets(hist):
+        if target in discover_dynamic_consumption_targets(hist):
             df = drop_groups_with_no_signal(df, id_cols, target)
 
         # sécurité spécifique température
@@ -219,7 +235,7 @@ def main():
         y_valid = valid[target].to_numpy(dtype=float)
 
         # ✅ log1p pour énergie (inclut accurate) + eau
-        use_log1p = target in (ELECTRIC_ALL + ["waterM3"])
+        use_log1p = _is_consumption_target(target)
         y_train_t = np.log1p(y_train) if use_log1p else y_train
 
         candidate_cat = ["siteId", "dow", "month", "is_weekend"]
@@ -283,9 +299,9 @@ def main():
             hist0, _, _ = load_level_tables(db_dir, cfg["level_defaults"][level])
 
         hist0 = add_elec_total_accurate(hist0)
-        dyn_usages = discover_elec_usage_targets(hist0)
+        dyn_targets = discover_dynamic_consumption_targets(hist0)
 
-        allowed = set(TARGETS_BY_LEVEL[level]) | set(dyn_usages) | {ELEC_TOTAL_ACCURATE}
+        allowed = set(TARGETS_BY_LEVEL[level]) | set(dyn_targets) | {ELEC_TOTAL_ACCURATE}
 
         targets = expand_targets(level, args.target)
         for target in targets:
@@ -295,7 +311,7 @@ def main():
             if target not in allowed:
                 raise ValueError(
                     f"Target {target} not supported for level {level}. "
-                    f"Allowed base={TARGETS_BY_LEVEL[level]} + dyn_usages({len(dyn_usages)})"
+                    f"Allowed base={TARGETS_BY_LEVEL[level]} + dyn_usages({len(dyn_targets)})"
                 )
             train_one(level, target)
 
